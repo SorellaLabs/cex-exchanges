@@ -1,0 +1,26 @@
+use thiserror::Error;
+
+use crate::{exchanges::normalized::CexExchange, types::normalized::ws::NormalizedWsMessage};
+
+#[derive(Debug, Error)]
+pub enum WsError {
+    #[error("failed to connect to the websocket: {0}")]
+    ConnectionError(#[from] tokio_tungstenite::tungstenite::Error),
+    #[error("failed to deserialize the message: {0}")]
+    DeserializingError(#[from] serde_json::Error),
+    #[error("recieved an error from the ws: {0}")]
+    StreamRxError(tokio_tungstenite::tungstenite::Error),
+    #[error("error sending value to the ws: {0}")]
+    StreamTxError(tokio_tungstenite::tungstenite::Error),
+    #[error("stream was terminated")]
+    StreamTerminated,
+}
+
+impl WsError {
+    pub fn normalized_with_exchange(self, exchange: CexExchange) -> NormalizedWsMessage {
+        NormalizedWsMessage::Disconnect {
+            exchange: exchange.to_string(),
+            message: self.to_string(),
+        }
+    }
+}

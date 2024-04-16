@@ -1,0 +1,32 @@
+[package]
+name = "cex-exchanges"
+version = "0.1.0"
+edition = "2021"
+
+
+
+
+[dependencies]
+
+
+
+# async 
+tokio = { version = "1.13.0", features = ["full"] }
+futures = "0.3.28"
+async-trait = "0.1.73"
+tokio-tungstenite = { version = "0.20", features = ["native-tls"] }
+
+
+# serde
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_with = "3.7"
+
+
+# error handling
+eyre = "0.6.5"
+thiserror = "1.0"
+
+
+# misc
+paste = "1.0"
