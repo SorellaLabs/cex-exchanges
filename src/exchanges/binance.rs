@@ -93,7 +93,7 @@ impl BinanceWsBuilder {
             let split_exchange = chunks
                 .into_iter()
                 .map(|chk| {
-                    let channel_urls = chk.into_iter().map(|c| c.build_url()).collect::<Vec<_>>();
+                    let channel_urls = chk.iter().map(|c| c.build_url()).collect::<Vec<_>>();
 
                     let url = format!("{base_url}{}", channel_urls.join("/"));
 

@@ -29,9 +29,7 @@ impl BinanceChannel {
                 .into_iter()
                 .map(|s| {
                     BinanceTradingPair::new_unchecked(
-                        &s.replace("-", "")
-                            .replace("_", "")
-                            .replace("/", "")
+                        &s.replace(['-', '_', '/'], "")
                             .to_uppercase()
                     )
                 })
@@ -42,7 +40,7 @@ impl BinanceChannel {
     pub(crate) fn build_url(&self) -> String {
         match self {
             BinanceChannel::Trade(Some(vals)) => vals
-                .into_iter()
+                .iter()
                 .map(|val| format!("{}@trade", val.0.to_lowercase()))
                 .collect::<Vec<_>>()
                 .join("/"),

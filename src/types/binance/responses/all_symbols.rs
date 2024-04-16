@@ -149,7 +149,7 @@ impl crate::types::test_utils::NormalizedEquals for BinanceAllSymbolsProperties 
         let equals = normalized.exchange == CexExchange::Binance
             && normalized.symbol == self.symbol
             && normalized.name == self.name
-            && normalized.display_name == None
+            && normalized.display_name.is_none()
             && normalized.status == format!("last updated: {:?}", self.last_updated)
             && normalized.blockchains
                 == self
