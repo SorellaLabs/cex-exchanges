@@ -72,7 +72,7 @@ impl Display for CoinbaseChannel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CoinbaseChannel::Status => write!(f, "status"),
-            CoinbaseChannel::Match(_) => write!(f, "matches"),
+            CoinbaseChannel::Match(_) => write!(f, "match"),
             CoinbaseChannel::Ticker(_) => write!(f, "ticker")
         }
     }
@@ -84,6 +84,8 @@ impl TryFrom<String> for CoinbaseChannel {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
             "status" => Ok(Self::Status),
+            "match" => Ok(Self::Match(None)),
+            "ticker" => Ok(Self::Ticker(None)),
             _ => Err(eyre::ErrReport::msg(format!("channel is not valid: {value}")))
         }
     }

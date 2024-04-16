@@ -38,4 +38,7 @@ chrono = { version = "0.4", features = ["serde"] }
 
 [features]
 default = ["test-utils"]
+
+non-us = []
+
 test-utils = []

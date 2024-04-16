@@ -1,19 +1,33 @@
+#[cfg(feature = "non-us")]
+pub mod binance;
 pub mod builder;
 pub mod coinbase;
-pub mod normalized;
 
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
-use self::normalized::CexExchange;
 use crate::{
-    http::errors::HttpError,
-    types::normalized::{http::combined::CombinedHttpResponse, ws::combined::CombinedWsMessage},
-    ws::errors::WsError
+    clients::{http::errors::HttpError, ws::errors::WsError},
+    types::normalized::{http::combined::CombinedHttpResponse, ws::combined::CombinedWsMessage}
 };
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CexExchange {
+    Coinbase,
+    Binance
+}
+
+impl Display for CexExchange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CexExchange::Coinbase => write!(f, "coinbase"),
+            CexExchange::Binance => write!(f, "binance")
+        }
+    }
+}
 
 #[async_trait::async_trait]
 pub trait Exchange: Clone {

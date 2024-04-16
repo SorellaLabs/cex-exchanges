@@ -2,12 +2,12 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{
-    exchanges::normalized::CexExchange,
+    exchanges::CexExchange,
     types::{blockchain::Blockchain, normalized::currencies::NormalizedCurrency}
 };
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CoinbaseAllCurrenciesResponse {
     pub currencies: Vec<CoinbaseAllCurrenciesProperties>
 }
@@ -18,6 +18,17 @@ impl CoinbaseAllCurrenciesResponse {
             .into_iter()
             .map(CoinbaseAllCurrenciesProperties::normalize)
             .collect()
+    }
+}
+
+impl<'de> Deserialize<'de> for CoinbaseAllCurrenciesResponse {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>
+    {
+        let currencies = Vec::<CoinbaseAllCurrenciesProperties>::deserialize(deserializer)?;
+
+        Ok(CoinbaseAllCurrenciesResponse { currencies })
     }
 }
 
@@ -42,15 +53,12 @@ pub struct CoinbaseAllCurrenciesProperties {
 impl CoinbaseAllCurrenciesProperties {
     pub fn normalize(self) -> NormalizedCurrency {
         NormalizedCurrency {
-            exchange:      CexExchange::Coinbase,
-            symbol:        self.id,
-            name:          self.name,
-            display_name:  self.display_name,
-            min_size:      self.min_size,
-            max_precision: self.max_precision,
-            status:        self.status,
-            is_fiat:       &self.details.kind.to_lowercase() == "fiat",
-            blockchains:   self
+            exchange:     CexExchange::Coinbase,
+            symbol:       self.id,
+            name:         self.name,
+            display_name: self.display_name,
+            status:       self.status,
+            blockchains:  self
                 .supported_networks
                 .into_iter()
                 .map(|n| n.parse_blockchain_address())
@@ -119,10 +127,7 @@ impl crate::types::test_utils::NormalizedEquals for CoinbaseAllCurrenciesPropert
             && normalized.symbol == self.id
             && normalized.name == self.name
             && normalized.display_name == self.display_name
-            && normalized.min_size == self.min_size
-            && normalized.max_precision == self.max_precision
             && normalized.status == self.status
-            && normalized.is_fiat == (&self.details.kind.to_lowercase() == "fiat")
             && normalized.blockchains
                 == self
                     .supported_networks

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{
-    exchanges::normalized::CexExchange,
+    exchanges::CexExchange,
     types::{coinbase::pairs::CoinbaseTradingPair, normalized::quotes::NormalizedQuote}
 };
 

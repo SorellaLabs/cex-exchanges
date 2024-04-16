@@ -1,5 +1,5 @@
 use crate::{
-    exchanges::{builder::TradingPairSplitRaw, normalized::CexExchange},
+    exchanges::{builder::TradingPairSplitRaw, CexExchange},
     types::normalized::pairs::NormalizedTradingPair
 };
 

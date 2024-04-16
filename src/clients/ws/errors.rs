@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{exchanges::normalized::CexExchange, types::normalized::ws::combined::CombinedWsMessage};
+use crate::{exchanges::CexExchange, types::normalized::ws::combined::CombinedWsMessage};
 
 #[derive(Debug, Error)]
 pub enum WsError {

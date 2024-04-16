@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 use crate::{exchanges::CexExchange, types::normalized::pairs::NormalizedTradingPair};
 
 #[derive(Debug, Clone)]
-pub struct CoinbaseTradingPair(pub(crate) String);
+pub struct BinanceTradingPair(pub(crate) String);
 
-impl CoinbaseTradingPair {
+impl BinanceTradingPair {
     pub fn new_checked(s: &str) -> eyre::Result<Self> {
         s.to_string().try_into()
     }
@@ -15,40 +15,40 @@ impl CoinbaseTradingPair {
     }
 
     pub fn is_valid(s: &str) -> bool {
-        s.contains('-') && !s.contains('_') && !s.contains('/')
+        !s.contains('-') && !s.contains('_') && !s.contains('/')
     }
 
     pub fn normalize(&self) -> NormalizedTradingPair {
         let mut split = self.0.split('-');
-        NormalizedTradingPair::new(CexExchange::Coinbase, split.next().unwrap(), split.next().unwrap(), Some('-'))
+        NormalizedTradingPair::new(CexExchange::Binance, split.next().unwrap(), split.next().unwrap(), Some('-'))
     }
 }
 
-impl TryFrom<String> for CoinbaseTradingPair {
+impl TryFrom<String> for BinanceTradingPair {
     type Error = eyre::Report;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if Self::is_valid(&value) {
-            Ok(CoinbaseTradingPair(value))
+            Ok(BinanceTradingPair(value))
         } else {
             Err(eyre::ErrReport::msg(format!("trading pair '{value}' does not contain a '-'")))
         }
     }
 }
 
-impl TryFrom<&str> for CoinbaseTradingPair {
+impl TryFrom<&str> for BinanceTradingPair {
     type Error = eyre::Report;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         if Self::is_valid(value) {
-            Ok(CoinbaseTradingPair(value.to_string()))
+            Ok(BinanceTradingPair(value.to_string()))
         } else {
             Err(eyre::ErrReport::msg(format!("trading pair '{value}' does not contain a '-'")))
         }
     }
 }
 
-impl Serialize for CoinbaseTradingPair {
+impl Serialize for BinanceTradingPair {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer
@@ -57,19 +57,19 @@ impl Serialize for CoinbaseTradingPair {
     }
 }
 
-impl<'de> Deserialize<'de> for CoinbaseTradingPair {
+impl<'de> Deserialize<'de> for BinanceTradingPair {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>
     {
         let s = String::deserialize(deserializer)?;
 
-        Ok(CoinbaseTradingPair(s))
+        Ok(BinanceTradingPair(s))
     }
 }
 
-impl From<NormalizedTradingPair> for CoinbaseTradingPair {
+impl From<NormalizedTradingPair> for BinanceTradingPair {
     fn from(value: NormalizedTradingPair) -> Self {
-        CoinbaseTradingPair(format!("{}-{}", value.base.to_uppercase(), value.quote.to_uppercase()))
+        BinanceTradingPair(format!("{}{}", value.base.to_uppercase(), value.quote.to_uppercase()))
     }
 }

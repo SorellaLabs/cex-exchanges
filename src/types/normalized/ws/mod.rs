@@ -1,7 +1,7 @@
 pub mod channels;
 pub mod combined;
 use super::{quotes::NormalizedQuote, trades::NormalizedTrade};
-use crate::exchanges::{normalized::CexExchange, Exchange};
+use crate::exchanges::{CexExchange, Exchange};
 
 #[derive(Debug, Clone)]
 pub enum NormalizedWsDataTypes {

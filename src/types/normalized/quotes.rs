@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use super::pairs::NormalizedTradingPair;
-use crate::exchanges::normalized::CexExchange;
+use crate::exchanges::CexExchange;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NormalizedQuote {

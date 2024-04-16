@@ -51,7 +51,10 @@ pub enum Blockchain {
     Ripple,
     Tezos,
     Zcash,
-    Horizen
+    Horizen,
+    Icp,
+    Injective,
+    Tron
 }
 
 impl FromStr for Blockchain {
@@ -62,7 +65,7 @@ impl FromStr for Blockchain {
         match lower_s.as_str() {
             "eth" | "ethereum" => Ok(Self::Ethereum),
             "sol" | "solana" => Ok(Self::Solana),
-            "btx" | "bitcoin" => Ok(Self::Bitcoin),
+            "btx" | "bitcoin" | "ordinals - brc20" => Ok(Self::Bitcoin),
             "ada" | "cardano" => Ok(Self::Cardano),
             "base" => Ok(Self::Base),
             "akash" => Ok(Self::Akash),
@@ -98,7 +101,7 @@ impl FromStr for Blockchain {
             "oasis" => Ok(Self::Oasis),
             "sei" => Ok(Self::Sei),
             "stacks" => Ok(Self::Stacks),
-            "sui" => Ok(Self::Sui),
+            "sui" | "sui network" => Ok(Self::Sui),
             "celestia" => Ok(Self::Celestia),
             "noble" => Ok(Self::Noble),
             "vara" => Ok(Self::Vara),
@@ -108,6 +111,9 @@ impl FromStr for Blockchain {
             "xtz" | "tezos" => Ok(Self::Tezos),
             "zec" | "zcash" => Ok(Self::Zcash),
             "zen" | "horizen" => Ok(Self::Horizen),
+            "icp" => Ok(Self::Icp),
+            "inj" | "injective" => Ok(Self::Injective),
+            "trx" | "tron20" => Ok(Self::Tron),
             _ => Err(eyre::ErrReport::msg(format!("'{s}' is not a valid network")))
         }
     }

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::exchanges::normalized::CexExchange;
+use crate::exchanges::CexExchange;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NormalizedTradingPair {

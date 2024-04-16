@@ -1,6 +1,6 @@
 use cex_exchanges::{
-    exchanges::Exchange,
-    ws::{mutli::MutliWsStreamBuilder, WsStream}
+    clients::ws::{mutli::MutliWsStreamBuilder, WsStream},
+    exchanges::Exchange
 };
 use futures::StreamExt;
 

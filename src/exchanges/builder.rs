@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::normalized::CexExchange;
+use super::CexExchange;
 use crate::types::normalized::ws::channels::{NormalizedWsChannelKinds, NormalizedWsChannels};
 
 #[derive(Debug, Default, Clone)]

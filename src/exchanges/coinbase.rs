@@ -2,18 +2,17 @@ use futures::SinkExt;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
-use super::{normalized::CexExchange, Exchange};
+use super::{CexExchange, Exchange};
 use crate::{
-    http::errors::HttpError,
+    clients::{
+        http::errors::HttpError,
+        ws::{errors::WsError, mutli::MutliWsStreamBuilder}
+    },
     types::coinbase::{
         channels::{CoinbaseChannel, CoinbaseSubscription},
         messages::CoinbaseWsMessage,
-        responses::{
-            all_currencies::{CoinbaseAllCurrenciesProperties, CoinbaseAllCurrenciesResponse},
-            CoinbaseHttpResponse
-        }
-    },
-    ws::{errors::WsError, mutli::MutliWsStreamBuilder}
+        responses::{all_currencies::CoinbaseAllCurrenciesResponse, CoinbaseHttpResponse}
+    }
 };
 
 const WSS_URL: &str = "wss://ws-feed.exchange.coinbase.com";
@@ -49,24 +48,19 @@ impl Exchange for Coinbase {
     async fn all_symbols(web_client: &reqwest::Client) -> Result<CoinbaseHttpResponse, HttpError> {
         let url = format!("{BASE_REST_API_URL}/currencies");
 
-        let response = web_client
+        let currencies: CoinbaseAllCurrenciesResponse = web_client
             .get(&url)
             .header("Content-Type", "application/json")
             .send()
             .await?
-            .text()
+            .json()
             .await?;
 
-        // println!("MSG: {}", response);
-
-        let currencies: Vec<CoinbaseAllCurrenciesProperties> = serde_json::from_str(&response)?;
-
-        Ok(CoinbaseHttpResponse::Currencies(CoinbaseAllCurrenciesResponse { currencies }))
+        Ok(CoinbaseHttpResponse::Currencies(currencies))
     }
 }
 
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct CoinbaseWsBuilder {
     pub channels:            Vec<CoinbaseChannel>,
     pub channels_per_stream: Option<usize>
@@ -150,5 +144,3 @@ impl CoinbaseWsBuilder {
         }
     }
 }
-
-

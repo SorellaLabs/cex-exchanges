@@ -1,4 +1,4 @@
-use crate::{exchanges::normalized::CexExchange, types::normalized::ws::NormalizedWsDataTypes};
+use crate::{exchanges::CexExchange, types::normalized::ws::NormalizedWsDataTypes};
 
 pub mod matches;
 pub mod status;
