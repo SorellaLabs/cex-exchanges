@@ -7,6 +7,12 @@ pub struct ExchangeApi {
     web_client: reqwest::Client
 }
 
+impl Default for ExchangeApi {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ExchangeApi {
     pub fn new() -> Self {
         Self { web_client: reqwest::Client::new() }

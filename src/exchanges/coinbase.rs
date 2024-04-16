@@ -66,6 +66,7 @@ impl Exchange for Coinbase {
 }
 
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct CoinbaseWsBuilder {
     pub channels:            Vec<CoinbaseChannel>,
     pub channels_per_stream: Option<usize>
@@ -137,7 +138,7 @@ impl CoinbaseWsBuilder {
                 .map(|chk| {
                     let mut sub = CoinbaseSubscription::new();
 
-                    chk.into_iter().for_each(|c| sub.add_channel(c.clone()));
+                    chk.iter().for_each(|c| sub.add_channel(c.clone()));
 
                     Coinbase::new_ws_subscription(sub)
                 })
@@ -150,8 +151,4 @@ impl CoinbaseWsBuilder {
     }
 }
 
-impl Default for CoinbaseWsBuilder {
-    fn default() -> Self {
-        Self { channels: Vec::new(), channels_per_stream: None }
-    }
-}
+
