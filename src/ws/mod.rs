@@ -1,4 +1,5 @@
 pub mod errors;
+pub mod mutli;
 
 use std::{
     pin::Pin,
@@ -12,7 +13,7 @@ use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 use self::errors::WsError;
 use crate::{
     exchanges::Exchange,
-    types::normalized::ws::{MessageOrPing, NormalizedWsMessage}
+    types::normalized::ws::{combined::CombinedWsMessage, MessageOrPing}
 };
 
 type ReconnectFuture = Option<Pin<Box<dyn Future<Output = Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError>>>>>;
@@ -48,10 +49,7 @@ where
                 Ok(MessageOrPing::new_message(val?))
             }
             Message::Ping(_) => Ok(MessageOrPing::new_ping()),
-            _ => {
-                println!("FULL MSG: {:?}", message);
-                unimplemented!()
-            }
+            _ => unimplemented!()
         }
     }
 
@@ -70,7 +68,7 @@ impl<T> Stream for WsStream<T>
 where
     T: Exchange + Send + Unpin + 'static
 {
-    type Item = NormalizedWsMessage;
+    type Item = CombinedWsMessage;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();

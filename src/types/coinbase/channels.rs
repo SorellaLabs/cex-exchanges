@@ -3,19 +3,20 @@ use std::fmt::Display;
 use serde::Serialize;
 
 use super::pairs::CoinbaseTradingPair;
-use crate::types::normalized::channels::NormalizedWsChannels;
+use crate::types::normalized::ws::channels::NormalizedWsChannels;
 
 #[derive(Debug, Clone)]
 pub enum CoinbaseChannel {
     Status,
-    RfqMatch(Option<Vec<CoinbaseTradingPair>>)
+    Match(Option<Vec<CoinbaseTradingPair>>),
+    Ticker(Option<Vec<CoinbaseTradingPair>>)
 }
 
 impl CoinbaseChannel {
-    /// builds rfq matches channel from a vec of (base asset, quote asset)
+    /// builds  match channel from a vec of (base asset, quote asset)
     /// (eth, usdt) -> ETH-USDT
-    pub fn new_rfq_matches_from_base_quote(pairs: Vec<(String, String)>) -> Self {
-        CoinbaseChannel::RfqMatch(Some(
+    pub fn new_match_from_base_quote(pairs: Vec<(String, String)>) -> Self {
+        CoinbaseChannel::Match(Some(
             pairs
                 .into_iter()
                 .map(|(b, q)| CoinbaseTradingPair::new_unchecked(&format!("{}-{}", b.to_uppercase(), q.to_uppercase())))
@@ -23,15 +24,42 @@ impl CoinbaseChannel {
         ))
     }
 
-    /// builds rfq matches channel from a vec of raw trading pairs
+    /// builds  match channel from a vec of trading pairs
     /// eth_USDT -> ETH-USDT
     /// panics if the symbol is incorrectly formatted
-    pub fn new_rfq_matches_from_raw(pairs: Vec<String>, delimiter: char) -> Self {
+    pub fn new_match_from_pair(pairs: Vec<String>, delimiter: char) -> Self {
         if delimiter == '\0' {
             panic!("delimiter for coinbase cannot be empty/null")
         }
 
-        CoinbaseChannel::RfqMatch(Some(
+        CoinbaseChannel::Match(Some(
+            pairs
+                .into_iter()
+                .map(|s| CoinbaseTradingPair::new_unchecked(&s.replace(delimiter, "-").to_uppercase()))
+                .collect()
+        ))
+    }
+
+    /// builds ticker channel from a vec of (base asset, quote asset)
+    /// (eth, usdt) -> ETH-USDT
+    pub fn new_ticker_from_base_quote(pairs: Vec<(String, String)>) -> Self {
+        CoinbaseChannel::Ticker(Some(
+            pairs
+                .into_iter()
+                .map(|(b, q)| CoinbaseTradingPair::new_unchecked(&format!("{}-{}", b.to_uppercase(), q.to_uppercase())))
+                .collect()
+        ))
+    }
+
+    /// builds ticker channel from a vec of trading pairs
+    /// eth_USDT -> ETH-USDT
+    /// panics if the symbol is incorrectly formatted
+    pub fn new_ticker_from_pair(pairs: Vec<String>, delimiter: char) -> Self {
+        if delimiter == '\0' {
+            panic!("delimiter for coinbase cannot be empty/null")
+        }
+
+        CoinbaseChannel::Ticker(Some(
             pairs
                 .into_iter()
                 .map(|s| CoinbaseTradingPair::new_unchecked(&s.replace(delimiter, "-").to_uppercase()))
@@ -44,7 +72,8 @@ impl Display for CoinbaseChannel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CoinbaseChannel::Status => write!(f, "status"),
-            CoinbaseChannel::RfqMatch(_) => write!(f, "rfq_matches")
+            CoinbaseChannel::Match(_) => write!(f, "matches"),
+            CoinbaseChannel::Ticker(_) => write!(f, "ticker")
         }
     }
 }
@@ -64,7 +93,8 @@ impl From<NormalizedWsChannels> for CoinbaseChannel {
     fn from(value: NormalizedWsChannels) -> Self {
         match value {
             NormalizedWsChannels::Status => CoinbaseChannel::Status,
-            NormalizedWsChannels::Trades(pairs) => CoinbaseChannel::RfqMatch(pairs.map(|p| p.into_iter().map(Into::into).collect()))
+            NormalizedWsChannels::Trades(pairs) => CoinbaseChannel::Match(pairs.map(|p| p.into_iter().map(Into::into).collect())),
+            NormalizedWsChannels::Quotes(pairs) => CoinbaseChannel::Ticker(pairs.map(|p| p.into_iter().map(Into::into).collect()))
         }
     }
 }
@@ -87,13 +117,17 @@ impl CoinbaseSubscription {
         CoinbaseSubscription { sub_name: "subscribe".to_string(), channels: Vec::new() }
     }
 
-    pub(crate) fn add_channel(&mut self, channel: CoinbaseSubscriptionInner) {
-        self.channels.push(channel);
+    pub fn new_single_channel(channel: CoinbaseChannel) -> Self {
+        CoinbaseSubscription { sub_name: "subscribe".to_string(), channels: vec![channel.into()] }
+    }
+
+    pub(crate) fn add_channel(&mut self, channel: CoinbaseChannel) {
+        self.channels.push(channel.into());
     }
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub(crate) struct CoinbaseSubscriptionInner {
+struct CoinbaseSubscriptionInner {
     name:        String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     product_ids: Vec<CoinbaseTradingPair>
@@ -104,7 +138,8 @@ impl From<CoinbaseChannel> for CoinbaseSubscriptionInner {
         let name = value.to_string();
         match value {
             CoinbaseChannel::Status => CoinbaseSubscriptionInner { name, product_ids: Vec::new() },
-            CoinbaseChannel::RfqMatch(pairs) => CoinbaseSubscriptionInner { name, product_ids: pairs.unwrap_or_default() }
+            CoinbaseChannel::Match(pairs) => CoinbaseSubscriptionInner { name, product_ids: pairs.unwrap_or_default() },
+            CoinbaseChannel::Ticker(pairs) => CoinbaseSubscriptionInner { name, product_ids: pairs.unwrap_or_default() }
         }
     }
 }

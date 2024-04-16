@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{exchanges::normalized::CexExchange, types::normalized::ws::NormalizedWsMessage};
+use crate::{exchanges::normalized::CexExchange, types::normalized::ws::combined::CombinedWsMessage};
 
 #[derive(Debug, Error)]
 pub enum WsError {
@@ -13,14 +13,11 @@ pub enum WsError {
     #[error("error sending value to the ws: {0}")]
     StreamTxError(tokio_tungstenite::tungstenite::Error),
     #[error("stream was terminated")]
-    StreamTerminated,
+    StreamTerminated
 }
 
 impl WsError {
-    pub fn normalized_with_exchange(self, exchange: CexExchange) -> NormalizedWsMessage {
-        NormalizedWsMessage::Disconnect {
-            exchange: exchange.to_string(),
-            message: self.to_string(),
-        }
+    pub fn normalized_with_exchange(self, exchange: CexExchange) -> CombinedWsMessage {
+        CombinedWsMessage::Disconnect { exchange, message: self.to_string() }
     }
 }

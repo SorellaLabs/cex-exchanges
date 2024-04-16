@@ -1,12 +1,14 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NormalizedExchange {
     pub exchange: CexExchange,
     pub url:      String
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CexExchange {
     Coinbase
 }
