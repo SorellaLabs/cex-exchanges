@@ -87,6 +87,12 @@ pub struct CoinbaseSubscription {
     channels: Vec<CoinbaseSubscriptionInner>,
 }
 
+impl Default for CoinbaseSubscription {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CoinbaseSubscription {
     pub fn new() -> Self {
         CoinbaseSubscription {

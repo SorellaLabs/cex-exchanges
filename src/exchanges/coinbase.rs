@@ -36,7 +36,7 @@ impl Exchange for Coinbase {
     async fn make_ws_connection(
         &self,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError> {
-        let (mut ws, _) = tokio_tungstenite::connect_async(&*self.url).await?;
+        let (mut ws, _) = tokio_tungstenite::connect_async(self.url).await?;
 
         let sub_message = serde_json::to_string(&self.subscription)?;
         ws.send(Message::Text(sub_message)).await?;

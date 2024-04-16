@@ -82,11 +82,9 @@ where
                             if let Err(e) = Self::flush_sink_queue(stream, cx) {
                                 this.stream = None;
                                 return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE)));
-                            } else {
-                                if let Err(e) = stream.start_send_unpin(Message::Pong(vec![])) {
-                                    this.stream = None;
-                                    return Poll::Ready(Some(WsError::StreamTxError(e).normalized_with_exchange(T::EXCHANGE)));
-                                }
+                            } else if let Err(e) = stream.start_send_unpin(Message::Pong(vec![])) {
+                                this.stream = None;
+                                return Poll::Ready(Some(WsError::StreamTxError(e).normalized_with_exchange(T::EXCHANGE)));
                             }
 
                             return Poll::Pending;
@@ -98,7 +96,7 @@ where
                     },
                     Some(Err(e)) => {
                         this.stream = None;
-                        WsError::StreamRxError(e.into()).normalized_with_exchange(T::EXCHANGE)
+                        WsError::StreamRxError(e).normalized_with_exchange(T::EXCHANGE)
                     }
                     None => {
                         this.stream = None;
@@ -108,27 +106,25 @@ where
 
                 return Poll::Ready(Some(ret_val));
             }
-        } else {
-            if let Some(reconnect) = this.reconnect_fut.as_mut() {
-                match reconnect.poll_unpin(cx) {
-                    Poll::Ready(Ok(new_stream)) => {
-                        this.stream = Some(Box::pin(new_stream));
-                        this.reconnect_fut = None;
-                        cx.waker().wake_by_ref();
-                        return Poll::Pending;
-                    }
-                    Poll::Ready(Err(e)) => {
-                        this.reconnect_fut = Some(Box::pin(this.exchange.clone().make_owned_ws_connection()));
-                        return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE)));
-                    }
-                    Poll::Pending => ()
+        } else if let Some(reconnect) = this.reconnect_fut.as_mut() {
+            match reconnect.poll_unpin(cx) {
+                Poll::Ready(Ok(new_stream)) => {
+                    this.stream = Some(Box::pin(new_stream));
+                    this.reconnect_fut = None;
+                    cx.waker().wake_by_ref();
+                    return Poll::Pending;
                 }
-            } else {
-                this.reconnect_fut = Some(Box::pin(this.exchange.clone().make_owned_ws_connection()));
-
-                cx.waker().wake_by_ref();
-                return Poll::Pending;
+                Poll::Ready(Err(e)) => {
+                    this.reconnect_fut = Some(Box::pin(this.exchange.clone().make_owned_ws_connection()));
+                    return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE)));
+                }
+                Poll::Pending => ()
             }
+        } else {
+            this.reconnect_fut = Some(Box::pin(this.exchange.clone().make_owned_ws_connection()));
+
+            cx.waker().wake_by_ref();
+            return Poll::Pending;
         }
 
         Poll::Pending

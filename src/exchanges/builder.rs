@@ -30,11 +30,11 @@ impl NormalizedExchangeBuilder {
         let entry = self
             .ws_exchanges
             .entry(*exchange)
-            .or_insert(HashMap::default());
+            .or_default();
 
         channels.iter().for_each(|c| {
             let channel_kind: NormalizedWsChannelKinds = c.into();
-            entry.entry(*&channel_kind).or_insert_with(|| {
+            entry.entry(channel_kind).or_insert_with(|| {
                 NormalizedWsChannels::new_with_pairs(channel_kind, pairs, symbol_delimiter)
             });
         });
@@ -56,10 +56,10 @@ impl NormalizedExchangeBuilder {
         let entry = self
             .ws_exchanges
             .entry(*exchange)
-            .or_insert(HashMap::default());
+            .or_default();
 
         let channel_kind: NormalizedWsChannelKinds = channel.into();
-        entry.entry(*&channel_kind).or_insert_with(|| {
+        entry.entry(channel_kind).or_insert_with(|| {
             NormalizedWsChannels::new_with_pairs(channel_kind, pairs, symbol_delimiter)
         });
     }
