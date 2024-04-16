@@ -1,5 +1,4 @@
 pub mod errors;
-pub mod sink;
 
 use std::{
     pin::Pin,
@@ -10,8 +9,11 @@ use futures::{Future, FutureExt, SinkExt, Stream, StreamExt};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
-use self::{errors::WsError, sink::MessageOrPing};
-use crate::{exchanges::Exchange, types::normalized::ws::NormalizedWsMessage};
+use self::errors::WsError;
+use crate::{
+    exchanges::Exchange,
+    types::normalized::ws::{MessageOrPing, NormalizedWsMessage}
+};
 
 type ReconnectFuture = Option<Pin<Box<dyn Future<Output = Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError>>>>>;
 
