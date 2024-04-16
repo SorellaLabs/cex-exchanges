@@ -1,13 +1,14 @@
+use std::fmt::Display;
+
 use serde::Serialize;
 
-use crate::types::normalized::channels::NormalizedWsChannels;
-
 use super::pairs::CoinbaseTradingPair;
+use crate::types::normalized::channels::NormalizedWsChannels;
 
 #[derive(Debug, Clone)]
 pub enum CoinbaseChannel {
     Status,
-    RfqMatch(Option<Vec<CoinbaseTradingPair>>),
+    RfqMatch(Option<Vec<CoinbaseTradingPair>>)
 }
 
 impl CoinbaseChannel {
@@ -17,14 +18,8 @@ impl CoinbaseChannel {
         CoinbaseChannel::RfqMatch(Some(
             pairs
                 .into_iter()
-                .map(|(b, q)| {
-                    CoinbaseTradingPair::new_unchecked(&format!(
-                        "{}-{}",
-                        b.to_uppercase(),
-                        q.to_uppercase()
-                    ))
-                })
-                .collect(),
+                .map(|(b, q)| CoinbaseTradingPair::new_unchecked(&format!("{}-{}", b.to_uppercase(), q.to_uppercase())))
+                .collect()
         ))
     }
 
@@ -39,19 +34,17 @@ impl CoinbaseChannel {
         CoinbaseChannel::RfqMatch(Some(
             pairs
                 .into_iter()
-                .map(|s| {
-                    CoinbaseTradingPair::new_unchecked(&s.replace(delimiter, "-").to_uppercase())
-                })
-                .collect(),
+                .map(|s| CoinbaseTradingPair::new_unchecked(&s.replace(delimiter, "-").to_uppercase()))
+                .collect()
         ))
     }
 }
 
-impl ToString for CoinbaseChannel {
-    fn to_string(&self) -> String {
+impl Display for CoinbaseChannel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CoinbaseChannel::Status => "status".to_string(),
-            CoinbaseChannel::RfqMatch(_) => "rfq_matches".to_string(),
+            CoinbaseChannel::Status => write!(f, "status"),
+            CoinbaseChannel::RfqMatch(_) => write!(f, "rfq_matches")
         }
     }
 }
@@ -62,9 +55,7 @@ impl TryFrom<String> for CoinbaseChannel {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
             "status" => Ok(Self::Status),
-            _ => Err(eyre::ErrReport::msg(format!(
-                "channel is not valid: {value}"
-            ))),
+            _ => Err(eyre::ErrReport::msg(format!("channel is not valid: {value}")))
         }
     }
 }
@@ -73,9 +64,7 @@ impl From<NormalizedWsChannels> for CoinbaseChannel {
     fn from(value: NormalizedWsChannels) -> Self {
         match value {
             NormalizedWsChannels::Status => CoinbaseChannel::Status,
-            NormalizedWsChannels::Trades(pairs) => {
-                CoinbaseChannel::RfqMatch(pairs.map(|p| p.into_iter().map(Into::into).collect()))
-            }
+            NormalizedWsChannels::Trades(pairs) => CoinbaseChannel::RfqMatch(pairs.map(|p| p.into_iter().map(Into::into).collect()))
         }
     }
 }
@@ -84,7 +73,7 @@ impl From<NormalizedWsChannels> for CoinbaseChannel {
 pub struct CoinbaseSubscription {
     #[serde(rename = "type")]
     sub_name: String,
-    channels: Vec<CoinbaseSubscriptionInner>,
+    channels: Vec<CoinbaseSubscriptionInner>
 }
 
 impl Default for CoinbaseSubscription {
@@ -95,10 +84,7 @@ impl Default for CoinbaseSubscription {
 
 impl CoinbaseSubscription {
     pub fn new() -> Self {
-        CoinbaseSubscription {
-            sub_name: "subscribe".to_string(),
-            channels: Vec::new(),
-        }
+        CoinbaseSubscription { sub_name: "subscribe".to_string(), channels: Vec::new() }
     }
 
     pub(crate) fn add_channel(&mut self, channel: CoinbaseSubscriptionInner) {
@@ -108,23 +94,17 @@ impl CoinbaseSubscription {
 
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct CoinbaseSubscriptionInner {
-    name: String,
+    name:        String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    product_ids: Vec<CoinbaseTradingPair>,
+    product_ids: Vec<CoinbaseTradingPair>
 }
 
 impl From<CoinbaseChannel> for CoinbaseSubscriptionInner {
     fn from(value: CoinbaseChannel) -> Self {
         let name = value.to_string();
         match value {
-            CoinbaseChannel::Status => CoinbaseSubscriptionInner {
-                name,
-                product_ids: Vec::new(),
-            },
-            CoinbaseChannel::RfqMatch(pairs) => CoinbaseSubscriptionInner {
-                name,
-                product_ids: pairs.unwrap_or_default(),
-            },
+            CoinbaseChannel::Status => CoinbaseSubscriptionInner { name, product_ids: Vec::new() },
+            CoinbaseChannel::RfqMatch(pairs) => CoinbaseSubscriptionInner { name, product_ids: pairs.unwrap_or_default() }
         }
     }
 }

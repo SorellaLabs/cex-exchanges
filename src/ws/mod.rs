@@ -74,7 +74,7 @@ where
         let this = self.get_mut();
 
         if let Some(stream) = this.stream.as_mut() {
-            while let Poll::Ready(val) = stream.poll_next_unpin(cx) {
+            if let Poll::Ready(val) = stream.poll_next_unpin(cx) {
                 let ret_val = match val {
                     Some(Ok(msg)) => match Self::handle_incoming(msg) {
                         Ok(MessageOrPing::Message(d)) => d.into(),

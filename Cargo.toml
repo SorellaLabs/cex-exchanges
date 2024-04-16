@@ -30,3 +30,4 @@ thiserror = "1.0"
 
 # misc
 paste = "1.0"
+serial_test = "2.0"
