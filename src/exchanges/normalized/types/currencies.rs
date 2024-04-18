@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use super::Blockchain;
 use crate::exchanges::CexExchange;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct NormalizedCurrency {
     pub exchange:     CexExchange,
     pub symbol:       String,

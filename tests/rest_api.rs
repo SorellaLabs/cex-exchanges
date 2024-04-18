@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 #[cfg(feature = "us")]
 #[cfg(test)]
 mod coinbase_tests {
@@ -12,10 +14,10 @@ mod coinbase_tests {
         all_currencies.as_ref().unwrap();
         assert!(all_currencies.is_ok());
 
-        #[cfg(feature = "test-utils")]
         {
             let all_currencies = all_currencies.unwrap();
-            assert!(cex_exchanges::exchanges::test_utils::NormalizedEquals::equals_normalized(all_currencies));
+            let normalized = all_currencies.clone().normalize();
+            assert_eq!(all_currencies, normalized);
         }
     }
 
@@ -26,10 +28,10 @@ mod coinbase_tests {
         let all_instruments = exchange_api.all_instruments::<Coinbase>().await;
         assert!(all_instruments.is_ok());
 
-        #[cfg(feature = "test-utils")]
         {
             let all_instruments = all_instruments.unwrap();
-            assert!(cex_exchanges::exchanges::test_utils::NormalizedEquals::equals_normalized(all_instruments));
+            let normalized = all_instruments.clone().normalize();
+            assert_eq!(all_instruments, normalized);
         }
     }
 }
@@ -47,10 +49,10 @@ mod binance_tests {
         let all_symbols = exchange_api.all_currencies::<Binance>().await;
         assert!(all_symbols.is_ok());
 
-        #[cfg(feature = "test-utils")]
         {
             let all_symbols = all_symbols.unwrap();
-            assert!(cex_exchanges::exchanges::test_utils::NormalizedEquals::equals_normalized(all_symbols));
+            let normalized = all_symbols.clone().normalize();
+            assert_eq!(all_symbols, normalized);
         }
     }
 
@@ -61,10 +63,10 @@ mod binance_tests {
         let all_instruments = exchange_api.all_instruments::<Binance>().await;
         assert!(all_instruments.is_ok());
 
-        #[cfg(feature = "test-utils")]
         {
             let all_instruments = all_instruments.unwrap();
-            assert!(cex_exchanges::exchanges::test_utils::NormalizedEquals::equals_normalized(all_instruments));
+            let normalized = all_instruments.clone().normalize();
+            assert_eq!(all_instruments, normalized);
         }
     }
 }
@@ -82,10 +84,10 @@ mod okex_tests {
         let all_symbols = exchange_api.all_currencies::<Okex>().await;
         assert!(all_symbols.is_ok());
 
-        #[cfg(feature = "test-utils")]
         {
             let all_symbols = all_symbols.unwrap();
-            assert!(cex_exchanges::exchanges::test_utils::NormalizedEquals::equals_normalized(all_symbols));
+            let normalized = all_symbols.clone().normalize();
+            assert_eq!(all_symbols, normalized);
         }
     }
 
@@ -97,10 +99,23 @@ mod okex_tests {
         all_instruments.as_ref().unwrap();
         assert!(all_instruments.is_ok());
 
-        #[cfg(feature = "test-utils")]
         {
             let all_instruments = all_instruments.unwrap();
-            assert!(cex_exchanges::exchanges::test_utils::NormalizedEquals::equals_normalized(all_instruments));
+            let normalized = all_instruments.clone().normalize();
+            assert_eq!(all_instruments, normalized);
+
+            crate::write_json(normalized);
         }
     }
+}
+
+pub fn write_json<D>(a: D)
+where
+    D: Serialize
+{
+    use std::io::Write;
+
+    let mut f0 = std::fs::File::create("/Users/josephnoorchashm/Desktop/SorellaLabs/GitHub/cex-exchanges/t.json").unwrap();
+
+    writeln!(f0, "{}", serde_json::to_string(&a).unwrap()).unwrap();
 }

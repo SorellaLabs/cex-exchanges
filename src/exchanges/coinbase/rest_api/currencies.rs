@@ -2,12 +2,15 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{
-    normalized::types::{Blockchain, NormalizedCurrency},
+    normalized::{
+        rest_api::NormalizedRestApiDataTypes,
+        types::{Blockchain, NormalizedCurrency}
+    },
     CexExchange
 };
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
 pub struct CoinbaseAllCurrenciesResponse {
     pub currencies: Vec<CoinbaseCurrency>
 }
@@ -32,8 +35,25 @@ impl<'de> Deserialize<'de> for CoinbaseAllCurrenciesResponse {
     }
 }
 
+impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllCurrenciesResponse {
+    fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
+        match other {
+            NormalizedRestApiDataTypes::AllCurrencies(other_currs) => {
+                let mut this_currencies = self.currencies.clone();
+                this_currencies.sort_by(|a, b| a.id.partial_cmp(&b.id).unwrap());
+
+                let mut others_currencies = other_currs.clone();
+                others_currencies.sort_by(|a, b| a.symbol.partial_cmp(&b.symbol).unwrap());
+
+                this_currencies == others_currencies
+            }
+            _ => false
+        }
+    }
+}
+
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct CoinbaseCurrency {
     pub id:                 String,
     pub name:               String,
@@ -68,7 +88,7 @@ impl CoinbaseCurrency {
 }
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct CoinbaseCurrencySupportedNetwork {
     pub id: String,
     pub name: String,
@@ -93,7 +113,7 @@ impl CoinbaseCurrencySupportedNetwork {
 }
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct CoinbaseCurrencyDetails {
     #[serde(rename = "type")]
     pub kind:                    String,
@@ -110,34 +130,23 @@ pub struct CoinbaseCurrencyDetails {
     pub processing_time_seconds: Option<f64>
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for CoinbaseAllCurrenciesResponse {
-    fn equals_normalized(self) -> bool {
-        self.currencies.into_iter().all(|c| c.equals_normalized())
-    }
-}
-
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for CoinbaseCurrency {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
-        let copy = self.clone();
-
-        let equals = normalized.exchange == CexExchange::Coinbase
-            && normalized.symbol == self.id
-            && normalized.name == self.name
-            && normalized.display_name == self.display_name
-            && normalized.status == self.status
-            && normalized.blockchains
+impl PartialEq<NormalizedCurrency> for CoinbaseCurrency {
+    fn eq(&self, other: &NormalizedCurrency) -> bool {
+        let equals = other.exchange == CexExchange::Coinbase
+            && other.symbol == self.id
+            && other.name == self.name
+            && other.display_name == self.display_name
+            && other.status == self.status
+            && other.blockchains
                 == self
                     .supported_networks
-                    .into_iter()
-                    .map(|n| n.parse_blockchain_address())
+                    .iter()
+                    .map(|n| n.clone().parse_blockchain_address())
                     .collect::<Vec<_>>();
 
         if !equals {
-            println!("SELF: {:?}", copy);
-            println!("NORMALIZED: {:?}", normalized);
+            println!("SELF: {:?}", self);
+            println!("NORMALIZED: {:?}", other);
         }
 
         equals

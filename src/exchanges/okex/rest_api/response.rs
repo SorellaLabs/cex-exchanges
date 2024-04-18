@@ -18,13 +18,11 @@ impl OkexRestApiResponse {
     }
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for OkexRestApiResponse {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
+impl PartialEq<NormalizedRestApiDataTypes> for OkexRestApiResponse {
+    fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match self {
-            OkexRestApiResponse::Symbols(vals) => matches!(normalized, NormalizedRestApiDataTypes::AllCurrencies(_)) && vals.equals_normalized(),
-            OkexRestApiResponse::Instruments(vals) => matches!(normalized, NormalizedRestApiDataTypes::AllInstruments(_)) && vals.equals_normalized()
+            OkexRestApiResponse::Symbols(vals) => vals == other,
+            OkexRestApiResponse::Instruments(vals) => vals == other
         }
     }
 }

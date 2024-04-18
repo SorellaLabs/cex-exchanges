@@ -8,9 +8,6 @@ pub mod coinbase;
 #[cfg(feature = "us")]
 pub mod okex;
 
-#[cfg(feature = "test-utils")]
-pub mod test_utils;
-
 use std::fmt::{Debug, Display};
 
 use serde::{Deserialize, Serialize};
@@ -35,7 +32,7 @@ use crate::{
     exchanges::normalized::rest_api::CombinedRestApiResponse
 };
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord)]
 pub enum CexExchange {
     #[cfg(feature = "us")]
     Coinbase,

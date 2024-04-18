@@ -6,28 +6,38 @@ use strum_macros::EnumIter;
 use super::NormalizedTradingPair;
 use crate::exchanges::CexExchange;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
 pub struct NormalizedInstrument {
-    pub exchange:           CexExchange,
-    pub trading_pair:       NormalizedTradingPair,
-    pub trading_type:       NormalizedTradingType,
-    pub base_asset_symbol:  String,
-    pub quote_asset_symbol: String,
-    pub active:             bool,
-    /// THIS IS AN ESTIMATE:
-    /// calculated by 24hr avg price * 24 hours volume
-    /// should only be used when estimate ranking exchanges by 24hr volume (in
-    /// usdc)
-    pub avg_vol_24hr_usdc:  f64
+    pub exchange:              CexExchange,
+    pub trading_pair:          NormalizedTradingPair,
+    pub trading_type:          NormalizedTradingType,
+    pub base_asset_symbol:     String,
+    pub quote_asset_symbol:    String,
+    pub active:                bool,
+    /// Some metric that (as an estimate) ranks the instrument in the exchange
+    pub exchange_ranking:      f64,
+    pub exchange_ranking_kind: String
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash, EnumIter)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash, EnumIter, PartialOrd, Ord)]
 pub enum NormalizedTradingType {
     Spot,
     Perpetual,
     Margin,
-    Future,
+    Futures,
     Option
+}
+
+impl NormalizedTradingType {
+    pub fn fmt_okex(&self) -> &str {
+        match self {
+            NormalizedTradingType::Spot => "SPOT",
+            NormalizedTradingType::Perpetual => "SWAP",
+            NormalizedTradingType::Margin => "MARGIN",
+            NormalizedTradingType::Futures => "FUTURE",
+            NormalizedTradingType::Option => "OPTION"
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for NormalizedTradingType {
@@ -50,7 +60,7 @@ impl TryFrom<&str> for NormalizedTradingType {
         match s.as_str() {
             "spot" => Ok(NormalizedTradingType::Spot),
             "perpetual" | "perp" | "swap" => Ok(NormalizedTradingType::Perpetual),
-            "futures" => Ok(NormalizedTradingType::Future),
+            "futures" => Ok(NormalizedTradingType::Futures),
             "margin" => Ok(NormalizedTradingType::Margin),
             "option" => Ok(NormalizedTradingType::Option),
             _ => Err(eyre::ErrReport::msg(format!("'{value}' is not a valid trading type")))

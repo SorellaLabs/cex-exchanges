@@ -16,8 +16,8 @@ pub async fn stream_util<E: Exchange + Send + Unpin + 'static>(exchange: E, iter
 
         assert!(val.is_ok());
 
-        #[cfg(feature = "test-utils")]
-        assert!(cex_exchanges::exchanges::test_utils::NormalizedEquals::equals_normalized(val));
+        let normalized = val.clone().normalize();
+        assert_eq!(val, normalized);
 
         if i == iterations {
             break;
@@ -37,8 +37,8 @@ pub async fn mutlistream_util<E: Exchange + Send + Unpin + 'static>(builder: Mut
 
         assert!(val.is_ok());
 
-        #[cfg(feature = "test-utils")]
-        assert!(cex_exchanges::exchanges::test_utils::NormalizedEquals::equals_normalized(val));
+        let normalized = val.clone().normalize();
+        assert_eq!(val, normalized);
 
         if i == iterations {
             break;

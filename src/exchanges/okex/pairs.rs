@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{exchanges::normalized::types::NormalizedTradingPair, CexExchange};
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct OkexTradingPair(pub(crate) String);
 
 impl OkexTradingPair {
@@ -17,6 +17,11 @@ impl OkexTradingPair {
     }
 
     pub fn normalize(&self) -> NormalizedTradingPair {
+        if self.0 == "ETH-USDC".to_string() {
+            let mut split = self.0.split('-');
+            let t = NormalizedTradingPair::new_base_quote(CexExchange::Okex, split.next().unwrap(), split.next().unwrap(), Some('-'));
+            println!("T: {:?}", t);
+        }
         let mut split = self.0.split('-');
         NormalizedTradingPair::new_base_quote(CexExchange::Okex, split.next().unwrap(), split.next().unwrap(), Some('-'))
     }

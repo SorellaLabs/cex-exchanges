@@ -82,21 +82,14 @@ impl OkexWsMessage {
     }
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for OkexWsMessage {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
-        match self {
-            OkexWsMessage::TradesAll(_) => match self {
-                OkexWsMessage::TradesAll(v) => v.equals_normalized(),
-                _ => unreachable!()
-            },
-            OkexWsMessage::Tickers(_) => match self {
-                OkexWsMessage::Tickers(v) => v.equals_normalized(),
-                _ => unreachable!()
-            },
-            OkexWsMessage::Subscribe(_) => matches!(normalized, NormalizedWsDataTypes::Other { .. }),
-            OkexWsMessage::Error(_) => matches!(normalized, NormalizedWsDataTypes::Other { .. })
+impl PartialEq<NormalizedWsDataTypes> for OkexWsMessage {
+    fn eq(&self, other: &NormalizedWsDataTypes) -> bool {
+        match (self, other) {
+            (OkexWsMessage::TradesAll(this), NormalizedWsDataTypes::Trade(that)) => this == that,
+            (OkexWsMessage::Tickers(this), NormalizedWsDataTypes::Quote(that)) => this == that,
+            (OkexWsMessage::Subscribe(_), NormalizedWsDataTypes::Other { .. }) => true,
+            (OkexWsMessage::Error(_), NormalizedWsDataTypes::Other { .. }) => true,
+            _ => false
         }
     }
 }

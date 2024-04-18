@@ -3,11 +3,14 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{
-    coinbase::CoinbaseTradingPair, exchanges::normalized::types::NormalizedInstrument, normalized::types::NormalizedTradingType, CexExchange
+    coinbase::CoinbaseTradingPair,
+    exchanges::normalized::types::NormalizedInstrument,
+    normalized::{rest_api::NormalizedRestApiDataTypes, types::NormalizedTradingType},
+    CexExchange
 };
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
 pub struct CoinbaseAllInstrumentsResponse {
     pub instruments: Vec<CoinbaseInstrument>
 }
@@ -32,8 +35,33 @@ impl<'de> Deserialize<'de> for CoinbaseAllInstrumentsResponse {
     }
 }
 
+impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllInstrumentsResponse {
+    fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
+        match other {
+            NormalizedRestApiDataTypes::AllInstruments(other_instrs) => {
+                let mut this_instruments = self.instruments.clone();
+                this_instruments.sort_by(|a, b| {
+                    (&a.base_asset_name, &a.quote_asset_name)
+                        .partial_cmp(&(&b.base_asset_name, &b.quote_asset_name))
+                        .unwrap()
+                });
+
+                let mut others_instruments = other_instrs.clone();
+                others_instruments.sort_by(|a, b| {
+                    (&a.base_asset_symbol, &a.quote_asset_symbol)
+                        .partial_cmp(&(&b.base_asset_symbol, &b.quote_asset_symbol))
+                        .unwrap()
+                });
+
+                this_instruments == others_instruments
+            }
+            _ => false
+        }
+    }
+}
+
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct CoinbaseInstrument {
     #[serde_as(as = "DisplayFromStr")]
     pub instrument_id:          u64,
@@ -87,19 +115,20 @@ pub struct CoinbaseInstrument {
 impl CoinbaseInstrument {
     pub fn normalize(self) -> NormalizedInstrument {
         NormalizedInstrument {
-            exchange:           CexExchange::Coinbase,
-            trading_pair:       self.symbol.normalize(),
-            trading_type:       self.instrument_type,
-            base_asset_symbol:  self.base_asset_name,
-            quote_asset_symbol: self.quote_asset_name,
-            active:             &self.trading_state == "TRADING",
-            avg_vol_24hr_usdc:  self.notional_24hr
+            exchange:              CexExchange::Coinbase,
+            trading_pair:          self.symbol.normalize(),
+            trading_type:          self.instrument_type,
+            base_asset_symbol:     self.base_asset_name,
+            quote_asset_symbol:    self.quote_asset_name,
+            active:                &self.trading_state == "TRADING",
+            exchange_ranking:      self.notional_24hr,
+            exchange_ranking_kind: "24hr volume (usdc)".to_string()
         }
     }
 }
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct CoinbaseInstrumentQuote {
     #[serde_as(as = "DisplayFromStr")]
     pub best_bid_price:    f64,
@@ -129,30 +158,19 @@ pub struct CoinbaseInstrumentQuote {
     pub timestamp:         DateTime<Utc>
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for CoinbaseAllInstrumentsResponse {
-    fn equals_normalized(self) -> bool {
-        self.instruments.into_iter().all(|c| c.equals_normalized())
-    }
-}
-
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for CoinbaseInstrument {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
-        let copy = self.clone();
-
-        let equals = normalized.exchange == CexExchange::Coinbase
-            && normalized.trading_pair == self.symbol.normalize()
-            && normalized.trading_type == self.instrument_type
-            && normalized.base_asset_symbol == self.base_asset_name
-            && normalized.quote_asset_symbol == self.quote_asset_name
-            && normalized.active == (&self.trading_state == "TRADING")
-            && normalized.avg_vol_24hr_usdc == self.notional_24hr;
+impl PartialEq<NormalizedInstrument> for CoinbaseInstrument {
+    fn eq(&self, other: &NormalizedInstrument) -> bool {
+        let equals = other.exchange == CexExchange::Coinbase
+            && other.trading_pair == self.symbol.normalize()
+            && other.trading_type == self.instrument_type
+            && other.base_asset_symbol == self.base_asset_name
+            && other.quote_asset_symbol == self.quote_asset_name
+            && other.active == (&self.trading_state == "TRADING")
+            && other.exchange_ranking == self.notional_24hr;
 
         if !equals {
-            println!("SELF: {:?}", copy);
-            println!("NORMALIZED: {:?}", normalized);
+            println!("SELF: {:?}", self);
+            println!("NORMALIZED: {:?}", other);
         }
 
         equals

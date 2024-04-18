@@ -56,13 +56,12 @@ impl BinanceWsMessage {
     }
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for BinanceWsMessage {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
-        match self {
-            BinanceWsMessage::Trade(vals) => matches!(normalized, NormalizedWsDataTypes::Trade(_)) && vals.equals_normalized(),
-            BinanceWsMessage::BookTicker(vals) => matches!(normalized, NormalizedWsDataTypes::Quote(_)) && vals.equals_normalized()
+impl PartialEq<NormalizedWsDataTypes> for BinanceWsMessage {
+    fn eq(&self, other: &NormalizedWsDataTypes) -> bool {
+        match (self, other) {
+            (BinanceWsMessage::Trade(this), NormalizedWsDataTypes::Trade(that)) => this == that,
+            (BinanceWsMessage::BookTicker(this), NormalizedWsDataTypes::Quote(that)) => this == that,
+            _ => false
         }
     }
 }

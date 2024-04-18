@@ -1,8 +1,10 @@
+use serde::{Deserialize, Serialize};
+
 use super::BinanceAllSymbolsResponse;
 use crate::exchanges::normalized::rest_api::NormalizedRestApiDataTypes;
 
 #[serde_with::serde_as]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum BinanceRestApiResponse {
     Symbols(BinanceAllSymbolsResponse)
@@ -16,12 +18,10 @@ impl BinanceRestApiResponse {
     }
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for BinanceRestApiResponse {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
+impl PartialEq<NormalizedRestApiDataTypes> for BinanceRestApiResponse {
+    fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match self {
-            BinanceRestApiResponse::Symbols(vals) => matches!(normalized, NormalizedRestApiDataTypes::AllCurrencies(_)) && vals.equals_normalized()
+            BinanceRestApiResponse::Symbols(vals) => vals == other // OkexRestApiResponse::Instruments(vals) => vals == other
         }
     }
 }

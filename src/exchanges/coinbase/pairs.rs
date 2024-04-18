@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{exchanges::normalized::types::NormalizedTradingPair, CexExchange};
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Hash)]
 pub struct CoinbaseTradingPair(pub(crate) String);
 
 impl CoinbaseTradingPair {

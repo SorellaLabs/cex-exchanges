@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[serde_as]
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
 pub struct OkexTickersMessage {
     /// SWAP, PERP, OPTION, ..
     #[serde(rename = "instType")]
@@ -81,18 +81,22 @@ impl OkexTickersMessage {
     }
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for OkexTickersMessage {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
+impl PartialEq<NormalizedQuote> for OkexTickersMessage {
+    fn eq(&self, other: &NormalizedQuote) -> bool {
+        let equals = other.exchange == CexExchange::Okex
+            && other.pair == self.pair.normalize()
+            && other.time == DateTime::from_timestamp_millis(self.timestamp as i64).unwrap()
+            && other.bid_amount == self.bid_amt
+            && other.bid_price == self.bid_price
+            && other.ask_amount == self.ask_amt
+            && other.ask_price == self.ask_price
+            && other.quote_id == None;
 
-        normalized.exchange == CexExchange::Okex
-            && normalized.pair == self.pair.normalize()
-            && normalized.time == DateTime::from_timestamp_millis(self.timestamp as i64).unwrap()
-            && normalized.bid_amount == self.bid_amt
-            && normalized.bid_price == self.bid_price
-            && normalized.ask_amount == self.ask_amt
-            && normalized.ask_price == self.ask_price
-            && normalized.quote_id == None
+        if !equals {
+            println!("SELF: {:?}", self);
+            println!("NORMALIZED: {:?}", other);
+        }
+
+        equals
     }
 }

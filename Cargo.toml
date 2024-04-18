@@ -39,11 +39,8 @@ strum_macros = "0.25"
 
 
 [features]
-default = ["test-utils", "all"]
+default = ["all"]
 
 all = ["non-us", "us"]
 non-us = []
 us = []
-
-
-test-utils = []

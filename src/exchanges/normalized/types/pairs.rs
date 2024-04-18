@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::CexExchange;
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct NormalizedTradingPair {
     exchange:   CexExchange,
     pair:       Option<String>,
@@ -12,7 +12,13 @@ pub struct NormalizedTradingPair {
 
 impl NormalizedTradingPair {
     pub(crate) fn new_base_quote(exchange: CexExchange, base: &str, quote: &str, delimiter: Option<char>) -> Self {
-        Self { pair: None, base_quote: Some((base.to_uppercase(), quote.to_uppercase())), exchange, delimiter }
+        let pair = if let Some(del) = delimiter {
+            format!("{}{del}{}", base.to_uppercase(), quote.to_uppercase())
+        } else {
+            format!("{}{}", base.to_uppercase(), quote.to_uppercase())
+        };
+
+        Self { pair: Some(pair), base_quote: Some((base.to_uppercase(), quote.to_uppercase())), exchange, delimiter }
     }
 
     pub(crate) fn new_no_base_quote(exchange: CexExchange, pair: &str) -> Self {
@@ -29,6 +35,14 @@ impl NormalizedTradingPair {
 
     pub fn base_quote(&self) -> &Option<(String, String)> {
         &self.base_quote
+    }
+
+    pub fn base(&self) -> Option<&String> {
+        self.base_quote.as_ref().map(|(b, _)| b)
+    }
+
+    pub fn quote(&self) -> Option<&String> {
+        self.base_quote.as_ref().map(|(_, q)| q)
     }
 
     pub fn delimiter(&self) -> Option<char> {

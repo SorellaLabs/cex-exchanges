@@ -51,12 +51,28 @@ impl Okex {
     }
 
     pub async fn get_all_instruments(&self, web_client: &reqwest::Client) -> Result<OkexCompleteAllInstruments, RestApiError> {
-        let complete_instruments = join_all(NormalizedTradingType::iter().map(|t| async move {
-            let tickers: OkexAllTickersResponse =
-                Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v5/market/tickers?instType={t}")).await?;
+        use std::io::Write;
+        let tt = [NormalizedTradingType::Margin];
+
+        let complete_instruments = join_all(tt.iter().map(|t| async move {
+            let tickers: OkexAllTickersResponse = if *t == NormalizedTradingType::Margin {
+                Self::simple_rest_api_request(
+                    web_client,
+                    format!("{BASE_REST_API_URL}/api/v5/market/tickers?instType={}", NormalizedTradingType::Spot.fmt_okex())
+                )
+                .await?
+            } else {
+                Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v5/market/tickers?instType={}", t.fmt_okex())).await?
+            };
+
+            let mut f0 = std::fs::File::create("/Users/josephnoorchashm/Desktop/SorellaLabs/GitHub/cex-exchanges/t0.json").unwrap();
+            writeln!(f0, "{}", serde_json::to_string(&tickers).unwrap()).unwrap();
 
             let instruments_no_vol: OkexAllInstrumentsResponse =
-                Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v5/market/instruments?instType={t}")).await?;
+                Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v5/public/instruments?instType={}", t.fmt_okex())).await?;
+
+            let mut f1 = std::fs::File::create("/Users/josephnoorchashm/Desktop/SorellaLabs/GitHub/cex-exchanges/t1.json").unwrap();
+            writeln!(f1, "{}", serde_json::to_string(&instruments_no_vol).unwrap()).unwrap();
 
             Ok((tickers, instruments_no_vol).into())
         }))
@@ -74,9 +90,15 @@ impl Okex {
     where
         T: for<'de> Deserialize<'de>
     {
-        let data = web_client.get(&url).send().await?.json().await?;
+        let data = web_client.get(&url).send().await?.text().await?;
 
-        Ok(data)
+        let res = serde_json::from_str(&data);
+
+        if res.is_err() {
+            println!("\n\nURL: {url}\nDATA: {data}\n\n");
+        }
+
+        Ok(res?)
     }
 }
 

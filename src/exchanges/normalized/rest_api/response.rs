@@ -1,10 +1,12 @@
+use serde::Serialize;
+
 use super::NormalizedRestApiDataTypes;
 #[cfg(feature = "non-us")]
 use crate::exchanges::binance::rest_api::BinanceRestApiResponse;
 #[cfg(feature = "us")]
 use crate::exchanges::{coinbase::rest_api::CoinbaseRestApiResponse, okex::rest_api::OkexRestApiResponse};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum CombinedRestApiResponse {
     #[cfg(feature = "us")]
     Coinbase(CoinbaseRestApiResponse),
@@ -48,16 +50,15 @@ combined_rest!(Okex);
 #[cfg(feature = "non-us")]
 combined_rest!(Binance);
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for CombinedRestApiResponse {
-    fn equals_normalized(self) -> bool {
+impl PartialEq<NormalizedRestApiDataTypes> for CombinedRestApiResponse {
+    fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match self {
             #[cfg(feature = "us")]
-            CombinedRestApiResponse::Coinbase(vals) => vals.equals_normalized(),
+            CombinedRestApiResponse::Coinbase(vals) => vals == other,
             #[cfg(feature = "us")]
-            CombinedRestApiResponse::Okex(vals) => vals.equals_normalized(),
+            CombinedRestApiResponse::Okex(vals) => vals == other,
             #[cfg(feature = "non-us")]
-            CombinedRestApiResponse::Binance(vals) => vals.equals_normalized()
+            CombinedRestApiResponse::Binance(vals) => vals == other
         }
     }
 }

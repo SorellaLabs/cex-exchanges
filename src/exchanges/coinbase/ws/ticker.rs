@@ -52,18 +52,22 @@ impl CoinbaseTickerMessage {
     }
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for CoinbaseTickerMessage {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
+impl PartialEq<NormalizedQuote> for CoinbaseTickerMessage {
+    fn eq(&self, other: &NormalizedQuote) -> bool {
+        let equals = other.exchange == CexExchange::Coinbase
+            && other.pair == self.product_id.normalize()
+            && other.time == self.time
+            && other.ask_amount == self.best_ask_size
+            && other.ask_price == self.best_ask
+            && other.bid_amount == self.best_bid_size
+            && other.bid_price == self.best_bid
+            && other.quote_id.as_ref().unwrap() == &self.trade_id.to_string();
 
-        normalized.exchange == CexExchange::Coinbase
-            && normalized.pair == self.product_id.normalize()
-            && normalized.time == self.time
-            && normalized.ask_amount == self.best_ask_size
-            && normalized.ask_price == self.best_ask
-            && normalized.bid_amount == self.best_bid_size
-            && normalized.bid_price == self.best_bid
-            && normalized.quote_id.unwrap() == self.trade_id.to_string()
+        if !equals {
+            println!("SELF: {:?}", self);
+            println!("NORMALIZED: {:?}", other);
+        }
+
+        equals
     }
 }

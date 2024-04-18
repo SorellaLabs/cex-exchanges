@@ -4,12 +4,15 @@ use serde_json::Value;
 use serde_with::serde_as;
 
 use crate::{
-    normalized::types::{Blockchain, NormalizedCurrency},
+    normalized::{
+        rest_api::NormalizedRestApiDataTypes,
+        types::{Blockchain, NormalizedCurrency}
+    },
     CexExchange
 };
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
 pub struct BinanceAllSymbolsResponse {
     pub currencies: Vec<BinanceAllSymbolsProperties>
 }
@@ -20,6 +23,23 @@ impl BinanceAllSymbolsResponse {
             .into_iter()
             .map(BinanceAllSymbolsProperties::normalize)
             .collect()
+    }
+}
+
+impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllSymbolsResponse {
+    fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
+        match other {
+            NormalizedRestApiDataTypes::AllCurrencies(other_currs) => {
+                let mut this_currencies = self.currencies.clone();
+                this_currencies.sort_by(|a, b| a.symbol.partial_cmp(&b.symbol).unwrap());
+
+                let mut others_currencies = other_currs.clone();
+                others_currencies.sort_by(|a, b| a.symbol.partial_cmp(&b.symbol).unwrap());
+
+                this_currencies == others_currencies
+            }
+            _ => false
+        }
     }
 }
 
@@ -55,7 +75,7 @@ impl<'de> Deserialize<'de> for BinanceAllSymbolsResponse {
 }
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct BinanceAllSymbolsProperties {
     pub symbol: String,
     pub circulating_supply: f64,
@@ -93,13 +113,13 @@ impl BinanceAllSymbolsProperties {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct BinanceAllSymbolsQuote {
     #[serde(rename = "USD")]
     pub usd: BinanceAllSymbolsQuoteUSD
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct BinanceAllSymbolsQuoteUSD {
     pub fully_diluted_market_cap: f64,
     pub last_updated: DateTime<Utc>,
@@ -118,7 +138,7 @@ pub struct BinanceAllSymbolsQuoteUSD {
 }
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct BinanceAllSymbolsPlatform {
     pub symbol:        String,
     pub name:          String,
@@ -133,33 +153,23 @@ impl BinanceAllSymbolsPlatform {
     }
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for BinanceAllSymbolsResponse {
-    fn equals_normalized(self) -> bool {
-        self.currencies.into_iter().all(|c| c.equals_normalized())
-    }
-}
-
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for BinanceAllSymbolsProperties {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
-        let copy = self.clone();
-
-        let equals = normalized.exchange == CexExchange::Binance
-            && normalized.symbol == self.symbol
-            && normalized.name == self.name
-            && normalized.display_name.is_none()
-            && normalized.status == format!("last updated: {:?}", self.last_updated)
-            && normalized.blockchains
+impl PartialEq<NormalizedCurrency> for BinanceAllSymbolsProperties {
+    fn eq(&self, other: &NormalizedCurrency) -> bool {
+        let equals = other.exchange == CexExchange::Binance
+            && other.symbol == self.symbol
+            && other.name == self.name
+            && other.display_name.is_none()
+            && other.status == format!("last updated: {:?}", self.last_updated)
+            && other.blockchains
                 == self
                     .platform
-                    .map(|v| vec![v.parse_blockchain_address()])
+                    .as_ref()
+                    .map(|v| vec![v.clone().parse_blockchain_address()])
                     .unwrap_or_default();
 
         if !equals {
-            println!("SELF: {:?}", copy);
-            println!("NORMALIZED: {:?}", normalized);
+            println!("\n\nSELF: {:?}\n", self);
+            println!("NORMALIZED: {:?}\n\n", other);
         }
 
         equals

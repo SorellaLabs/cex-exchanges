@@ -31,16 +31,15 @@ impl CoinbaseWsMessage {
     }
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for CoinbaseWsMessage {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
-        match self {
-            CoinbaseWsMessage::Matches(vals) => matches!(normalized, NormalizedWsDataTypes::Trade(_)) && vals.equals_normalized(),
-            CoinbaseWsMessage::Ticker(vals) => matches!(normalized, NormalizedWsDataTypes::Quote(_)) && vals.equals_normalized(),
-            CoinbaseWsMessage::Status(_) => matches!(normalized, NormalizedWsDataTypes::Other { .. }),
-            CoinbaseWsMessage::Subscriptions(_) => matches!(normalized, NormalizedWsDataTypes::Other { .. }),
-            CoinbaseWsMessage::Error(_) => matches!(normalized, NormalizedWsDataTypes::Other { .. })
+impl PartialEq<NormalizedWsDataTypes> for CoinbaseWsMessage {
+    fn eq(&self, other: &NormalizedWsDataTypes) -> bool {
+        match (self, other) {
+            (CoinbaseWsMessage::Matches(this), NormalizedWsDataTypes::Trade(that)) => this == that,
+            (CoinbaseWsMessage::Ticker(this), NormalizedWsDataTypes::Quote(that)) => this == that,
+            (CoinbaseWsMessage::Status(_), NormalizedWsDataTypes::Other { .. }) => true,
+            (CoinbaseWsMessage::Subscriptions(_), NormalizedWsDataTypes::Other { .. }) => true,
+            (CoinbaseWsMessage::Error(_), NormalizedWsDataTypes::Other { .. }) => true,
+            _ => false
         }
     }
 }

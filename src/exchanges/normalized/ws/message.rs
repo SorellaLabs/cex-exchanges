@@ -62,21 +62,16 @@ combined_ws!(Okex);
 #[cfg(feature = "non-us")]
 combined_ws!(Binance);
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for CombinedWsMessage {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
+impl PartialEq<NormalizedWsDataTypes> for CombinedWsMessage {
+    fn eq(&self, other: &NormalizedWsDataTypes) -> bool {
         match self {
             #[cfg(feature = "us")]
-            CombinedWsMessage::Coinbase(vals) => vals.equals_normalized(),
+            CombinedWsMessage::Coinbase(vals) => vals == other,
             #[cfg(feature = "us")]
-            CombinedWsMessage::Okex(vals) => vals.equals_normalized(),
+            CombinedWsMessage::Okex(vals) => vals == other,
             #[cfg(feature = "non-us")]
-            CombinedWsMessage::Binance(vals) => vals.equals_normalized(),
-            CombinedWsMessage::Disconnect { exchange, message } => match normalized {
-                NormalizedWsDataTypes::Disconnect { exchange: norm_exch, message: norm_message } => exchange == norm_exch && message == norm_message,
-                _ => false
-            }
+            CombinedWsMessage::Binance(vals) => vals == other,
+            CombinedWsMessage::Disconnect { exchange, message } => true
         }
     }
 }

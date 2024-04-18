@@ -5,7 +5,7 @@ use serde_with::{serde_as, DisplayFromStr};
 use crate::{binance::BinanceTradingPair, normalized::types::NormalizedQuote, CexExchange};
 
 #[serde_as]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
 pub struct BinanceBookTicker {
     #[serde(rename = "s")]
     pub pair:                BinanceTradingPair,
@@ -42,18 +42,22 @@ impl BinanceBookTicker {
     }
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for BinanceBookTicker {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
+impl PartialEq<NormalizedQuote> for BinanceBookTicker {
+    fn eq(&self, other: &NormalizedQuote) -> bool {
+        let equals = other.exchange == CexExchange::Binance
+            && other.pair == self.pair.normalize()
+            && other.time == self.local_update_time
+            && other.ask_amount == self.best_ask_amt
+            && other.ask_price == self.best_ask_price
+            && other.bid_amount == self.best_bid_amt
+            && other.bid_price == self.best_bid_price
+            && other.quote_id == Some(self.orderbook_update_id.to_string());
 
-        normalized.exchange == CexExchange::Binance
-            && normalized.pair == self.pair.normalize()
-            && normalized.time == self.local_update_time
-            && normalized.ask_amount == self.best_ask_amt
-            && normalized.ask_price == self.best_ask_price
-            && normalized.bid_amount == self.best_bid_amt
-            && normalized.bid_price == self.best_bid_price
-            && normalized.quote_id == Some(self.orderbook_update_id.to_string())
+        if !equals {
+            println!("SELF: {:?}", self);
+            println!("NORMALIZED: {:?}", other);
+        }
+
+        equals
     }
 }

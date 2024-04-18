@@ -3,10 +3,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
 
-use crate::{exchanges::normalized::types::NormalizedCurrency, normalized::types::Blockchain, CexExchange};
+use crate::{
+    exchanges::normalized::types::NormalizedCurrency,
+    normalized::{rest_api::NormalizedRestApiDataTypes, types::Blockchain},
+    CexExchange
+};
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
 pub struct OkexAllSymbolsResponse {
     pub currencies: Vec<OkexAllSymbolsProperties>
 }
@@ -51,8 +55,25 @@ impl<'de> Deserialize<'de> for OkexAllSymbolsResponse {
     }
 }
 
+impl PartialEq<NormalizedRestApiDataTypes> for OkexAllSymbolsResponse {
+    fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
+        match other {
+            NormalizedRestApiDataTypes::AllCurrencies(other_currs) => {
+                let mut this_currencies = self.currencies.clone();
+                this_currencies.sort_by(|a, b| a.symbol.partial_cmp(&b.symbol).unwrap());
+
+                let mut others_currencies = other_currs.clone();
+                others_currencies.sort_by(|a, b| a.symbol.partial_cmp(&b.symbol).unwrap());
+
+                this_currencies == *others_currencies
+            }
+            _ => false
+        }
+    }
+}
+
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct OkexAllSymbolsProperties {
     pub symbol: String,
     pub circulating_supply: f64,
@@ -90,13 +111,13 @@ impl OkexAllSymbolsProperties {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct OkexAllSymbolsQuote {
     #[serde(rename = "USD")]
     pub usd: OkexAllSymbolsQuoteUSD
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct OkexAllSymbolsQuoteUSD {
     pub fully_diluted_market_cap: f64,
     pub last_updated: DateTime<Utc>,
@@ -115,7 +136,7 @@ pub struct OkexAllSymbolsQuoteUSD {
 }
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct OkexAllSymbolsPlatform {
     pub symbol:        String,
     pub name:          String,
@@ -130,33 +151,23 @@ impl OkexAllSymbolsPlatform {
     }
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for OkexAllSymbolsResponse {
-    fn equals_normalized(self) -> bool {
-        self.currencies.into_iter().all(|c| c.equals_normalized())
-    }
-}
-
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for OkexAllSymbolsProperties {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
-        let copy = self.clone();
-
-        let equals = normalized.exchange == CexExchange::Okex
-            && normalized.symbol == self.symbol
-            && normalized.name == self.name
-            && normalized.display_name.is_none()
-            && normalized.status == format!("last updated: {:?}", self.last_updated)
-            && normalized.blockchains
+impl PartialEq<NormalizedCurrency> for OkexAllSymbolsProperties {
+    fn eq(&self, other: &NormalizedCurrency) -> bool {
+        let equals = other.exchange == CexExchange::Okex
+            && other.symbol == self.symbol
+            && other.name == self.name
+            && other.display_name.is_none()
+            && other.status == format!("last updated: {:?}", self.last_updated)
+            && other.blockchains
                 == self
                     .platform
-                    .map(|v| vec![v.parse_blockchain_address()])
+                    .as_ref()
+                    .map(|v| vec![v.clone().parse_blockchain_address()])
                     .unwrap_or_default();
 
         if !equals {
-            println!("SELF: {:?}", copy);
-            println!("NORMALIZED: {:?}", normalized);
+            println!("SELF: {:?}", self);
+            println!("NORMALIZED: {:?}", other);
         }
 
         equals

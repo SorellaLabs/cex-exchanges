@@ -1,8 +1,10 @@
+use serde::{Deserialize, Serialize};
+
 use super::{CoinbaseAllCurrenciesResponse, CoinbaseAllInstrumentsResponse};
 use crate::normalized::rest_api::NormalizedRestApiDataTypes;
 
 #[serde_with::serde_as]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum CoinbaseRestApiResponse {
     Currencies(CoinbaseAllCurrenciesResponse),
@@ -32,17 +34,11 @@ impl CoinbaseRestApiResponse {
     }
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for CoinbaseRestApiResponse {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
+impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseRestApiResponse {
+    fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match self {
-            CoinbaseRestApiResponse::Currencies(vals) => {
-                matches!(normalized, NormalizedRestApiDataTypes::AllCurrencies(_)) && vals.equals_normalized()
-            }
-            CoinbaseRestApiResponse::Instruments(vals) => {
-                matches!(normalized, NormalizedRestApiDataTypes::AllInstruments(_)) && vals.equals_normalized()
-            }
+            CoinbaseRestApiResponse::Currencies(vals) => vals == other,
+            CoinbaseRestApiResponse::Instruments(vals) => vals == other
         }
     }
 }

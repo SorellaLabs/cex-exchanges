@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[serde_as]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
 pub struct BinanceTradeMessage {
     #[serde(rename = "s")]
     pub pair:                  BinanceTradingPair,
@@ -44,17 +44,21 @@ impl BinanceTradeMessage {
     }
 }
 
-#[cfg(feature = "test-utils")]
-impl crate::exchanges::test_utils::NormalizedEquals for BinanceTradeMessage {
-    fn equals_normalized(self) -> bool {
-        let normalized = self.clone().normalize();
+impl PartialEq<NormalizedTrade> for BinanceTradeMessage {
+    fn eq(&self, other: &NormalizedTrade) -> bool {
+        let equals = other.exchange == CexExchange::Binance
+            && other.pair == self.pair.normalize()
+            && other.time == DateTime::from_timestamp_millis(self.trade_time as i64).unwrap()
+            && other.side == if self.is_buyer_market_maker { "buy".to_string() } else { "sell".to_string() }
+            && other.price == self.price
+            && other.amount == self.quantity
+            && other.trade_id.as_ref().unwrap() == &self.trade_id.to_string();
 
-        normalized.exchange == CexExchange::Binance
-            && normalized.pair == self.pair.normalize()
-            && normalized.time == DateTime::from_timestamp_millis(self.trade_time as i64).unwrap()
-            && normalized.side == if self.is_buyer_market_maker { "buy".to_string() } else { "sell".to_string() }
-            && normalized.price == self.price
-            && normalized.amount == self.quantity
-            && normalized.trade_id.unwrap() == self.trade_id.to_string()
+        if !equals {
+            println!("SELF: {:?}", self);
+            println!("NORMALIZED: {:?}", other);
+        }
+
+        equals
     }
 }
