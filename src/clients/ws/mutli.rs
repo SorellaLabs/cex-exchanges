@@ -6,7 +6,7 @@ use std::{
 use futures::{future::join_all, stream::select_all, Stream, StreamExt};
 
 use super::{errors::WsError, WsStream};
-use crate::{exchanges::Exchange, types::normalized::ws::combined::CombinedWsMessage};
+use crate::{exchanges::normalized::ws::CombinedWsMessage, Exchange};
 
 pub struct MutliWsStream {
     combined_streams: Pin<Box<dyn Stream<Item = CombinedWsMessage>>>,
@@ -68,5 +68,18 @@ where
         let combined_streams = Box::pin(select_all(ws_streams));
 
         Ok(MutliWsStream { combined_streams, stream_count })
+    }
+
+    pub fn build_multistream_unconnected(self) -> MutliWsStream {
+        let ws_streams = self
+            .exchanges
+            .into_iter()
+            .map(|exch| WsStream::new(exch))
+            .collect::<Vec<_>>();
+
+        let stream_count = ws_streams.len();
+        let combined_streams = Box::pin(select_all(ws_streams));
+
+        MutliWsStream { combined_streams, stream_count }
     }
 }

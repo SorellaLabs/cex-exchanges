@@ -1,5 +1,5 @@
 use cex_exchanges::{
-    clients::ws::{mutli::MutliWsStreamBuilder, WsStream},
+    clients::ws::{MutliWsStreamBuilder, WsStream},
     exchanges::Exchange
 };
 use futures::StreamExt;
@@ -17,7 +17,7 @@ pub async fn stream_util<E: Exchange + Send + Unpin + 'static>(exchange: E, iter
         assert!(val.is_ok());
 
         #[cfg(feature = "test-utils")]
-        assert!(cex_exchanges::types::test_utils::NormalizedEquals::equals_normalized(val));
+        assert!(cex_exchanges::exchanges::test_utils::NormalizedEquals::equals_normalized(val));
 
         if i == iterations {
             break;
@@ -38,7 +38,7 @@ pub async fn mutlistream_util<E: Exchange + Send + Unpin + 'static>(builder: Mut
         assert!(val.is_ok());
 
         #[cfg(feature = "test-utils")]
-        assert!(cex_exchanges::types::test_utils::NormalizedEquals::equals_normalized(val));
+        assert!(cex_exchanges::exchanges::test_utils::NormalizedEquals::equals_normalized(val));
 
         if i == iterations {
             break;

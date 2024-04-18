@@ -1,9 +1,13 @@
 mod utils;
 use utils::*;
 
+#[cfg(feature = "us")]
 #[cfg(test)]
 mod coinbase_tests {
-    use cex_exchanges::{exchanges::coinbase::CoinbaseWsBuilder, types::coinbase::channels::CoinbaseChannel};
+    use cex_exchanges::exchanges::{
+        coinbase::ws::{CoinbaseWsBuilder, CoinbaseWsChannel},
+        normalized::types::RawTradingPair
+    };
     use serial_test::serial;
 
     use crate::{mutlistream_util, stream_util};
@@ -15,23 +19,25 @@ mod coinbase_tests {
     #[tokio::test]
     #[serial]
     async fn test_status() {
-        let builder = CoinbaseWsBuilder::default().add_channel(CoinbaseChannel::Status);
+        let builder = CoinbaseWsBuilder::default().add_channel(CoinbaseWsChannel::Status);
         coinbase_util(builder, 1).await;
     }
 
     #[tokio::test]
     #[serial]
-    async fn test_match() {
-        let builder =
-            CoinbaseWsBuilder::default().add_channel(CoinbaseChannel::new_match_from_pair(vec!["ETH_USD".to_string(), "btc_usd".to_string()], '_'));
+    async fn test_matches() {
+        let builder = CoinbaseWsBuilder::default().add_channel(
+            CoinbaseWsChannel::new_match(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
+        );
         coinbase_util(builder, 5).await;
     }
 
     #[tokio::test]
     #[serial]
     async fn test_ticker() {
-        let builder =
-            CoinbaseWsBuilder::default().add_channel(CoinbaseChannel::new_ticker_from_pair(vec!["ETH_USD".to_string(), "btc_usd".to_string()], '_'));
+        let builder = CoinbaseWsBuilder::default().add_channel(
+            CoinbaseWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
+        );
         coinbase_util(builder, 5).await;
     }
 
@@ -39,11 +45,69 @@ mod coinbase_tests {
     #[serial]
     async fn test_multi() {
         let builder = CoinbaseWsBuilder::default()
-            .add_channel(CoinbaseChannel::new_ticker_from_pair(vec!["ETH_USD".to_string(), "btc_usd".to_string()], '_'))
-            .add_channel(CoinbaseChannel::new_match_from_pair(vec!["ETH_USD".to_string(), "btc_usd".to_string()], '_'))
-            .add_channel(CoinbaseChannel::Status)
+            .add_channel(CoinbaseWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USD", '_')]).unwrap())
+            .add_channel(
+                CoinbaseWsChannel::new_match(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
+            )
+            .add_channel(CoinbaseWsChannel::Status)
             .set_channels_per_stream(1)
-            .build_many();
+            .build_many()
+            .unwrap();
+
+        mutlistream_util(builder, 50).await;
+    }
+}
+
+#[cfg(feature = "us")]
+#[cfg(test)]
+mod okex_tests {
+    use cex_exchanges::{
+        exchanges::{
+            normalized::types::RawTradingPair,
+            okex::ws::{OkexWsBuilder, OkexWsChannel}
+        },
+        CexExchange
+    };
+    use serial_test::serial;
+
+    use crate::{mutlistream_util, stream_util};
+
+    async fn okex_util(builder: OkexWsBuilder, iterations: usize) {
+        stream_util(builder.build(), iterations).await;
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_trades() {
+        let builder = OkexWsBuilder::new(CexExchange::Binance)
+            .add_channel(OkexWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdt")]).unwrap());
+        okex_util(builder, 5).await;
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_book_ticker() {
+        let builder = OkexWsBuilder::new(CexExchange::Binance).add_channel(
+            OkexWsChannel::new_book_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
+        );
+        okex_util(builder, 5).await;
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_multi() {
+        let builder = OkexWsBuilder::new(CexExchange::Binance)
+            .add_channel(
+                OkexWsChannel::new_trade(vec![
+                    RawTradingPair::new_raw("ETH_USDt", '_'),
+                    RawTradingPair::new_base_quote("btc", "USDC"),
+                    RawTradingPair::new_raw("XLM/eUr", '/'),
+                ])
+                .unwrap()
+            )
+            .set_channels_per_stream(1)
+            .build_many()
+            .unwrap();
 
         mutlistream_util(builder, 50).await;
     }
@@ -52,7 +116,10 @@ mod coinbase_tests {
 #[cfg(feature = "non-us")]
 #[cfg(test)]
 mod binance_tests {
-    use cex_exchanges::{exchanges::binance::BinanceWsBuilder, types::binance::channels::BinanceChannel};
+    use cex_exchanges::exchanges::{
+        binance::ws::{BinanceWsBuilder, BinanceWsChannel},
+        normalized::types::RawTradingPair
+    };
     use serial_test::serial;
 
     use crate::{mutlistream_util, stream_util};
@@ -64,8 +131,18 @@ mod binance_tests {
     #[tokio::test]
     #[serial]
     async fn test_trade() {
-        let builder =
-            BinanceWsBuilder::default().add_channel(BinanceChannel::new_trade_from_pair(vec!["ETH_USD".to_string(), "btc-usd".to_string()]));
+        let builder = BinanceWsBuilder::default().add_channel(
+            BinanceWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
+        );
+        binance_util(builder, 5).await;
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_book_ticker() {
+        let builder = BinanceWsBuilder::default().add_channel(
+            BinanceWsChannel::new_book_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
+        );
         binance_util(builder, 5).await;
     }
 
@@ -73,9 +150,17 @@ mod binance_tests {
     #[serial]
     async fn test_multi() {
         let builder = BinanceWsBuilder::default()
-            .add_channel(BinanceChannel::new_trade_from_pair(vec!["ETH_USD".to_string(), "btc_usd".to_string(), "SUSDUSDT".to_string()]))
+            .add_channel(
+                BinanceWsChannel::new_trade(vec![
+                    RawTradingPair::new_raw("ETH_USDt", '_'),
+                    RawTradingPair::new_no_delim("btcusdc"),
+                    RawTradingPair::new_no_delim("SUSDETH"),
+                ])
+                .unwrap()
+            )
             .set_channels_per_stream(1)
-            .build_many();
+            .build_many()
+            .unwrap();
 
         mutlistream_util(builder, 50).await;
     }

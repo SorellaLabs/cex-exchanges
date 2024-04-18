@@ -33,12 +33,17 @@ thiserror = "1.0"
 paste = "1.0"
 serial_test = "2.0"
 chrono = { version = "0.4", features = ["serde"] }
+strum = "0.25"
+strum_macros = "0.25"
 
 
 
 [features]
-default = ["test-utils", "non-us"]
+default = ["test-utils", "all"]
 
+all = ["non-us", "us"]
 non-us = []
+us = []
+
 
 test-utils = []
