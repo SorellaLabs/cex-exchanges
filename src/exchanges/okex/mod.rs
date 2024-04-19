@@ -11,7 +11,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
-    rest_api::{OkexAllInstrumentsResponse, OkexAllSymbolsResponse, OkexAllTickersResponse, OkexCompleteAllInstruments, OkexRestApiResponse},
+    rest_api::{OkexAllInstrumentsResponse, OkexAllSymbols, OkexAllTickersResponse, OkexCompleteAllInstruments, OkexRestApiResponse},
     ws::{OkexSubscription, OkexWsMessage}
 };
 use crate::{
@@ -37,44 +37,33 @@ impl Okex {
         Self { subscription, exch_currency_proxy }
     }
 
-    pub async fn get_all_symbols(&self, web_client: &reqwest::Client) -> Result<OkexAllSymbolsResponse, RestApiError> {
+    pub async fn get_all_symbols(&self, web_client: &reqwest::Client) -> Result<OkexAllSymbols, RestApiError> {
         let proxy_symbols = self.exch_currency_proxy.get_all_currencies().await?;
+        let instruments = self.get_all_instruments(web_client).await?;
 
-        let currencies: OkexAllSymbolsResponse = web_client
-            .get(BASE_REST_API_URL)
-            .send()
-            .await?
-            .json()
-            .await?;
-
-        Ok(currencies)
+        Ok(OkexAllSymbols::new(proxy_symbols, instruments.instruments))
     }
 
     pub async fn get_all_instruments(&self, web_client: &reqwest::Client) -> Result<OkexCompleteAllInstruments, RestApiError> {
-        use std::io::Write;
-        let tt = [NormalizedTradingType::Margin];
+        let complete_instruments = join_all(NormalizedTradingType::iter().map(|t| async move {
+            if t != NormalizedTradingType::Rfq {
+                let tickers: OkexAllTickersResponse = if t == NormalizedTradingType::Margin {
+                    Self::simple_rest_api_request(
+                        web_client,
+                        format!("{BASE_REST_API_URL}/api/v5/market/tickers?instType={}", NormalizedTradingType::Spot.fmt_okex().unwrap())
+                    )
+                    .await?
+                } else {
+                    Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v5/market/tickers?instType={t}")).await?
+                };
 
-        let complete_instruments = join_all(tt.iter().map(|t| async move {
-            let tickers: OkexAllTickersResponse = if *t == NormalizedTradingType::Margin {
-                Self::simple_rest_api_request(
-                    web_client,
-                    format!("{BASE_REST_API_URL}/api/v5/market/tickers?instType={}", NormalizedTradingType::Spot.fmt_okex())
-                )
-                .await?
+                let instruments_no_vol: OkexAllInstrumentsResponse =
+                    Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v5/public/instruments?instType={t}")).await?;
+
+                Ok((tickers, instruments_no_vol).into())
             } else {
-                Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v5/market/tickers?instType={}", t.fmt_okex())).await?
-            };
-
-            let mut f0 = std::fs::File::create("/Users/josephnoorchashm/Desktop/SorellaLabs/GitHub/cex-exchanges/t0.json").unwrap();
-            writeln!(f0, "{}", serde_json::to_string(&tickers).unwrap()).unwrap();
-
-            let instruments_no_vol: OkexAllInstrumentsResponse =
-                Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v5/public/instruments?instType={}", t.fmt_okex())).await?;
-
-            let mut f1 = std::fs::File::create("/Users/josephnoorchashm/Desktop/SorellaLabs/GitHub/cex-exchanges/t1.json").unwrap();
-            writeln!(f1, "{}", serde_json::to_string(&instruments_no_vol).unwrap()).unwrap();
-
-            Ok((tickers, instruments_no_vol).into())
+                Ok(OkexCompleteAllInstruments { instruments: vec![] })
+            }
         }))
         .await
         .into_iter()
@@ -90,15 +79,9 @@ impl Okex {
     where
         T: for<'de> Deserialize<'de>
     {
-        let data = web_client.get(&url).send().await?.text().await?;
+        let data = web_client.get(&url).send().await?.json().await?;
 
-        let res = serde_json::from_str(&data);
-
-        if res.is_err() {
-            println!("\n\nURL: {url}\nDATA: {data}\n\n");
-        }
-
-        Ok(res?)
+        Ok(data)
     }
 }
 
@@ -114,7 +97,6 @@ impl Exchange for Okex {
 
         let (mut ws, _) = tokio_tungstenite::connect_async(url).await?;
 
-        //        println!("SUB: {:?}", self.subscription);
         let sub_message = serde_json::to_string(&self.subscription)?;
         ws.send(Message::Text(sub_message)).await?;
 

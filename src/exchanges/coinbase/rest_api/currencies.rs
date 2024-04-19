@@ -11,11 +11,11 @@ use crate::{
 
 #[serde_as]
 #[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
-pub struct CoinbaseAllCurrenciesResponse {
+pub struct CoinbaseAllCurrencies {
     pub currencies: Vec<CoinbaseCurrency>
 }
 
-impl CoinbaseAllCurrenciesResponse {
+impl CoinbaseAllCurrencies {
     pub fn normalize(self) -> Vec<NormalizedCurrency> {
         self.currencies
             .into_iter()
@@ -24,18 +24,18 @@ impl CoinbaseAllCurrenciesResponse {
     }
 }
 
-impl<'de> Deserialize<'de> for CoinbaseAllCurrenciesResponse {
+impl<'de> Deserialize<'de> for CoinbaseAllCurrencies {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>
     {
         let currencies = Vec::<CoinbaseCurrency>::deserialize(deserializer)?;
 
-        Ok(CoinbaseAllCurrenciesResponse { currencies })
+        Ok(CoinbaseAllCurrencies { currencies })
     }
 }
 
-impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllCurrenciesResponse {
+impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllCurrencies {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match other {
             NormalizedRestApiDataTypes::AllCurrencies(other_currs) => {

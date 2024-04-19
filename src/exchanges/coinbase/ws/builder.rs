@@ -128,7 +128,7 @@ mod tests {
         builder.add_pairs_all_channels(
             CexExchange::Coinbase,
             &[NormalizedWsChannelKinds::Quotes, NormalizedWsChannelKinds::Trades],
-            &[RawTradingPair::new_raw("pepe_USD", '_'), RawTradingPair::new_base_quote("ETH", "usd")]
+            &[RawTradingPair::new_raw("pepe_USD", '_'), RawTradingPair::new_base_quote("ETH", "usd", None)]
         );
 
         builder.add_pairs_single_channel(CexExchange::Coinbase, NormalizedWsChannelKinds::Trades, &[RawTradingPair::new_no_delim("wbtc-usd")]);

@@ -1,15 +1,15 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{tickers::OkexTickersMessage, trades::OkexTradesAllMessage};
+use super::{tickers::OkexTicker, trades::OkexTrade};
 use crate::{exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 
 #[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "snake_case", tag = "data")]
 pub enum OkexWsMessage {
-    TradesAll(OkexTradesAllMessage),
-    Tickers(OkexTickersMessage),
+    TradesAll(OkexTrade),
+    Tickers(OkexTicker),
     Subscribe(serde_json::Value),
     Error(String)
 }
@@ -26,10 +26,10 @@ impl OkexWsMessage {
 
         if let Some(data) = value.get("data") {
             if channel == "trades-all" {
-                let data: Vec<OkexTradesAllMessage> = serde_json::from_value(data.clone())?;
+                let data: Vec<OkexTrade> = serde_json::from_value(data.clone())?;
                 Ok(Self::TradesAll(data.first().unwrap().clone()))
             } else if channel == "tickers" {
-                let data: Vec<OkexTickersMessage> = serde_json::from_value(data.clone())?;
+                let data: Vec<OkexTicker> = serde_json::from_value(data.clone())?;
                 Ok(Self::Tickers(data.first().unwrap().clone()))
             } else {
                 Err(eyre::ErrReport::msg(format!("Channel type '{channel}' cannot be deserialized")))

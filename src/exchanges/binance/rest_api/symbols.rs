@@ -13,20 +13,20 @@ use crate::{
 
 #[serde_as]
 #[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
-pub struct BinanceAllSymbolsResponse {
-    pub currencies: Vec<BinanceAllSymbolsProperties>
+pub struct BinanceAllSymbols {
+    pub currencies: Vec<BinanceSymbol>
 }
 
-impl BinanceAllSymbolsResponse {
+impl BinanceAllSymbols {
     pub fn normalize(self) -> Vec<NormalizedCurrency> {
         self.currencies
             .into_iter()
-            .map(BinanceAllSymbolsProperties::normalize)
+            .map(BinanceSymbol::normalize)
             .collect()
     }
 }
 
-impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllSymbolsResponse {
+impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllSymbols {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match other {
             NormalizedRestApiDataTypes::AllCurrencies(other_currs) => {
@@ -43,7 +43,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllSymbolsResponse {
     }
 }
 
-impl<'de> Deserialize<'de> for BinanceAllSymbolsResponse {
+impl<'de> Deserialize<'de> for BinanceAllSymbols {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>
@@ -70,13 +70,13 @@ impl<'de> Deserialize<'de> for BinanceAllSymbolsResponse {
             .collect::<Result<Vec<_>, _>>()
             .map_err(serde::de::Error::custom)?;
 
-        Ok(BinanceAllSymbolsResponse { currencies })
+        Ok(BinanceAllSymbols { currencies })
     }
 }
 
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct BinanceAllSymbolsProperties {
+pub struct BinanceSymbol {
     pub symbol: String,
     pub circulating_supply: f64,
     pub last_updated: DateTime<Utc>,
@@ -84,7 +84,7 @@ pub struct BinanceAllSymbolsProperties {
     pub tvl_ratio: Option<f64>,
     pub cmc_rank: u64,
     pub self_reported_circulating_supply: Option<f64>,
-    pub platform: Option<BinanceAllSymbolsPlatform>,
+    pub platform: Option<BinanceSymbolPlatform>,
     pub tags: Vec<String>,
     pub date_added: DateTime<Utc>,
     pub quote: BinanceAllSymbolsQuote,
@@ -97,7 +97,7 @@ pub struct BinanceAllSymbolsProperties {
     pub slug: String
 }
 
-impl BinanceAllSymbolsProperties {
+impl BinanceSymbol {
     pub fn normalize(self) -> NormalizedCurrency {
         NormalizedCurrency {
             exchange:     CexExchange::Binance,
@@ -116,11 +116,11 @@ impl BinanceAllSymbolsProperties {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct BinanceAllSymbolsQuote {
     #[serde(rename = "USD")]
-    pub usd: BinanceAllSymbolsQuoteUSD
+    pub usd: BinanceSymbolQuoteUSD
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct BinanceAllSymbolsQuoteUSD {
+pub struct BinanceSymbolQuoteUSD {
     pub fully_diluted_market_cap: f64,
     pub last_updated: DateTime<Utc>,
     pub market_cap_dominance: f64,
@@ -139,7 +139,7 @@ pub struct BinanceAllSymbolsQuoteUSD {
 
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct BinanceAllSymbolsPlatform {
+pub struct BinanceSymbolPlatform {
     pub symbol:        String,
     pub name:          String,
     pub token_address: String,
@@ -147,13 +147,13 @@ pub struct BinanceAllSymbolsPlatform {
     pub slug:          String
 }
 
-impl BinanceAllSymbolsPlatform {
+impl BinanceSymbolPlatform {
     pub fn parse_blockchain_address(self) -> (Blockchain, Option<String>) {
         (self.name.parse().unwrap(), Some(self.token_address))
     }
 }
 
-impl PartialEq<NormalizedCurrency> for BinanceAllSymbolsProperties {
+impl PartialEq<NormalizedCurrency> for BinanceSymbol {
     fn eq(&self, other: &NormalizedCurrency) -> bool {
         let equals = other.exchange == CexExchange::Binance
             && other.symbol == self.symbol

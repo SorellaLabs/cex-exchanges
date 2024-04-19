@@ -1,14 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-use super::{CoinbaseAllCurrenciesResponse, CoinbaseAllInstrumentsResponse};
+use super::{CoinbaseAllCurrencies, CoinbaseAllInstruments, CoinbaseCompleteInstrument, CoinbaseCurrency};
 use crate::normalized::rest_api::NormalizedRestApiDataTypes;
 
 #[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum CoinbaseRestApiResponse {
-    Currencies(CoinbaseAllCurrenciesResponse),
-    Instruments(CoinbaseAllInstrumentsResponse)
+    Currencies(CoinbaseAllCurrencies),
+    Instruments(CoinbaseAllInstruments)
 }
 
 impl CoinbaseRestApiResponse {
@@ -19,17 +19,17 @@ impl CoinbaseRestApiResponse {
         }
     }
 
-    pub fn take_symbols(self) -> CoinbaseAllCurrenciesResponse {
+    pub fn take_currencies(self) -> Option<Vec<CoinbaseCurrency>> {
         match self {
-            CoinbaseRestApiResponse::Currencies(val) => val,
-            _ => unreachable!()
+            CoinbaseRestApiResponse::Currencies(val) => Some(val.currencies),
+            _ => None
         }
     }
 
-    pub fn take_instruments(self) -> CoinbaseAllInstrumentsResponse {
+    pub fn take_instruments(self) -> Option<Vec<CoinbaseCompleteInstrument>> {
         match self {
-            CoinbaseRestApiResponse::Instruments(val) => val,
-            _ => unreachable!()
+            CoinbaseRestApiResponse::Instruments(val) => Some(val.instruments),
+            _ => None
         }
     }
 }

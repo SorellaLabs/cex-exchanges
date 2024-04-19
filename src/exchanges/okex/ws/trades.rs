@@ -9,7 +9,7 @@ use crate::{
 
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct OkexTradesAllMessage {
+pub struct OkexTrade {
     #[serde(rename = "instId")]
     pub pair:       OkexTradingPair,
     #[serde_as(as = "DisplayFromStr")]
@@ -26,7 +26,7 @@ pub struct OkexTradesAllMessage {
     pub trade_time: u64
 }
 
-impl OkexTradesAllMessage {
+impl OkexTrade {
     pub fn normalize(self) -> NormalizedTrade {
         NormalizedTrade {
             exchange: CexExchange::Okex,
@@ -40,7 +40,7 @@ impl OkexTradesAllMessage {
     }
 }
 
-impl PartialEq<NormalizedTrade> for OkexTradesAllMessage {
+impl PartialEq<NormalizedTrade> for OkexTrade {
     fn eq(&self, other: &NormalizedTrade) -> bool {
         let equals = other.exchange == CexExchange::Okex
             && other.pair == self.pair.normalize()

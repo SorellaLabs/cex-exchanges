@@ -9,7 +9,7 @@ use crate::{
 
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CoinbaseMatchesMessage {
+pub struct CoinbaseMatches {
     pub trade_id:       u64,
     pub sequence:       u64,
     pub maker_order_id: String,
@@ -23,7 +23,7 @@ pub struct CoinbaseMatchesMessage {
     pub side:           String
 }
 
-impl CoinbaseMatchesMessage {
+impl CoinbaseMatches {
     pub fn normalize(self) -> NormalizedTrade {
         NormalizedTrade {
             exchange: CexExchange::Coinbase,
@@ -37,7 +37,7 @@ impl CoinbaseMatchesMessage {
     }
 }
 
-impl PartialEq<NormalizedTrade> for CoinbaseMatchesMessage {
+impl PartialEq<NormalizedTrade> for CoinbaseMatches {
     fn eq(&self, other: &NormalizedTrade) -> bool {
         let equals = other.exchange == CexExchange::Coinbase
             && other.pair == self.product_id.normalize()

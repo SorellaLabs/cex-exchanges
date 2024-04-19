@@ -15,10 +15,10 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 use self::{
-    binance::ws::BinanceWsBuilder,
-    coinbase::ws::CoinbaseWsBuilder,
+    binance::{ws::BinanceWsBuilder, Binance},
+    coinbase::{ws::CoinbaseWsBuilder, Coinbase},
     normalized::{
-        rest_api::NormalizedRestApiRequest,
+        rest_api::{NormalizedRestApiDataTypes, NormalizedRestApiRequest},
         types::NormalizedCurrency,
         ws::{CombinedWsMessage, NormalizedWsChannels}
     },
@@ -74,10 +74,21 @@ impl CexExchange {
     }
 
     pub async fn get_all_currencies(&self) -> Result<Vec<NormalizedCurrency>, RestApiError> {
-        match self {
-            CexExchange::Coinbase => todo!(),
-            CexExchange::Binance => todo!(),
+        let out = match self {
+            CexExchange::Coinbase => Coinbase::default()
+                .rest_api_call(&reqwest::Client::new(), NormalizedRestApiRequest::AllCurrencies)
+                .await?
+                .normalize(),
+            CexExchange::Binance => Binance::default()
+                .rest_api_call(&reqwest::Client::new(), NormalizedRestApiRequest::AllCurrencies)
+                .await?
+                .normalize(),
             CexExchange::Okex => unreachable!("Okex cannot be a currency proxy")
+        };
+
+        match out {
+            NormalizedRestApiDataTypes::AllCurrencies(vals) => Ok(vals),
+            _ => unreachable!()
         }
     }
 }

@@ -4,7 +4,7 @@ use serde_with::{serde_as, DisplayFromStr};
 use crate::exchanges::coinbase::pairs::CoinbaseTradingPair;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CoinbaseStatusMessage {
+pub struct CoinbaseStatus {
     pub products:   Vec<CoinbaseStatusProduct>,
     pub currencies: Vec<CoinbaseStatusCurrency>
 }

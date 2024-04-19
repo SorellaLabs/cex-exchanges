@@ -100,7 +100,7 @@ mod okex_tests {
             .add_channel(
                 OkexWsChannel::new_trade(vec![
                     RawTradingPair::new_raw("ETH_USDt", '_'),
-                    RawTradingPair::new_base_quote("btc", "USDC"),
+                    RawTradingPair::new_base_quote("btc", "USDC", None),
                     RawTradingPair::new_raw("XLM/eUr", '/'),
                 ])
                 .unwrap()
@@ -116,9 +116,12 @@ mod okex_tests {
 #[cfg(feature = "non-us")]
 #[cfg(test)]
 mod binance_tests {
-    use cex_exchanges::exchanges::{
-        binance::ws::{BinanceWsBuilder, BinanceWsChannel},
-        normalized::types::RawTradingPair
+    use cex_exchanges::{
+        binance::ws::BinanceWsChannelKind,
+        exchanges::{
+            binance::ws::{BinanceWsBuilder, BinanceWsChannel},
+            normalized::types::RawTradingPair
+        }
     };
     use serial_test::serial;
 
@@ -163,5 +166,18 @@ mod binance_tests {
             .unwrap();
 
         mutlistream_util(builder, 50).await;
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_build_ranked_weighted_all_symbols() {
+        let map = vec![(2, 3), (1, 10), (1, 30), (1, 50)];
+        let channels = vec![BinanceWsChannelKind::Trade, BinanceWsChannelKind::BookTicker];
+
+        let builder = BinanceWsBuilder::build_ranked_weighted_all_symbols(map, &channels, None)
+            .await
+            .unwrap();
+
+        mutlistream_util(builder, 10000).await;
     }
 }

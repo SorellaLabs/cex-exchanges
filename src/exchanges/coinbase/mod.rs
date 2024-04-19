@@ -1,4 +1,6 @@
 mod pairs;
+use std::fmt::Debug;
+
 pub use pairs::*;
 
 pub mod rest_api;
@@ -10,7 +12,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
-    rest_api::CoinbaseRestApiResponse,
+    rest_api::{CoinbaseAllInstruments, CoinbaseInstrument, CoinbaseRestApiResponse},
     ws::{CoinbaseSubscription, CoinbaseWsMessage}
 };
 use crate::{
@@ -20,8 +22,6 @@ use crate::{
 };
 
 const WSS_URL: &str = "wss://ws-feed.exchange.coinbase.com";
-
-const BASE_INTERNATIONAL_REST_API_URL: &str = "https://api.international.coinbase.com/api/v1";
 const BASE_REST_API_URL: &str = "https://api.exchange.coinbase.com";
 
 #[derive(Debug, Default, Clone)]
@@ -34,14 +34,26 @@ impl Coinbase {
         Self { subscription }
     }
 
+    pub async fn get_all_instruments(&self, web_client: &reqwest::Client) -> Result<CoinbaseAllInstruments, RestApiError> {
+        let currencies = self
+            .rest_api_call(web_client, NormalizedRestApiRequest::AllCurrencies)
+            .await?
+            .take_currencies()
+            .unwrap();
+        let instruments: Vec<CoinbaseInstrument> = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/products")).await?;
+
+        Ok(CoinbaseAllInstruments::new(instruments, currencies))
+    }
+
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
     where
-        T: for<'de> Deserialize<'de>
+        T: for<'de> Deserialize<'de> + Debug
     {
         let data = web_client
             .get(&url)
             .header("Content-Type", "application/json")
             .header("Accept", "application/json")
+            .header("User-Agent", "rust")
             .send()
             .await?
             .json()
@@ -76,9 +88,7 @@ impl Exchange for Coinbase {
             NormalizedRestApiRequest::AllCurrencies => {
                 CoinbaseRestApiResponse::Currencies(Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/currencies")).await?)
             }
-            NormalizedRestApiRequest::AllInstruments => CoinbaseRestApiResponse::Instruments(
-                Self::simple_rest_api_request(web_client, format!("{BASE_INTERNATIONAL_REST_API_URL}/instruments")).await?
-            )
+            NormalizedRestApiRequest::AllInstruments => CoinbaseRestApiResponse::Instruments(self.get_all_instruments(web_client).await?)
         };
 
         Ok(api_response)

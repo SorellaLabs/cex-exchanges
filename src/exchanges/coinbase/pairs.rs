@@ -16,7 +16,7 @@ impl CoinbaseTradingPair {
 
     pub fn normalize(&self) -> NormalizedTradingPair {
         let mut split = self.0.split('-');
-        NormalizedTradingPair::new_base_quote(CexExchange::Coinbase, split.next().unwrap(), split.next().unwrap(), Some('-'))
+        NormalizedTradingPair::new_base_quote(CexExchange::Coinbase, split.next().unwrap(), split.next().unwrap(), Some('-'), None)
     }
 }
 

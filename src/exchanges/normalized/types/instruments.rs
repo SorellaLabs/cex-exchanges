@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
@@ -15,27 +16,31 @@ pub struct NormalizedInstrument {
     pub quote_asset_symbol:    String,
     pub active:                bool,
     /// Some metric that (as an estimate) ranks the instrument in the exchange
-    pub exchange_ranking:      f64,
-    pub exchange_ranking_kind: String
+    pub exchange_ranking:      i64,
+    pub exchange_ranking_kind: String,
+    pub futures_expiry:        Option<NaiveDate>
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash, EnumIter, PartialOrd, Ord)]
+#[derive(Debug, Default, Clone, Serialize, PartialEq, Eq, Hash, EnumIter, PartialOrd, Ord)]
 pub enum NormalizedTradingType {
     Spot,
     Perpetual,
     Margin,
     Futures,
-    Option
+    Rfq,
+    #[default]
+    Other
 }
 
 impl NormalizedTradingType {
-    pub fn fmt_okex(&self) -> &str {
+    pub fn fmt_okex(&self) -> Option<&str> {
         match self {
-            NormalizedTradingType::Spot => "SPOT",
-            NormalizedTradingType::Perpetual => "SWAP",
-            NormalizedTradingType::Margin => "MARGIN",
-            NormalizedTradingType::Futures => "FUTURE",
-            NormalizedTradingType::Option => "OPTION"
+            NormalizedTradingType::Spot => Some("SPOT"),
+            NormalizedTradingType::Perpetual => Some("SWAP"),
+            NormalizedTradingType::Margin => Some("MARGIN"),
+            NormalizedTradingType::Futures => Some("FUTURES"),
+            NormalizedTradingType::Rfq => None,
+            NormalizedTradingType::Other => None
         }
     }
 }
@@ -62,7 +67,6 @@ impl TryFrom<&str> for NormalizedTradingType {
             "perpetual" | "perp" | "swap" => Ok(NormalizedTradingType::Perpetual),
             "futures" => Ok(NormalizedTradingType::Futures),
             "margin" => Ok(NormalizedTradingType::Margin),
-            "option" => Ok(NormalizedTradingType::Option),
             _ => Err(eyre::ErrReport::msg(format!("'{value}' is not a valid trading type")))
         }
     }

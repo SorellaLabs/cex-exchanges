@@ -71,7 +71,7 @@ impl PartialEq<NormalizedWsDataTypes> for CombinedWsMessage {
             CombinedWsMessage::Okex(vals) => vals == other,
             #[cfg(feature = "non-us")]
             CombinedWsMessage::Binance(vals) => vals == other,
-            CombinedWsMessage::Disconnect { exchange, message } => true
+            CombinedWsMessage::Disconnect { .. } => true
         }
     }
 }

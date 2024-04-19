@@ -26,7 +26,7 @@ impl BinanceWsChannel {
             .map(|pair| pair.get_normalized_pair(CexExchange::Binance))
             .collect();
 
-        Self::new_from_kind(normalized, BinanceWsChannel::Trade(Vec::new()))
+        Self::new_from_normalized(normalized, BinanceWsChannel::Trade(Vec::new()))
     }
 
     /// builds the book ticker channel from a vec of raw trading
@@ -37,10 +37,10 @@ impl BinanceWsChannel {
             .map(|pair| pair.get_normalized_pair(CexExchange::Binance))
             .collect();
 
-        Self::new_from_kind(normalized, BinanceWsChannel::BookTicker(Vec::new()))
+        Self::new_from_normalized(normalized, BinanceWsChannel::BookTicker(Vec::new()))
     }
 
-    fn new_from_kind(pairs: Vec<NormalizedTradingPair>, kind: BinanceWsChannel) -> eyre::Result<Self> {
+    pub(crate) fn new_from_normalized(pairs: Vec<NormalizedTradingPair>, kind: BinanceWsChannel) -> eyre::Result<Self> {
         match kind {
             BinanceWsChannel::Trade(_) => Ok(BinanceWsChannel::Trade(
                 pairs
@@ -111,4 +111,10 @@ impl TryFrom<NormalizedWsChannels> for BinanceWsChannel {
             _ => unimplemented!()
         }
     }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum BinanceWsChannelKind {
+    Trade,
+    BookTicker
 }

@@ -1,14 +1,14 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{book_ticker::BinanceBookTicker, trades::BinanceTradeMessage};
+use super::{book_ticker::BinanceBookTicker, trades::BinanceTrade};
 use crate::exchanges::normalized::ws::NormalizedWsDataTypes;
 
 #[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "snake_case", tag = "data")]
 pub enum BinanceWsMessage {
-    Trade(BinanceTradeMessage),
+    Trade(BinanceTrade),
     BookTicker(BinanceBookTicker)
 }
 
@@ -25,7 +25,7 @@ impl BinanceWsMessage {
             .ok_or(eyre::ErrReport::msg("Could not convert 'stream' (event type) field in Binance ws message to &str".to_string()))?;
 
         if data_type.contains("@trade") {
-            let trade: BinanceTradeMessage = serde_json::from_value(data.clone())?;
+            let trade: BinanceTrade = serde_json::from_value(data.clone())?;
             Ok(Self::Trade(trade))
         } else if data_type.contains("@bookTicker") {
             let book_ticker: BinanceBookTicker = serde_json::from_value(data.clone())?;

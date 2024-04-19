@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use chrono::{TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr, NoneAsEmptyString};
 
@@ -28,17 +29,6 @@ impl OkexCompleteAllInstruments {
     }
 }
 
-/*
-
-
-1 ETH / 3024.87 USDC
-
-1 OKB / ((0.018643 + 0.018004) / 2 ) ETH
-
-
-41809.36687967907
-*/
-
 impl From<(OkexAllTickersResponse, OkexAllInstrumentsResponse)> for OkexCompleteAllInstruments {
     fn from(value: (OkexAllTickersResponse, OkexAllInstrumentsResponse)) -> Self {
         let (tickers, instruments) = (value.0.into_pair_map(), value.1.into_pair_map());
@@ -46,31 +36,28 @@ impl From<(OkexAllTickersResponse, OkexAllInstrumentsResponse)> for OkexComplete
         let completed_instruments = instruments
             .into_iter()
             .filter_map(|(pair, instr)| {
-                let get_currency = if instr.instrument_type == NormalizedTradingType::Perpetual {
-                    format!("{}-USD", instr.settlement_currency.clone().unwrap())
+                let mut get_currency = instr.instrument.clone();
+
+                if instr.instrument_type == NormalizedTradingType::Perpetual || instr.instrument_type == NormalizedTradingType::Futures {
+                    let (settlement, contract) = (instr.settlement_currency.as_ref().unwrap(), instr.contract_currency.as_ref().unwrap());
+                    get_currency.0 = get_currency.0.replace(settlement, "USD");
+                    get_currency.0 = get_currency.0.replace(contract, settlement);
                 } else {
-                    format!("{}-USDC", instr.quote_currency.clone().unwrap())
-                };
+                    let (base, quote) = (instr.base_currency.as_ref().unwrap(), instr.quote_currency.as_ref().unwrap());
+                    get_currency.0 = get_currency.0.replace(quote, "USD");
+                    get_currency.0 = get_currency.0.replace(base, quote);
+                }
 
                 let pair_ticker = tickers.get(&pair);
 
                 let usd_price = if pair.quote() != Some(&"USD".to_string()) && pair.quote() != Some(&"USDC".to_string()) {
                     tickers
-                        .get(&OkexTradingPair(get_currency.clone()).normalize())
+                        .get(&get_currency.normalize())
                         .map(|v| if let (Some(hp), Some(lp)) = (v.high_price_24h, v.low_price_24h) { Some((hp + lp) / 2.0) } else { None })
                         .flatten()
                 } else {
                     None
                 };
-
-                if instr.settlement_currency == Some("ETH".to_string()) && instr.contract_currency == Some("USD".to_string()) {
-                    println!("get_currency: {:?}\n", get_currency);
-                    println!("instr: {:?}\n", instr);
-                    println!("pair_ticker: {:?}\n", pair_ticker);
-                    println!("usd_price: {:?}", usd_price);
-                };
-
-                // 31131262.58988457
 
                 if let Some(ticker) = pair_ticker {
                     if let (Some(hp), Some(lp)) = (ticker.high_price_24h, ticker.low_price_24h) {
@@ -79,7 +66,7 @@ impl From<(OkexAllTickersResponse, OkexAllInstrumentsResponse)> for OkexComplete
                         } else {
                             ticker.vol_currency_24hr * ((hp + lp) / 2.0)
                         };
-                        Some(OkexCompleteInstrument { instrument: instr, exchange_ranking: rank })
+                        Some(OkexCompleteInstrument { instrument: instr, reverse_usd_vol_24hr: rank.round() as i64 * -1 })
                     } else {
                         None
                     }
@@ -103,21 +90,21 @@ impl PartialEq<NormalizedRestApiDataTypes> for OkexCompleteAllInstruments {
                         &a.instrument
                             .base_currency
                             .as_ref()
-                            .unwrap_or(a.instrument.contract_currency.as_ref().unwrap()),
+                            .unwrap_or_else(|| a.instrument.contract_currency.as_ref().unwrap()),
                         &a.instrument
                             .quote_currency
                             .as_ref()
-                            .unwrap_or(a.instrument.settlement_currency.as_ref().unwrap())
+                            .unwrap_or_else(|| a.instrument.settlement_currency.as_ref().unwrap())
                     )
                         .partial_cmp(&(
                             &b.instrument
                                 .base_currency
                                 .as_ref()
-                                .unwrap_or(b.instrument.contract_currency.as_ref().unwrap()),
+                                .unwrap_or_else(|| b.instrument.contract_currency.as_ref().unwrap()),
                             &b.instrument
                                 .quote_currency
                                 .as_ref()
-                                .unwrap_or(b.instrument.settlement_currency.as_ref().unwrap())
+                                .unwrap_or_else(|| b.instrument.settlement_currency.as_ref().unwrap())
                         ))
                         .unwrap()
                 });
@@ -139,8 +126,8 @@ impl PartialEq<NormalizedRestApiDataTypes> for OkexCompleteAllInstruments {
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct OkexCompleteInstrument {
-    pub instrument:       OkexInstrument,
-    pub exchange_ranking: f64
+    pub instrument:           OkexInstrument,
+    pub reverse_usd_vol_24hr: i64
 }
 
 impl OkexCompleteInstrument {
@@ -152,14 +139,19 @@ impl OkexCompleteInstrument {
             base_asset_symbol:     self
                 .instrument
                 .base_currency
-                .unwrap_or(self.instrument.contract_currency.unwrap()),
+                .unwrap_or_else(|| self.instrument.contract_currency.unwrap()),
             quote_asset_symbol:    self
                 .instrument
                 .quote_currency
-                .unwrap_or(self.instrument.settlement_currency.unwrap()),
+                .unwrap_or_else(|| self.instrument.settlement_currency.unwrap()),
             active:                &self.instrument.state == "live",
-            exchange_ranking:      self.exchange_ranking,
-            exchange_ranking_kind: "24vol (base currency) * avg 24hr price (usdc)".to_string()
+            exchange_ranking:      self.reverse_usd_vol_24hr,
+            exchange_ranking_kind: "24vol (base currency) * avg 24hr price (usdc)".to_string(),
+            futures_expiry:        self
+                .instrument
+                .expiry_time
+                .clone()
+                .map(|t| Utc.timestamp_millis_opt(t as i64).unwrap().date_naive())
         }
     }
 }
@@ -221,8 +213,9 @@ pub struct OkexInstrument {
     #[serde_as(as = "DisplayFromStr")]
     #[serde(rename = "listTime")]
     pub listing_time:        u64,
+    #[serde_as(as = "NoneAsEmptyString")]
     #[serde(rename = "expTime")]
-    pub expiry_time:         Option<String>,
+    pub expiry_time:         Option<u64>,
     #[serde_as(as = "NoneAsEmptyString")]
     #[serde(rename = "lever")]
     pub leverage:            Option<u64>,
@@ -235,6 +228,7 @@ pub struct OkexInstrument {
     #[serde_as(as = "DisplayFromStr")]
     #[serde(rename = "minSz")]
     pub minimum_size:        f64,
+    #[serde_as(as = "NoneAsEmptyString")]
     #[serde(rename = "ctType")]
     pub contract_type:       Option<String>,
     #[serde(rename = "state")]
@@ -291,15 +285,15 @@ impl PartialEq<NormalizedInstrument> for OkexCompleteInstrument {
                     .instrument
                     .base_currency
                     .as_ref()
-                    .unwrap_or(&self.instrument.contract_currency.as_ref().unwrap())
+                    .unwrap_or_else(|| &self.instrument.contract_currency.as_ref().unwrap())
             && other.quote_asset_symbol
                 == *self
                     .instrument
                     .quote_currency
                     .as_ref()
-                    .unwrap_or(&self.instrument.settlement_currency.as_ref().unwrap())
+                    .unwrap_or_else(|| &self.instrument.settlement_currency.as_ref().unwrap())
             && other.active == (&self.instrument.state == "live")
-            && other.exchange_ranking == self.exchange_ranking;
+            && other.exchange_ranking == self.reverse_usd_vol_24hr;
 
         if !equals {
             println!("SELF: {:?}", self);
@@ -368,41 +362,3 @@ pub struct OkexTickersRestApi {
     #[serde(rename = "ts")]
     pub timestamp:         u64
 }
-
-// ((0.0000002003 + 0.0000001988) / 2 ) *
-
-// vol USDT: 242462.5745970497
-// / 1 USDC / 1 USDT * 242462.5745970497 USDT
-
-/*
-
-OKB-ETH
-
-
-    1 OKB                                                                  1 ETH
-_____________                                       *                   _____________
-
-(( 0.018643 + 0.018531 ) / 2 ) ETH                           (( 3096.18 + 3004.84 ) / 2 ) USDC
-
-
-
-
-
-
-1 OKB / ((( 0.018643 + 0.018531 ) / 2 ) * (( 3096.18 + 3004.84 ) / 2 )) USDC
-
-754.3249 * ^
-
-
-
-OKB-ETH (SPOT): ~13
-ETH-USD-SWAP (PERPETUAL) : ~664338055
-
-
-
-
-1 ETH / 3045 USD
-
-
-
-*/

@@ -1,7 +1,9 @@
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use std::collections::{HashMap, HashSet};
 
+use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr, NoneAsEmptyString};
+
+use super::CoinbaseCurrency;
 use crate::{
     coinbase::CoinbaseTradingPair,
     exchanges::normalized::types::NormalizedInstrument,
@@ -10,163 +12,132 @@ use crate::{
 };
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
-pub struct CoinbaseAllInstrumentsResponse {
-    pub instruments: Vec<CoinbaseInstrument>
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
+pub struct CoinbaseAllInstruments {
+    pub instruments: Vec<CoinbaseCompleteInstrument>
 }
 
-impl CoinbaseAllInstrumentsResponse {
+impl CoinbaseAllInstruments {
+    pub(crate) fn new(instruments: Vec<CoinbaseInstrument>, currencies: Vec<CoinbaseCurrency>) -> Self {
+        let product_map = currencies
+            .into_iter()
+            .map(|p| (p.id.clone(), p))
+            .collect::<HashMap<_, _>>();
+
+        let complete = instruments
+            .into_iter()
+            .filter_map(|instr| {
+                product_map
+                    .get(&instr.base_currency)
+                    .map(|prod| CoinbaseCompleteInstrument {
+                        id: instr.id.clone(),
+                        trading_type: NormalizedTradingType::Spot,
+                        base_currency: instr.base_currency.clone(),
+                        quote_currency: instr.quote_currency.clone(),
+                        quote_increment: instr.quote_increment.clone(),
+                        base_increment: instr.base_increment.clone(),
+                        display_name: instr.display_name.clone(),
+                        min_market_funds: instr.min_market_funds.clone(),
+                        margin_enabled: instr.margin_enabled.clone(),
+                        post_only: instr.post_only.clone(),
+                        limit_only: instr.limit_only.clone(),
+                        cancel_only: instr.cancel_only.clone(),
+                        status: instr.status.clone(),
+                        status_message: instr.status_message.clone(),
+                        trading_disabled: instr.trading_disabled.clone(),
+                        fx_stablecoin: instr.fx_stablecoin.clone(),
+                        max_slippage_percentage: instr.max_slippage_percentage.clone(),
+                        auction_mode: instr.auction_mode.clone(),
+                        high_bid_limit_percentage: instr.high_bid_limit_percentage.clone(),
+                        sort_order: prod.details.sort_order.unwrap_or(1000) as f64
+                    })
+            })
+            .collect();
+
+        Self { instruments: complete }
+    }
+
     pub fn normalize(self) -> Vec<NormalizedInstrument> {
         self.instruments
             .into_iter()
-            .map(CoinbaseInstrument::normalize)
+            .map(CoinbaseCompleteInstrument::normalize)
             .collect()
     }
 }
 
-impl<'de> Deserialize<'de> for CoinbaseAllInstrumentsResponse {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>
-    {
-        let instruments = Vec::<CoinbaseInstrument>::deserialize(deserializer)?;
-
-        Ok(CoinbaseAllInstrumentsResponse { instruments })
-    }
-}
-
-impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllInstrumentsResponse {
+impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllInstruments {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match other {
             NormalizedRestApiDataTypes::AllInstruments(other_instrs) => {
-                let mut this_instruments = self.instruments.clone();
-                this_instruments.sort_by(|a, b| {
-                    (&a.base_asset_name, &a.quote_asset_name)
-                        .partial_cmp(&(&b.base_asset_name, &b.quote_asset_name))
-                        .unwrap()
-                });
+                let this_instruments = self
+                    .instruments
+                    .iter()
+                    .map(|instr| (instr.base_currency.clone(), instr.quote_currency.clone(), instr.id.normalize()))
+                    .collect::<HashSet<_>>();
 
-                let mut others_instruments = other_instrs.clone();
-                others_instruments.sort_by(|a, b| {
-                    (&a.base_asset_symbol, &a.quote_asset_symbol)
-                        .partial_cmp(&(&b.base_asset_symbol, &b.quote_asset_symbol))
-                        .unwrap()
-                });
+                let others_instruments = other_instrs
+                    .iter()
+                    .map(|instr| (instr.base_asset_symbol.clone(), instr.quote_asset_symbol.clone(), instr.trading_pair.clone()))
+                    .collect::<HashSet<_>>();
 
-                this_instruments == others_instruments
+                others_instruments
+                    .into_iter()
+                    .all(|instr| this_instruments.contains(&instr))
             }
             _ => false
         }
     }
 }
 
-#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct CoinbaseInstrument {
-    #[serde_as(as = "DisplayFromStr")]
-    pub instrument_id:          u64,
-    pub instrument_uuid:        String,
-    pub symbol:                 CoinbaseTradingPair,
-    #[serde(rename = "type")]
-    pub instrument_type:        NormalizedTradingType,
-    pub mode:                   String,
-    #[serde_as(as = "DisplayFromStr")]
-    pub base_asset_id:          u64,
-    pub base_asset_uuid:        String,
-    pub base_asset_name:        String,
-    #[serde_as(as = "DisplayFromStr")]
-    pub quote_asset_id:         u64,
-    pub quote_asset_uuid:       String,
-    pub quote_asset_name:       String,
-    #[serde_as(as = "DisplayFromStr")]
-    pub base_increment:         f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub quote_increment:        f64,
-    pub price_band_percent:     f64,
-    pub market_order_percent:   f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub qty_24hr:               f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub notional_24hr:          f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub avg_daily_qty:          f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub avg_daily_notional:     f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub previous_day_qty:       f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub open_interest:          f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub position_limit_qty:     f64,
-    pub position_limit_adq_pct: f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub replacement_cost:       f64,
-    pub base_imf:               f64,
-    pub default_imf:            Option<f64>,
-    #[serde_as(as = "DisplayFromStr")]
-    pub min_notional_value:     f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub funding_interval:       f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub trading_state:          String,
-    pub quote:                  CoinbaseInstrumentQuote
+pub struct CoinbaseCompleteInstrument {
+    pub id: CoinbaseTradingPair,
+    pub trading_type: NormalizedTradingType,
+    pub base_currency: String,
+    pub quote_currency: String,
+    pub quote_increment: f64,
+    pub base_increment: f64,
+    pub display_name: String,
+    pub min_market_funds: f64,
+    pub margin_enabled: bool,
+    pub post_only: bool,
+    pub limit_only: bool,
+    pub cancel_only: bool,
+    pub status: String,
+    pub status_message: Option<String>,
+    pub trading_disabled: bool,
+    pub fx_stablecoin: bool,
+    pub max_slippage_percentage: f64,
+    pub auction_mode: bool,
+    pub high_bid_limit_percentage: Option<f64>,
+    pub sort_order: f64
 }
 
-impl CoinbaseInstrument {
+impl CoinbaseCompleteInstrument {
     pub fn normalize(self) -> NormalizedInstrument {
         NormalizedInstrument {
-            exchange:              CexExchange::Coinbase,
-            trading_pair:          self.symbol.normalize(),
-            trading_type:          self.instrument_type,
-            base_asset_symbol:     self.base_asset_name,
-            quote_asset_symbol:    self.quote_asset_name,
-            active:                &self.trading_state == "TRADING",
-            exchange_ranking:      self.notional_24hr,
-            exchange_ranking_kind: "24hr volume (usdc)".to_string()
+            exchange:              CexExchange::Okex,
+            trading_pair:          self.id.normalize(),
+            trading_type:          self.trading_type,
+            base_asset_symbol:     self.base_currency,
+            quote_asset_symbol:    self.quote_currency,
+            active:                (&self.status == "online"),
+            exchange_ranking:      self.sort_order.round() as i64 * -1, // reverse
+            exchange_ranking_kind: "reverse sort order".to_string(),
+            futures_expiry:        None
         }
     }
 }
 
-#[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct CoinbaseInstrumentQuote {
-    #[serde_as(as = "DisplayFromStr")]
-    pub best_bid_price:    f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub best_bid_size:     f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub best_ask_price:    f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub best_ask_size:     f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub trade_price:       f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub trade_qty:         f64,
-    #[serde_as(as = "Option<DisplayFromStr>")]
-    pub index_price:       Option<f64>,
-    #[serde_as(as = "DisplayFromStr")]
-    pub mark_price:        f64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub settlement_price:  f64,
-    #[serde_as(as = "Option<DisplayFromStr>")]
-    pub limit_up:          Option<f64>,
-    #[serde_as(as = "Option<DisplayFromStr>")]
-    pub limit_down:        Option<f64>,
-    #[serde_as(as = "Option<DisplayFromStr>")]
-    pub predicted_funding: Option<f64>,
-    #[serde_as(as = "DisplayFromStr")]
-    pub timestamp:         DateTime<Utc>
-}
-
-impl PartialEq<NormalizedInstrument> for CoinbaseInstrument {
+impl PartialEq<NormalizedInstrument> for CoinbaseCompleteInstrument {
     fn eq(&self, other: &NormalizedInstrument) -> bool {
         let equals = other.exchange == CexExchange::Coinbase
-            && other.trading_pair == self.symbol.normalize()
-            && other.trading_type == self.instrument_type
-            && other.base_asset_symbol == self.base_asset_name
-            && other.quote_asset_symbol == self.quote_asset_name
-            && other.active == (&self.trading_state == "TRADING")
-            && other.exchange_ranking == self.notional_24hr;
+            && other.trading_pair == self.id.normalize()
+            && other.trading_type == self.trading_type
+            && other.base_asset_symbol == *self.base_currency
+            && other.quote_asset_symbol == *self.quote_currency
+            && other.active == (&self.status == "online")
+            && other.exchange_ranking == self.sort_order.round() as i64 * -1;
 
         if !equals {
             println!("SELF: {:?}", self);
@@ -175,4 +146,33 @@ impl PartialEq<NormalizedInstrument> for CoinbaseInstrument {
 
         equals
     }
+}
+
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+pub struct CoinbaseInstrument {
+    pub id: CoinbaseTradingPair,
+    pub base_currency: String,
+    pub quote_currency: String,
+    #[serde_as(as = "DisplayFromStr")]
+    pub quote_increment: f64,
+    #[serde_as(as = "DisplayFromStr")]
+    pub base_increment: f64,
+    pub display_name: String,
+    #[serde_as(as = "DisplayFromStr")]
+    pub min_market_funds: f64,
+    pub margin_enabled: bool,
+    pub post_only: bool,
+    pub limit_only: bool,
+    pub cancel_only: bool,
+    pub status: String,
+    #[serde_as(as = "NoneAsEmptyString")]
+    pub status_message: Option<String>,
+    pub trading_disabled: bool,
+    pub fx_stablecoin: bool,
+    #[serde_as(as = "DisplayFromStr")]
+    pub max_slippage_percentage: f64,
+    pub auction_mode: bool,
+    #[serde_as(as = "NoneAsEmptyString")]
+    pub high_bid_limit_percentage: Option<f64>
 }

@@ -11,11 +11,21 @@ pub struct NormalizedTradingPair {
 }
 
 impl NormalizedTradingPair {
-    pub(crate) fn new_base_quote(exchange: CexExchange, base: &str, quote: &str, delimiter: Option<char>) -> Self {
+    /// extra data would be like '240201' in 'BTC-USD-240201'
+    pub(crate) fn new_base_quote(exchange: CexExchange, base: &str, quote: &str, delimiter: Option<char>, extra_data: Option<String>) -> Self {
+        let extra_data = extra_data.map(|d| d.to_uppercase());
         let pair = if let Some(del) = delimiter {
-            format!("{}{del}{}", base.to_uppercase(), quote.to_uppercase())
+            if let Some(ed) = extra_data {
+                format!("{}{del}{}{del}{ed}", base.to_uppercase(), quote.to_uppercase())
+            } else {
+                format!("{}{del}{}", base.to_uppercase(), quote.to_uppercase())
+            }
         } else {
-            format!("{}{}", base.to_uppercase(), quote.to_uppercase())
+            if let Some(ed) = extra_data {
+                format!("{}{}{ed}", base.to_uppercase(), quote.to_uppercase())
+            } else {
+                format!("{}{}", base.to_uppercase(), quote.to_uppercase())
+            }
         };
 
         Self { pair: Some(pair), base_quote: Some((base.to_uppercase(), quote.to_uppercase())), exchange, delimiter }
@@ -54,25 +64,26 @@ impl NormalizedTradingPair {
 pub enum RawTradingPair {
     /// (base, quote)
     /// ex: (ETH, USDC)
-    Split { base: String, quote: String },
+    /// ex: (ETH, USDC, 241202)
+    Split { base: String, quote: String, extra_data: Option<String> },
     /// (base + quote, delimiter)
     /// ex: (ETH_USDC, _)
-    Raw { pair: String, delimiter: char },
+    RawDelim { pair: String, delimiter: char },
     /// raw trading pair w/o delimiter
     /// ex: ETHUSDC
     RawNoDelim { pair: String }
 }
 
 impl RawTradingPair {
-    pub fn new_base_quote(base: &str, quote: &str) -> Self {
-        RawTradingPair::Split { base: base.to_uppercase(), quote: quote.to_uppercase() }
+    pub fn new_base_quote(base: &str, quote: &str, extra_data: Option<String>) -> Self {
+        RawTradingPair::Split { base: base.to_uppercase(), quote: quote.to_uppercase(), extra_data: extra_data.map(|d| d.to_uppercase()) }
     }
 
     pub fn new_raw(pair: &str, delimiter: char) -> Self {
         if delimiter == '\0' {
             panic!("delimiter for coinbase cannot be empty/null - use 'new_no_delim' instead")
         }
-        RawTradingPair::Raw { pair: pair.to_uppercase(), delimiter }
+        RawTradingPair::RawDelim { pair: pair.to_uppercase(), delimiter }
     }
 
     pub fn new_no_delim(pair: &str) -> Self {
@@ -82,10 +93,13 @@ impl RawTradingPair {
     pub fn get_normalized_pair(&self, exchange: CexExchange) -> NormalizedTradingPair {
         let this = self.clone();
         match this {
-            RawTradingPair::Split { base, quote } => NormalizedTradingPair::new_base_quote(exchange, &base, &quote, None),
-            RawTradingPair::Raw { pair, delimiter } => {
+            RawTradingPair::Split { base, quote, extra_data } => NormalizedTradingPair::new_base_quote(exchange, &base, &quote, None, extra_data),
+            RawTradingPair::RawDelim { pair, delimiter } => {
                 let mut split = pair.split(delimiter);
-                NormalizedTradingPair::new_base_quote(exchange, split.next().unwrap(), split.next().unwrap(), Some(delimiter))
+                let (base, quote) = (split.next().unwrap(), split.next().unwrap());
+                let extra_data = split.collect::<Vec<_>>();
+                let ed = if extra_data.is_empty() { None } else { Some(extra_data.join(&delimiter.to_string())) };
+                NormalizedTradingPair::new_base_quote(exchange, base, quote, Some(delimiter), ed)
             }
             RawTradingPair::RawNoDelim { pair } => NormalizedTradingPair::new_no_base_quote(exchange, &pair)
         }

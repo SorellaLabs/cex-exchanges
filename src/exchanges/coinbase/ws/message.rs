@@ -1,4 +1,4 @@
-use super::{CoinbaseMatchesMessage, CoinbaseStatusMessage, CoinbaseTickerMessage};
+use super::{CoinbaseMatches, CoinbaseStatus, CoinbaseTicker};
 use crate::{exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 
 #[serde_with::serde_as]
@@ -6,9 +6,9 @@ use crate::{exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum CoinbaseWsMessage {
     #[serde(alias = "last_match", alias = "match")]
-    Matches(CoinbaseMatchesMessage),
-    Ticker(CoinbaseTickerMessage),
-    Status(CoinbaseStatusMessage),
+    Matches(CoinbaseMatches),
+    Ticker(CoinbaseTicker),
+    Status(CoinbaseStatus),
     Subscriptions(serde_json::Value),
     Error(String)
 }

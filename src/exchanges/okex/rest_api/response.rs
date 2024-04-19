@@ -1,11 +1,11 @@
-use super::{OkexAllSymbolsResponse, OkexCompleteAllInstruments};
-use crate::normalized::rest_api::NormalizedRestApiDataTypes;
+use super::{OkexAllSymbols, OkexCompleteAllInstruments};
+use crate::normalized::{rest_api::NormalizedRestApiDataTypes, types::NormalizedCurrency};
 
 #[serde_with::serde_as]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum OkexRestApiResponse {
-    Symbols(OkexAllSymbolsResponse),
+    Symbols(OkexAllSymbols),
     Instruments(OkexCompleteAllInstruments)
 }
 
@@ -14,6 +14,20 @@ impl OkexRestApiResponse {
         match self {
             OkexRestApiResponse::Symbols(v) => NormalizedRestApiDataTypes::AllCurrencies(v.normalize()),
             OkexRestApiResponse::Instruments(v) => NormalizedRestApiDataTypes::AllInstruments(v.normalize())
+        }
+    }
+
+    pub fn take_currencies(self) -> Option<Vec<NormalizedCurrency>> {
+        match self {
+            OkexRestApiResponse::Symbols(val) => Some(val.currencies),
+            _ => None
+        }
+    }
+
+    pub fn take_instruments(self) -> Option<OkexCompleteAllInstruments> {
+        match self {
+            OkexRestApiResponse::Instruments(val) => Some(val),
+            _ => None
         }
     }
 }

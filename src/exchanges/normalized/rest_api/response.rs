@@ -5,6 +5,12 @@ use super::NormalizedRestApiDataTypes;
 use crate::exchanges::binance::rest_api::BinanceRestApiResponse;
 #[cfg(feature = "us")]
 use crate::exchanges::{coinbase::rest_api::CoinbaseRestApiResponse, okex::rest_api::OkexRestApiResponse};
+use crate::{
+    binance::rest_api::{BinanceCompleteInstrument, BinanceSymbol},
+    coinbase::rest_api::{CoinbaseCompleteInstrument, CoinbaseCurrency},
+    normalized::types::NormalizedCurrency,
+    okex::rest_api::OkexCompleteInstrument
+};
 
 #[derive(Debug, Clone, Serialize)]
 pub enum CombinedRestApiResponse {
@@ -26,6 +32,53 @@ impl CombinedRestApiResponse {
             #[cfg(feature = "non-us")]
             CombinedRestApiResponse::Binance(c) => c.normalize()
         }
+    }
+
+    pub fn take_coinbase(self) -> Option<CoinbaseRestApiResponse> {
+        match self {
+            CombinedRestApiResponse::Coinbase(vals) => Some(vals),
+            _ => None
+        }
+    }
+
+    pub fn take_coinbase_instruments(self) -> Option<Vec<CoinbaseCompleteInstrument>> {
+        self.take_coinbase().map(|v| v.take_instruments()).flatten()
+    }
+
+    pub fn take_coinbase_currencies(self) -> Option<Vec<CoinbaseCurrency>> {
+        self.take_coinbase().map(|v| v.take_currencies()).flatten()
+    }
+
+    pub fn take_binance(self) -> Option<BinanceRestApiResponse> {
+        match self {
+            CombinedRestApiResponse::Binance(vals) => Some(vals),
+            _ => None
+        }
+    }
+
+    pub fn take_binance_currencies(self) -> Option<Vec<BinanceSymbol>> {
+        self.take_binance().map(|v| v.take_currencies()).flatten()
+    }
+
+    pub fn take_binance_instruments(self) -> Option<Vec<BinanceCompleteInstrument>> {
+        self.take_binance().map(|v| v.take_instruments()).flatten()
+    }
+
+    pub fn take_okex(self) -> Option<OkexRestApiResponse> {
+        match self {
+            CombinedRestApiResponse::Okex(vals) => Some(vals),
+            _ => None
+        }
+    }
+
+    pub fn take_okex_instruments(self) -> Option<Vec<OkexCompleteInstrument>> {
+        self.take_okex()
+            .map(|v| v.take_instruments().map(|instr| instr.instruments))
+            .flatten()
+    }
+
+    pub fn take_okex_currencies(self) -> Option<Vec<NormalizedCurrency>> {
+        self.take_okex().map(|v| v.take_currencies()).flatten()
     }
 }
 

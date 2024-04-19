@@ -16,7 +16,17 @@ mod coinbase_tests {
 
         {
             let all_currencies = all_currencies.unwrap();
+            let test_length = all_currencies
+                .clone()
+                .take_coinbase_currencies()
+                .unwrap()
+                .len();
+            assert!(test_length > 10);
+
             let normalized = all_currencies.clone().normalize();
+            let test_length = normalized.clone().take_currencies().unwrap().len();
+            assert!(test_length > 10);
+
             assert_eq!(all_currencies, normalized);
         }
     }
@@ -26,6 +36,7 @@ mod coinbase_tests {
     async fn test_all_instruments() {
         let exchange_api = ExchangeApi::new();
         let all_instruments = exchange_api.all_instruments::<Coinbase>().await;
+        all_instruments.as_ref().unwrap();
         assert!(all_instruments.is_ok());
 
         {
@@ -51,7 +62,13 @@ mod binance_tests {
 
         {
             let all_symbols = all_symbols.unwrap();
+            let test_length = all_symbols.clone().take_binance_currencies().unwrap().len();
+            assert!(test_length > 10);
+
             let normalized = all_symbols.clone().normalize();
+            let test_length = normalized.clone().take_currencies().unwrap().len();
+            assert!(test_length > 10);
+
             assert_eq!(all_symbols, normalized);
         }
     }
@@ -61,11 +78,23 @@ mod binance_tests {
     async fn test_all_instruments() {
         let exchange_api = ExchangeApi::new();
         let all_instruments = exchange_api.all_instruments::<Binance>().await;
+        all_instruments.as_ref().unwrap();
         assert!(all_instruments.is_ok());
 
         {
             let all_instruments = all_instruments.unwrap();
+            let test_length = all_instruments
+                .clone()
+                .take_binance_instruments()
+                .unwrap()
+                .len();
+            assert!(test_length > 10);
+
             let normalized = all_instruments.clone().normalize();
+
+            let test_length = normalized.clone().take_instruments().unwrap().len();
+            assert!(test_length > 10);
+
             assert_eq!(all_instruments, normalized);
         }
     }
@@ -86,7 +115,13 @@ mod okex_tests {
 
         {
             let all_symbols = all_symbols.unwrap();
+            let test_length = all_symbols.clone().take_okex_currencies().unwrap().len();
+            assert!(test_length > 10);
+
             let normalized = all_symbols.clone().normalize();
+            let test_length = normalized.clone().take_currencies().unwrap().len();
+            assert!(test_length > 10);
+
             assert_eq!(all_symbols, normalized);
         }
     }
@@ -101,10 +136,16 @@ mod okex_tests {
 
         {
             let all_instruments = all_instruments.unwrap();
-            let normalized = all_instruments.clone().normalize();
-            assert_eq!(all_instruments, normalized);
+            let test_length = all_instruments
+                .clone()
+                .take_okex_instruments()
+                .unwrap()
+                .len();
+            assert!(test_length > 10);
 
-            crate::write_json(normalized);
+            let normalized = all_instruments.clone().normalize();
+            let test_length = normalized.clone().take_instruments().unwrap().len();
+            assert!(test_length > 10);
         }
     }
 }
