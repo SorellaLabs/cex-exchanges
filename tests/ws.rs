@@ -174,7 +174,7 @@ mod binance_tests {
         let map = vec![(2, 3), (1, 10), (1, 30), (1, 50)];
         let channels = vec![BinanceWsChannelKind::Trade, BinanceWsChannelKind::BookTicker];
 
-        let builder = BinanceWsBuilder::build_ranked_weighted_all_symbols(map, &channels, None)
+        let builder = BinanceWsBuilder::build_ranked_weighted_all_symbols(map, &channels)
             .await
             .unwrap();
 

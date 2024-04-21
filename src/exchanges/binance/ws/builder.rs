@@ -3,8 +3,7 @@ use crate::{
     binance::Binance,
     clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},
     exchanges::binance::WSS_URL,
-    normalized::{types::Blockchain, ws::NormalizedWsChannels},
-    CexExchange
+    normalized::ws::NormalizedWsChannels
 };
 
 #[derive(Debug, Clone, Default)]
@@ -51,7 +50,7 @@ impl BinanceWsBuilder {
         self
     }
 
-    /// sets the number of channels
+    /// sets the number of channels per stream for multistream config
     pub fn set_channels_per_stream(mut self, channels_per_stream: usize) -> Self {
         self.channels_per_stream = Some(channels_per_stream);
         self
@@ -73,26 +72,24 @@ impl BinanceWsBuilder {
     }
 
     /// builds many ws instances of the [Binance] as the inner streams of
-    /// [MutliWsStreamBuilder] IFF 'channels_per_stream' is set, splitting
-    /// channels by the specified number
+    /// [MutliWsStreamBuilder], splitting channels by the `channels_per_stream`,
+    /// otherwise, each channel get's it's own stream
     pub fn build_many(self) -> eyre::Result<MutliWsStreamBuilder<Binance>> {
-        if let Some(per_stream) = self.channels_per_stream {
-            let chunks = self.channels.chunks(per_stream).collect::<Vec<_>>();
-            let split_exchange = chunks
-                .into_iter()
-                .map(|chk| {
-                    let channel_urls = chk.iter().map(|c| c.build_url()).collect::<Vec<_>>();
+        let per_stream = if let Some(p) = self.channels_per_stream { p } else { self.channels.len() };
 
-                    let url = format!("{WSS_URL}{}", channel_urls.join("/"));
+        let chunks = self.channels.chunks(per_stream).collect::<Vec<_>>();
+        let split_exchange = chunks
+            .into_iter()
+            .map(|chk| {
+                let channel_urls = chk.iter().map(|c| c.build_url()).collect::<Vec<_>>();
 
-                    Binance::new_ws_subscription(url)
-                })
-                .collect();
+                let url = format!("{WSS_URL}{}", channel_urls.join("/"));
 
-            Ok(MutliWsStreamBuilder::new(split_exchange))
-        } else {
-            Err(eyre::ErrReport::msg("'channels_per_stream' was not set".to_string()))
-        }
+                Binance::new_ws_subscription(url)
+            })
+            .collect();
+
+        Ok(MutliWsStreamBuilder::new(split_exchange))
     }
 
     /// builds a mutlistream channel with a weighted mapping (how many channels
@@ -105,10 +102,9 @@ impl BinanceWsBuilder {
     /// with 55 symbols, 1 with the rest
     pub async fn build_ranked_weighted_all_symbols(
         weighted_map: Vec<(usize, usize)>,
-        channels: &[BinanceWsChannelKind],
-        blockchain: Option<Blockchain>
+        channels: &[BinanceWsChannelKind]
     ) -> eyre::Result<MutliWsStreamBuilder<Binance>> {
-        let this = Self::build_ranked_weighted_all_symbols_util(weighted_map, channels, blockchain).await?;
+        let this = Self::build_ranked_weighted_all_symbols_util(weighted_map, channels).await?;
         let all_streams = this
             .channels
             .into_iter()
@@ -124,11 +120,7 @@ impl BinanceWsBuilder {
         Ok(MutliWsStreamBuilder::new(all_streams))
     }
 
-    async fn build_ranked_weighted_all_symbols_util(
-        weighted_map: Vec<(usize, usize)>,
-        channels: &[BinanceWsChannelKind],
-        blockchain: Option<Blockchain>
-    ) -> eyre::Result<Self> {
+    async fn build_ranked_weighted_all_symbols_util(weighted_map: Vec<(usize, usize)>, channels: &[BinanceWsChannelKind]) -> eyre::Result<Self> {
         let mut this = Self::default();
 
         let mut all_symbols_vec = ExchangeApi::new()
@@ -136,19 +128,7 @@ impl BinanceWsBuilder {
             .await?
             .take_binance_instruments()
             .unwrap();
-
-        if let Some(bk) = blockchain {
-            all_symbols_vec.retain(|instr| {
-                instr
-                    .clone()
-                    .normalize()
-                    .blockchains
-                    .iter()
-                    .any(|(chain, _)| *chain == bk)
-            });
-        }
-
-        all_symbols_vec.sort_by(|a, b| a.quote)
+        all_symbols_vec.sort_by(|a, b| a.trade_count.cmp(&b.trade_count));
 
         let mut all_symbols = all_symbols_vec.into_iter();
 
@@ -239,7 +219,7 @@ mod tests {
         let map = vec![(2, 3), (1, 10), (1, 30), (1, 50)];
         let channels = vec![BinanceWsChannelKind::Trade, BinanceWsChannelKind::BookTicker];
 
-        let calculated = BinanceWsBuilder::build_ranked_weighted_all_symbols_util(map, &channels, None)
+        let calculated = BinanceWsBuilder::build_ranked_weighted_all_symbols_util(map, &channels)
             .await
             .unwrap();
         let mut calculated_channels = calculated.channels.into_iter();
