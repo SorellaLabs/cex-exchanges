@@ -3,7 +3,7 @@ use super::NormalizedWsDataTypes;
 use crate::exchanges::binance::ws::BinanceWsMessage;
 #[cfg(feature = "us")]
 use crate::exchanges::coinbase::ws::CoinbaseWsMessage;
-use crate::{exchanges::okex::ws::OkexWsMessage, CexExchange};
+use crate::{exchanges::okex::ws::OkexWsMessage, kucoin::ws::KucoinWsMessage, CexExchange};
 
 #[derive(Debug, Clone)]
 pub enum CombinedWsMessage {
@@ -13,6 +13,8 @@ pub enum CombinedWsMessage {
     Okex(OkexWsMessage),
     #[cfg(feature = "non-us")]
     Binance(BinanceWsMessage),
+    #[cfg(feature = "non-us")]
+    Kucoin(KucoinWsMessage),
     Disconnect {
         exchange: CexExchange,
         message:  String
@@ -28,6 +30,8 @@ impl CombinedWsMessage {
             CombinedWsMessage::Okex(c) => c.normalize(),
             #[cfg(feature = "non-us")]
             CombinedWsMessage::Binance(c) => c.normalize(),
+            #[cfg(feature = "non-us")]
+            CombinedWsMessage::Kucoin(c) => c.normalize(),
             CombinedWsMessage::Disconnect { exchange, message } => NormalizedWsDataTypes::Disconnect { exchange, message }
         }
     }
@@ -62,6 +66,9 @@ combined_ws!(Okex);
 #[cfg(feature = "non-us")]
 combined_ws!(Binance);
 
+#[cfg(feature = "non-us")]
+combined_ws!(Kucoin);
+
 impl PartialEq<NormalizedWsDataTypes> for CombinedWsMessage {
     fn eq(&self, other: &NormalizedWsDataTypes) -> bool {
         match self {
@@ -71,6 +78,8 @@ impl PartialEq<NormalizedWsDataTypes> for CombinedWsMessage {
             CombinedWsMessage::Okex(vals) => vals == other,
             #[cfg(feature = "non-us")]
             CombinedWsMessage::Binance(vals) => vals == other,
+            #[cfg(feature = "non-us")]
+            CombinedWsMessage::Kucoin(vals) => vals == other,
             CombinedWsMessage::Disconnect { .. } => true
         }
     }

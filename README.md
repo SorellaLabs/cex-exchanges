@@ -5,9 +5,9 @@
 
 
 
-Binance - YES
-Coinbase - YES
-Okex
-BybitSpot
-Kucoin
+- Binance - YES
+- Coinbase - YES
+- Okex - YES
+- BybitSpot - TBD
+- Kucoin - YES
 

@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::{
     exchanges::{
-        binance::pairs::BinanceTradingPair,
+        kucoin::pairs::KucoinTradingPair,
         normalized::{
             types::{NormalizedTradingPair, RawTradingPair},
             ws::NormalizedWsChannels
@@ -14,21 +14,21 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum BinanceWsChannel {
-    Trade(Vec<BinanceTradingPair>),
-    BookTicker(Vec<BinanceTradingPair>)
+pub enum KucoinWsChannel {
+    Trade(Vec<KucoinTradingPair>),
+    BookTicker(Vec<KucoinTradingPair>)
 }
 
-impl BinanceWsChannel {
+impl KucoinWsChannel {
     /// builds trade channel from a vec of raw trading pairs
     /// return an error if the symbol is incorrectly formatted
     pub fn new_trade(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
-            .map(|pair| pair.get_normalized_pair(CexExchange::Binance))
+            .map(|pair| pair.get_normalized_pair(CexExchange::Kucoin))
             .collect();
 
-        Self::new_from_normalized(normalized, BinanceWsChannel::Trade(Vec::new()))
+        Self::new_from_normalized(normalized, KucoinWsChannel::Trade(Vec::new()))
     }
 
     /// builds the book ticker channel from a vec of raw trading
@@ -36,21 +36,21 @@ impl BinanceWsChannel {
     pub fn new_book_ticker(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
-            .map(|pair| pair.get_normalized_pair(CexExchange::Binance))
+            .map(|pair| pair.get_normalized_pair(CexExchange::Kucoin))
             .collect();
 
-        Self::new_from_normalized(normalized, BinanceWsChannel::BookTicker(Vec::new()))
+        Self::new_from_normalized(normalized, KucoinWsChannel::BookTicker(Vec::new()))
     }
 
-    pub(crate) fn new_from_normalized(pairs: Vec<NormalizedTradingPair>, kind: BinanceWsChannel) -> eyre::Result<Self> {
+    pub(crate) fn new_from_normalized(pairs: Vec<NormalizedTradingPair>, kind: KucoinWsChannel) -> eyre::Result<Self> {
         match kind {
-            BinanceWsChannel::Trade(_) => Ok(BinanceWsChannel::Trade(
+            KucoinWsChannel::Trade(_) => Ok(KucoinWsChannel::Trade(
                 pairs
                     .into_iter()
                     .map(TryInto::try_into)
                     .collect::<Result<_, _>>()?
             )),
-            BinanceWsChannel::BookTicker(_) => Ok(BinanceWsChannel::BookTicker(
+            KucoinWsChannel::BookTicker(_) => Ok(KucoinWsChannel::BookTicker(
                 pairs
                     .into_iter()
                     .map(TryInto::try_into)
@@ -61,22 +61,22 @@ impl BinanceWsChannel {
 
     pub fn count_entries(&self) -> usize {
         match self {
-            BinanceWsChannel::Trade(vals) => vals.len(),
-            BinanceWsChannel::BookTicker(vals) => vals.len()
+            KucoinWsChannel::Trade(vals) => vals.len(),
+            KucoinWsChannel::BookTicker(vals) => vals.len()
         }
     }
 }
 
-impl Display for BinanceWsChannel {
+impl Display for KucoinWsChannel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BinanceWsChannel::Trade(_) => write!(f, "trade"),
-            BinanceWsChannel::BookTicker(_) => write!(f, "bookTicker")
+            KucoinWsChannel::Trade(_) => write!(f, "trade"),
+            KucoinWsChannel::BookTicker(_) => write!(f, "bookTicker")
         }
     }
 }
 
-impl TryFrom<String> for BinanceWsChannel {
+impl TryFrom<String> for KucoinWsChannel {
     type Error = eyre::Report;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -88,7 +88,7 @@ impl TryFrom<String> for BinanceWsChannel {
     }
 }
 
-impl TryFrom<NormalizedWsChannels> for BinanceWsChannel {
+impl TryFrom<NormalizedWsChannels> for KucoinWsChannel {
     type Error = eyre::ErrReport;
 
     fn try_from(value: NormalizedWsChannels) -> Result<Self, Self::Error> {
@@ -99,7 +99,7 @@ impl TryFrom<NormalizedWsChannels> for BinanceWsChannel {
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<_>, Self::Error>>()?;
 
-                Ok(BinanceWsChannel::Trade(norm_pairs))
+                Ok(KucoinWsChannel::Trade(norm_pairs))
             }
 
             _ => unimplemented!()
@@ -108,60 +108,60 @@ impl TryFrom<NormalizedWsChannels> for BinanceWsChannel {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub enum BinanceWsChannelKind {
+pub enum KucoinWsChannelKind {
     Trade,
     BookTicker
 }
 
-impl Display for BinanceWsChannelKind {
+impl Display for KucoinWsChannelKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BinanceWsChannelKind::Trade => write!(f, "trade"),
-            BinanceWsChannelKind::BookTicker => write!(f, "bookTicker")
+            KucoinWsChannelKind::Trade => write!(f, "trade"),
+            KucoinWsChannelKind::BookTicker => write!(f, "bookTicker")
         }
     }
 }
 
-impl From<&BinanceWsChannel> for BinanceWsChannelKind {
-    fn from(value: &BinanceWsChannel) -> Self {
+impl From<&KucoinWsChannel> for KucoinWsChannelKind {
+    fn from(value: &KucoinWsChannel) -> Self {
         match value {
-            BinanceWsChannel::Trade(_) => BinanceWsChannelKind::Trade,
-            BinanceWsChannel::BookTicker(_) => BinanceWsChannelKind::BookTicker
+            KucoinWsChannel::Trade(_) => KucoinWsChannelKind::Trade,
+            KucoinWsChannel::BookTicker(_) => KucoinWsChannelKind::BookTicker
         }
     }
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct BinanceSubscription {
+pub struct KucoinSubscription {
     method: String,
-    params: Vec<BinanceSubscriptionInner>,
+    params: Vec<KucoinSubscriptionInner>,
     id:     u64
 }
 
-impl BinanceSubscription {
+impl KucoinSubscription {
     pub fn new() -> Self {
-        BinanceSubscription { method: "SUBSCRIBE".to_string(), params: Vec::new(), id: 1 }
+        KucoinSubscription { method: "SUBSCRIBE".to_string(), params: Vec::new(), id: 1 }
     }
 
-    pub fn add_channel(&mut self, channel: BinanceWsChannel) {
-        let new: Vec<BinanceSubscriptionInner> = channel.into();
+    pub fn add_channel(&mut self, channel: KucoinWsChannel) {
+        let new: Vec<KucoinSubscriptionInner> = channel.into();
         self.params.extend(new);
     }
 }
 
-impl Default for BinanceSubscription {
+impl Default for KucoinSubscription {
     fn default() -> Self {
         Self::new()
     }
 }
 
 #[derive(Debug, Clone)]
-struct BinanceSubscriptionInner {
-    channel:      BinanceWsChannelKind,
-    trading_pair: BinanceTradingPair
+struct KucoinSubscriptionInner {
+    channel:      KucoinWsChannelKind,
+    trading_pair: KucoinTradingPair
 }
 
-impl Serialize for BinanceSubscriptionInner {
+impl Serialize for KucoinSubscriptionInner {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer
@@ -170,17 +170,17 @@ impl Serialize for BinanceSubscriptionInner {
     }
 }
 
-impl Into<Vec<BinanceSubscriptionInner>> for BinanceWsChannel {
-    fn into(self) -> Vec<BinanceSubscriptionInner> {
+impl Into<Vec<KucoinSubscriptionInner>> for KucoinWsChannel {
+    fn into(self) -> Vec<KucoinSubscriptionInner> {
         let channel = (&self).into();
 
         let all_pairs: Vec<_> = match self {
-            BinanceWsChannel::Trade(pairs) => pairs
+            KucoinWsChannel::Trade(pairs) => pairs
                 .into_iter()
                 .collect::<HashSet<_>>()
                 .into_iter()
                 .collect(),
-            BinanceWsChannel::BookTicker(pairs) => pairs
+            KucoinWsChannel::BookTicker(pairs) => pairs
                 .into_iter()
                 .collect::<HashSet<_>>()
                 .into_iter()
@@ -189,7 +189,7 @@ impl Into<Vec<BinanceSubscriptionInner>> for BinanceWsChannel {
 
         all_pairs
             .into_iter()
-            .map(|p| BinanceSubscriptionInner { channel, trading_pair: p })
+            .map(|p| KucoinSubscriptionInner { channel, trading_pair: p })
             .collect()
     }
 }

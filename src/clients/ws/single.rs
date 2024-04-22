@@ -32,8 +32,13 @@ where
     }
 
     pub async fn connect(&mut self) -> Result<(), WsError> {
-        let ws = self.exchange.make_ws_connection().await?;
-        self.stream = Some(Box::pin(ws));
+        let ws = self.exchange.make_ws_connection().await;
+        if let Err(e) = ws {
+            println!("ERROR: {:?}", e);
+            return Err(e)
+        }
+
+        self.stream = Some(Box::pin(ws?));
         Ok(())
     }
 

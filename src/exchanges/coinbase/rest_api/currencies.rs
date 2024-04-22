@@ -120,7 +120,7 @@ pub struct CoinbaseCurrencyDetails {
     pub display_name:            Option<String>,
     pub symbol:                  Option<String>,
     pub network_confirmations:   Option<u64>,
-    pub sort_order:              Option<u64>,
+    pub sort_order:              Option<i64>,
     pub crypto_address_link:     Option<String>,
     pub crypto_transaction_link: Option<String>,
     pub group_types:             Vec<String>,

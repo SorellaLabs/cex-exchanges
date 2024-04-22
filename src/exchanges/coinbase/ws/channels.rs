@@ -111,6 +111,33 @@ impl TryFrom<NormalizedWsChannels> for CoinbaseWsChannel {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum CoinbaseWsChannelKind {
+    Matches,
+    Ticker,
+    Status
+}
+
+impl Display for CoinbaseWsChannelKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CoinbaseWsChannelKind::Matches => write!(f, "matches"),
+            CoinbaseWsChannelKind::Ticker => write!(f, "ticker"),
+            CoinbaseWsChannelKind::Status => write!(f, "status")
+        }
+    }
+}
+
+impl From<&CoinbaseWsChannel> for CoinbaseWsChannelKind {
+    fn from(value: &CoinbaseWsChannel) -> Self {
+        match value {
+            CoinbaseWsChannel::Matches(_) => CoinbaseWsChannelKind::Matches,
+            CoinbaseWsChannel::Ticker(_) => CoinbaseWsChannelKind::Ticker,
+            CoinbaseWsChannel::Status => CoinbaseWsChannelKind::Status
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CoinbaseSubscription {
     #[serde(rename = "type")]

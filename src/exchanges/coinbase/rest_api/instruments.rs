@@ -49,7 +49,7 @@ impl CoinbaseAllInstruments {
                         max_slippage_percentage: instr.max_slippage_percentage.clone(),
                         auction_mode: instr.auction_mode.clone(),
                         high_bid_limit_percentage: instr.high_bid_limit_percentage.clone(),
-                        sort_order: prod.details.sort_order.unwrap_or(1000) as f64
+                        sort_order: prod.details.sort_order.unwrap_or(10000)
                     })
             })
             .collect();
@@ -110,7 +110,7 @@ pub struct CoinbaseCompleteInstrument {
     pub max_slippage_percentage: f64,
     pub auction_mode: bool,
     pub high_bid_limit_percentage: Option<f64>,
-    pub sort_order: f64
+    pub sort_order: i64
 }
 
 impl CoinbaseCompleteInstrument {
@@ -122,7 +122,7 @@ impl CoinbaseCompleteInstrument {
             base_asset_symbol:     self.base_currency,
             quote_asset_symbol:    self.quote_currency,
             active:                (&self.status == "online"),
-            exchange_ranking:      self.sort_order.round() as i64 * -1, // reverse
+            exchange_ranking:      self.sort_order * -1, // reverse
             exchange_ranking_kind: "reverse sort order".to_string(),
             futures_expiry:        None
         }
@@ -137,7 +137,7 @@ impl PartialEq<NormalizedInstrument> for CoinbaseCompleteInstrument {
             && other.base_asset_symbol == *self.base_currency
             && other.quote_asset_symbol == *self.quote_currency
             && other.active == (&self.status == "online")
-            && other.exchange_ranking == self.sort_order.round() as i64 * -1;
+            && other.exchange_ranking == self.sort_order as i64 * -1;
 
         if !equals {
             println!("SELF: {:?}", self);

@@ -54,6 +54,7 @@ impl Coinbase {
             .header("Content-Type", "application/json")
             .header("Accept", "application/json")
             .header("User-Agent", "rust")
+            .header("Sec-WebSocket-Extensions", "permessage-deflate")
             .send()
             .await?
             .json()
@@ -65,7 +66,7 @@ impl Coinbase {
 
 #[async_trait::async_trait]
 impl Exchange for Coinbase {
-    type RestApiMessage = CoinbaseRestApiResponse;
+    type RestApiResult = CoinbaseRestApiResponse;
     type WsMessage = CoinbaseWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Coinbase;

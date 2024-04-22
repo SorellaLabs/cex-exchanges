@@ -100,6 +100,30 @@ impl TryFrom<NormalizedWsChannels> for OkexWsChannel {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum OkexWsChannelKind {
+    TradesAll,
+    BookTicker
+}
+
+impl Display for OkexWsChannelKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OkexWsChannelKind::TradesAll => write!(f, "trades-all"),
+            OkexWsChannelKind::BookTicker => write!(f, "bookTicker")
+        }
+    }
+}
+
+impl From<&OkexWsChannel> for OkexWsChannelKind {
+    fn from(value: &OkexWsChannel) -> Self {
+        match value {
+            OkexWsChannel::TradesAll(_) => OkexWsChannelKind::TradesAll,
+            OkexWsChannel::BookTicker(_) => OkexWsChannelKind::BookTicker
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct OkexSubscription {
     op:   String,

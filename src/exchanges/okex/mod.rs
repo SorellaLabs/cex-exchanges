@@ -87,7 +87,7 @@ impl Okex {
 
 #[async_trait::async_trait]
 impl Exchange for Okex {
-    type RestApiMessage = OkexRestApiResponse;
+    type RestApiResult = OkexRestApiResponse;
     type WsMessage = OkexWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Okex;

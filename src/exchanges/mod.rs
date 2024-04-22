@@ -3,6 +3,9 @@ pub mod normalized;
 #[cfg(feature = "non-us")]
 pub mod binance;
 
+#[cfg(feature = "non-us")]
+pub mod kucoin;
+
 #[cfg(feature = "us")]
 pub mod coinbase;
 #[cfg(feature = "us")]
@@ -17,12 +20,13 @@ use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 use self::{
     binance::{ws::BinanceWsBuilder, Binance},
     coinbase::{ws::CoinbaseWsBuilder, Coinbase},
+    kucoin::ws::KucoinWsBuilder,
     normalized::{
         rest_api::{NormalizedRestApiDataTypes, NormalizedRestApiRequest},
         types::NormalizedCurrency,
         ws::{CombinedWsMessage, NormalizedWsChannels}
     },
-    okex::ws::OkexWsBuilder
+    okex::{ws::OkexWsBuilder, Okex}
 };
 use crate::{
     clients::{
@@ -39,7 +43,9 @@ pub enum CexExchange {
     #[cfg(feature = "us")]
     Okex,
     #[cfg(feature = "non-us")]
-    Binance
+    Binance,
+    #[cfg(feature = "non-us")]
+    Kucoin
 }
 
 impl CexExchange {
@@ -52,21 +58,22 @@ impl CexExchange {
     ) -> eyre::Result<MutliWsStream> {
         let res = match self {
             #[cfg(feature = "us")]
-            CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map, channels_per_stream, split_channel_size)?
-                .build_many()?
+            CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map, split_channel_size)?
+                .build_many_packed()?
                 .build_multistream_unconnected(),
             #[cfg(feature = "us")]
-            CexExchange::Okex => OkexWsBuilder::make_from_normalized_map(
-                map,
-                channels_per_stream,
-                split_channel_size,
-                exch_currency_proxy.ok_or(eyre::Report::msg("Okex exchange requires a 'CexExchange' as a proxy to get symbols".to_string()))?
-            )?
-            .build_many()?
-            .build_multistream_unconnected(),
+            CexExchange::Okex => {
+                OkexWsBuilder::make_from_normalized_map(map, channels_per_stream, exch_currency_proxy.unwrap_or(CexExchange::Binance))?
+                    .build_many_packed()?
+                    .build_multistream_unconnected()
+            }
             #[cfg(feature = "non-us")]
-            CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map, channels_per_stream, split_channel_size)?
-                .build_many()?
+            CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map, channels_per_stream)?
+                .build_many_packed()?
+                .build_multistream_unconnected(),
+            #[cfg(feature = "non-us")]
+            CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map, channels_per_stream)?
+                .build_many_packed()?
                 .build_multistream_unconnected()
         };
 
@@ -75,15 +82,26 @@ impl CexExchange {
 
     pub async fn get_all_currencies(&self) -> Result<Vec<NormalizedCurrency>, RestApiError> {
         let out = match self {
+            #[cfg(feature = "us")]
             CexExchange::Coinbase => Coinbase::default()
                 .rest_api_call(&reqwest::Client::new(), NormalizedRestApiRequest::AllCurrencies)
                 .await?
                 .normalize(),
+            #[cfg(feature = "non-us")]
             CexExchange::Binance => Binance::default()
                 .rest_api_call(&reqwest::Client::new(), NormalizedRestApiRequest::AllCurrencies)
                 .await?
                 .normalize(),
-            CexExchange::Okex => unreachable!("Okex cannot be a currency proxy")
+            #[cfg(feature = "us")]
+            CexExchange::Okex => Okex::default()
+                .rest_api_call(&reqwest::Client::new(), NormalizedRestApiRequest::AllCurrencies)
+                .await?
+                .normalize(),
+            #[cfg(feature = "non-us")]
+            CexExchange::Kucoin => Okex::default()
+                .rest_api_call(&reqwest::Client::new(), NormalizedRestApiRequest::AllCurrencies)
+                .await?
+                .normalize()
         };
 
         match out {
@@ -101,7 +119,9 @@ impl Display for CexExchange {
             #[cfg(feature = "us")]
             CexExchange::Okex => write!(f, "okex"),
             #[cfg(feature = "non-us")]
-            CexExchange::Binance => write!(f, "binance")
+            CexExchange::Binance => write!(f, "binance"),
+            #[cfg(feature = "non-us")]
+            CexExchange::Kucoin => write!(f, "kucoin")
         }
     }
 }
@@ -110,7 +130,7 @@ impl Display for CexExchange {
 pub trait Exchange: Clone + Default {
     const EXCHANGE: CexExchange;
     type WsMessage: for<'de> Deserialize<'de> + Into<CombinedWsMessage> + Debug;
-    type RestApiMessage: for<'de> Deserialize<'de> + Into<CombinedRestApiResponse> + Debug;
+    type RestApiResult: for<'de> Deserialize<'de> + Into<CombinedRestApiResponse> + Debug;
 
     async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError>;
 
@@ -118,5 +138,5 @@ pub trait Exchange: Clone + Default {
         self.make_ws_connection().await
     }
 
-    async fn rest_api_call(&self, web_client: &reqwest::Client, api_channel: NormalizedRestApiRequest) -> Result<Self::RestApiMessage, RestApiError>;
+    async fn rest_api_call(&self, web_client: &reqwest::Client, api_channel: NormalizedRestApiRequest) -> Result<Self::RestApiResult, RestApiError>;
 }

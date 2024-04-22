@@ -1,5 +1,6 @@
 mod pairs;
 
+use futures::SinkExt;
 pub use pairs::*;
 
 pub mod rest_api;
@@ -7,11 +8,11 @@ pub mod ws;
 
 use serde::Deserialize;
 use tokio::net::TcpStream;
-use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
     rest_api::{BinanceAllInstruments, BinanceRestApiResponse, BinanceTradingDayTicker},
-    ws::BinanceWsMessage
+    ws::{BinanceSubscription, BinanceWsMessage}
 };
 use crate::{
     binance::rest_api::BinanceAllInstrumentsUtil,
@@ -21,18 +22,18 @@ use crate::{
     CexExchange
 };
 
-const WSS_URL: &str = "wss://stream.binance.com:443/stream?streams=";
+const WSS_URL: &str = "wss://stream.binance.com:443/stream";
 const BASE_REST_API_URL: &str = "https://api.binance.com/api/v3";
 const ALL_SYMBOLS_URL: &str = "https://www.binance.com/bapi/composite/v1/public/promo/cmc/cryptocurrency/listings/latest";
 
 #[derive(Debug, Default, Clone)]
 pub struct Binance {
-    ws_url: String
+    subscription: BinanceSubscription
 }
 
 impl Binance {
-    pub fn new_ws_subscription(ws_url: String) -> Self {
-        Self { ws_url }
+    pub fn new_ws_subscription(subscription: BinanceSubscription) -> Self {
+        Self { subscription }
     }
 
     pub async fn get_all_instruments(web_client: &reqwest::Client) -> Result<BinanceAllInstruments, RestApiError> {
@@ -55,13 +56,16 @@ impl Binance {
 
 #[async_trait::async_trait]
 impl Exchange for Binance {
-    type RestApiMessage = BinanceRestApiResponse;
+    type RestApiResult = BinanceRestApiResponse;
     type WsMessage = BinanceWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Binance;
 
     async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError> {
-        let (ws, _) = tokio_tungstenite::connect_async(&self.ws_url).await?;
+        let (mut ws, _) = tokio_tungstenite::connect_async(WSS_URL).await?;
+
+        let sub_message = serde_json::to_string(&self.subscription)?;
+        ws.send(Message::Text(sub_message)).await?;
 
         Ok(ws)
     }

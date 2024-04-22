@@ -3,7 +3,8 @@ use std::{
     task::{Context, Poll}
 };
 
-use futures::{future::join_all, stream::select_all, Stream, StreamExt};
+use futures::{stream::select_all, Stream, StreamExt};
+use tokio::{runtime::Handle, sync::mpsc::UnboundedReceiver};
 
 use super::{errors::WsError, WsStream};
 use crate::{exchanges::normalized::ws::CombinedWsMessage, Exchange};
@@ -27,9 +28,9 @@ impl Stream for MutliWsStream {
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
 
-        println!("POLL");
+        // println!("POLL");
         while let Poll::Ready(val) = this.combined_streams.poll_next_unpin(cx) {
-            println!("POLL RECV");
+            //     println!("POLL RECV");
             if val.is_none() {
                 this.stream_count -= 1;
                 if this.stream_count == 0 {
@@ -57,17 +58,21 @@ where
     }
 
     pub async fn build_multistream(self) -> Result<MutliWsStream, WsError> {
-        let ws_streams = join_all(self.exchanges.into_iter().map(|exch| async move {
-            let mut stream = WsStream::new(exch);
-            stream.connect().await?;
-            Ok(stream)
-        }))
-        .await
-        .into_iter()
-        .collect::<Result<Vec<_>, WsError>>()?;
+        let mut ws_streams = futures::stream::iter(self.exchanges)
+            .map(|exch| async move {
+                let mut stream = WsStream::new(exch);
+                stream.connect().await?;
+                Ok::<_, WsError>(stream)
+            })
+            .buffer_unordered(10);
 
-        let stream_count = ws_streams.len();
-        let combined_streams = Box::pin(select_all(ws_streams));
+        let mut all_streams = Vec::new();
+        while let Some(s) = ws_streams.next().await {
+            all_streams.push(Box::pin(s?))
+        }
+
+        let stream_count = all_streams.len();
+        let combined_streams = Box::pin(select_all(all_streams));
 
         Ok(MutliWsStream { combined_streams, stream_count })
     }
@@ -83,5 +88,36 @@ where
         let combined_streams = Box::pin(select_all(ws_streams));
 
         MutliWsStream { combined_streams, stream_count }
+    }
+
+    pub fn spawn_multithreaded(self, num_threads: usize, handle: Handle) -> UnboundedReceiver<CombinedWsMessage> {
+        let exchange_chunks = self
+            .exchanges
+            .chunks(self.exchanges.len() / num_threads + 1);
+
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+
+        exchange_chunks.into_iter().for_each(|exchanges| {
+            let handle = handle.clone();
+            let exchanges = exchanges.to_vec();
+            let tx = tx.clone();
+            std::thread::spawn(move || {
+                let this_new = Self { exchanges };
+                let mut ms = this_new.build_multistream_unconnected();
+
+                let fut = async move {
+                    while let Some(val) = ms.next().await {
+                        tx.send(val)?;
+                    }
+
+                    Ok::<(), eyre::Report>(())
+                };
+
+                handle.block_on(fut)?;
+                Ok::<(), eyre::Report>(())
+            });
+        });
+
+        rx
     }
 }
