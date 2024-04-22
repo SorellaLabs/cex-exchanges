@@ -13,6 +13,7 @@ pub mod okex;
 
 use std::fmt::{Debug, Display};
 
+use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -38,7 +39,7 @@ use crate::{
     exchanges::normalized::rest_api::CombinedRestApiResponse
 };
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord, EnumIter)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord, EnumIter, ValueEnum)]
 pub enum CexExchange {
     #[cfg(feature = "us")]
     Coinbase,

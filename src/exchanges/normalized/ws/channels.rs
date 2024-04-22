@@ -1,3 +1,5 @@
+use clap::ValueEnum;
+
 use crate::{
     exchanges::normalized::types::{NormalizedTradingPair, RawTradingPair},
     CexExchange
@@ -51,7 +53,7 @@ impl NormalizedWsChannels {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, ValueEnum)]
 pub enum NormalizedWsChannelKinds {
     Trades,
     Quotes

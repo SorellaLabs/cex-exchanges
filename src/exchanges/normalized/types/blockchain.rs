@@ -1,8 +1,9 @@
 use std::str::FromStr;
 
+use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord, ValueEnum)]
 pub enum Blockchain {
     Bitcoin,
     Ethereum,
