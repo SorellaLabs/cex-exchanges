@@ -14,6 +14,7 @@ pub mod okex;
 use std::fmt::{Debug, Display};
 
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
@@ -36,7 +37,7 @@ use crate::{
     exchanges::normalized::rest_api::CombinedRestApiResponse
 };
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord, EnumIter)]
 pub enum CexExchange {
     #[cfg(feature = "us")]
     Coinbase,
