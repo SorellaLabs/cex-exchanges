@@ -14,6 +14,7 @@ pub mod okex;
 use std::fmt::{Debug, Display};
 
 use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
@@ -50,6 +51,10 @@ pub enum CexExchange {
 }
 
 impl CexExchange {
+    pub fn vec_all() -> Vec<Self> {
+        Self::iter().collect()
+    }
+
     pub fn build_multistream_ws_from_normalized(
         &self,
         map: Vec<NormalizedWsChannels>,
