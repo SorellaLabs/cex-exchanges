@@ -22,17 +22,17 @@ use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 use self::{
     binance::{ws::BinanceWsBuilder, Binance},
     coinbase::{ws::CoinbaseWsBuilder, Coinbase},
-    kucoin::ws::KucoinWsBuilder,
+    kucoin::{ws::KucoinWsBuilder, Kucoin},
     normalized::{
-        rest_api::{NormalizedRestApiDataTypes, NormalizedRestApiRequest},
-        types::NormalizedCurrency,
+        rest_api::NormalizedRestApiRequest,
+        types::{NormalizedCurrency, NormalizedInstrument},
         ws::{CombinedWsMessage, NormalizedWsChannels}
     },
     okex::{ws::OkexWsBuilder, Okex}
 };
 use crate::{
     clients::{
-        rest_api::RestApiError,
+        rest_api::{ExchangeApi, RestApiError},
         ws::{MutliWsStream, WsError}
     },
     exchanges::normalized::rest_api::CombinedRestApiResponse
@@ -87,33 +87,75 @@ impl CexExchange {
     }
 
     pub async fn get_all_currencies(&self) -> Result<Vec<NormalizedCurrency>, RestApiError> {
+        let exchange_api = ExchangeApi::new();
         let out = match self {
             #[cfg(feature = "us")]
-            CexExchange::Coinbase => Coinbase::default()
-                .rest_api_call(&reqwest::Client::new(), NormalizedRestApiRequest::AllCurrencies)
-                .await?
-                .normalize(),
-            #[cfg(feature = "non-us")]
-            CexExchange::Binance => Binance::default()
-                .rest_api_call(&reqwest::Client::new(), NormalizedRestApiRequest::AllCurrencies)
-                .await?
-                .normalize(),
-            #[cfg(feature = "us")]
-            CexExchange::Okex => Okex::default()
-                .rest_api_call(&reqwest::Client::new(), NormalizedRestApiRequest::AllCurrencies)
-                .await?
-                .normalize(),
-            #[cfg(feature = "non-us")]
-            CexExchange::Kucoin => Okex::default()
-                .rest_api_call(&reqwest::Client::new(), NormalizedRestApiRequest::AllCurrencies)
+            CexExchange::Coinbase => exchange_api
+                .all_currencies::<Coinbase>()
                 .await?
                 .normalize()
+                .take_currencies()
+                .unwrap(),
+            #[cfg(feature = "non-us")]
+            CexExchange::Binance => exchange_api
+                .all_currencies::<Binance>()
+                .await?
+                .normalize()
+                .take_currencies()
+                .unwrap(),
+            #[cfg(feature = "us")]
+            CexExchange::Okex => exchange_api
+                .all_currencies::<Okex>()
+                .await?
+                .normalize()
+                .take_currencies()
+                .unwrap(),
+            #[cfg(feature = "non-us")]
+            CexExchange::Kucoin => exchange_api
+                .all_currencies::<Kucoin>()
+                .await?
+                .normalize()
+                .take_currencies()
+                .unwrap()
         };
 
-        match out {
-            NormalizedRestApiDataTypes::AllCurrencies(vals) => Ok(vals),
-            _ => unreachable!()
-        }
+        Ok(out)
+    }
+
+    pub async fn get_all_instruments(&self) -> Result<Vec<NormalizedInstrument>, RestApiError> {
+        let exchange_api = ExchangeApi::new();
+        let out = match self {
+            #[cfg(feature = "us")]
+            CexExchange::Coinbase => exchange_api
+                .all_instruments::<Coinbase>()
+                .await?
+                .normalize()
+                .take_instruments()
+                .unwrap(),
+            #[cfg(feature = "non-us")]
+            CexExchange::Binance => exchange_api
+                .all_instruments::<Binance>()
+                .await?
+                .normalize()
+                .take_instruments()
+                .unwrap(),
+            #[cfg(feature = "us")]
+            CexExchange::Okex => exchange_api
+                .all_instruments::<Okex>()
+                .await?
+                .normalize()
+                .take_instruments()
+                .unwrap(),
+            #[cfg(feature = "non-us")]
+            CexExchange::Kucoin => exchange_api
+                .all_instruments::<Kucoin>()
+                .await?
+                .normalize()
+                .take_instruments()
+                .unwrap()
+        };
+
+        Ok(out)
     }
 }
 
