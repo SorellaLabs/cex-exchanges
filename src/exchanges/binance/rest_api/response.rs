@@ -19,9 +19,9 @@ impl BinanceRestApiResponse {
         }
     }
 
-    pub fn take_currencies(self) -> Option<Vec<BinanceSymbol>> {
+    pub fn take_symbols(self) -> Option<Vec<BinanceSymbol>> {
         match self {
-            BinanceRestApiResponse::Symbols(val) => Some(val.currencies),
+            BinanceRestApiResponse::Symbols(val) => Some(val.symbols),
             _ => None
         }
     }

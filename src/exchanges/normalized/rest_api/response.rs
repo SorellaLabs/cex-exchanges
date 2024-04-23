@@ -62,7 +62,7 @@ impl CombinedRestApiResponse {
     }
 
     pub fn take_binance_currencies(self) -> Option<Vec<BinanceSymbol>> {
-        self.take_binance().map(|v| v.take_currencies()).flatten()
+        self.take_binance().map(|v| v.take_symbols()).flatten()
     }
 
     pub fn take_binance_instruments(self) -> Option<Vec<BinanceInstrument>> {

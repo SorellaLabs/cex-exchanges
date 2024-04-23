@@ -14,12 +14,12 @@ use crate::{
 #[serde_as]
 #[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
 pub struct BinanceAllSymbols {
-    pub currencies: Vec<BinanceSymbol>
+    pub symbols: Vec<BinanceSymbol>
 }
 
 impl BinanceAllSymbols {
     pub fn normalize(self) -> Vec<NormalizedCurrency> {
-        self.currencies
+        self.symbols
             .into_iter()
             .map(BinanceSymbol::normalize)
             .collect()
@@ -30,7 +30,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllSymbols {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match other {
             NormalizedRestApiDataTypes::AllCurrencies(other_currs) => {
-                let mut this_currencies = self.currencies.clone();
+                let mut this_currencies = self.symbols.clone();
                 this_currencies.sort_by(|a, b| a.symbol.partial_cmp(&b.symbol).unwrap());
 
                 let mut others_currencies = other_currs.clone();
@@ -64,13 +64,13 @@ impl<'de> Deserialize<'de> for BinanceAllSymbols {
             .ok_or(eyre::ErrReport::msg("Could not convert nested 'data' field in Binance symbols with addresses request to array".to_string()))
             .map_err(serde::de::Error::custom)?;
 
-        let currencies = data
+        let symbols = data
             .iter()
             .map(|v| serde_json::from_value(v.clone()))
             .collect::<Result<Vec<_>, _>>()
             .map_err(serde::de::Error::custom)?;
 
-        Ok(BinanceAllSymbols { currencies })
+        Ok(BinanceAllSymbols { symbols })
     }
 }
 

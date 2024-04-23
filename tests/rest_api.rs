@@ -56,6 +56,7 @@ mod binance_tests {
     async fn test_all_symbols() {
         let exchange_api = ExchangeApi::new();
         let all_symbols = exchange_api.all_currencies::<Binance>().await;
+        all_symbols.as_ref().unwrap();
         assert!(all_symbols.is_ok());
 
         {
