@@ -32,7 +32,12 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllInstruments {
                 let this_instruments = self
                     .instruments
                     .iter()
-                    .map(|instr| (instr.base_asset.clone(), instr.quote_asset.clone(), instr.symbol.normalize()))
+                    .flat_map(|un| {
+                        un.clone()
+                            .normalize()
+                            .into_iter()
+                            .map(|instr| (instr.base_asset_symbol.clone(), instr.quote_asset_symbol.clone(), instr.trading_pair.clone()))
+                    })
                     .collect::<HashSet<_>>();
 
                 let others_instruments = other_instrs
@@ -40,9 +45,9 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllInstruments {
                     .map(|instr| (instr.base_asset_symbol.clone(), instr.quote_asset_symbol.clone(), instr.trading_pair.clone()))
                     .collect::<HashSet<_>>();
 
-                others_instruments
+                this_instruments
                     .into_iter()
-                    .all(|instr| this_instruments.contains(&instr))
+                    .all(|instr| others_instruments.contains(&instr))
             }
             _ => false
         }

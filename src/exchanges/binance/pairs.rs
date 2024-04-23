@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{exchanges::normalized::types::NormalizedTradingPair, CexExchange};
@@ -19,7 +21,17 @@ impl BinanceTradingPair {
     }
 
     pub fn normalize_with(&self, base: &str, quote: &str) -> NormalizedTradingPair {
+        if self.0 != format!("{base}{quote}") {
+            println!("SELF: {self}");
+            println!("BQ: {base} -- {quote}");
+        }
         NormalizedTradingPair::new_base_quote(CexExchange::Binance, base, quote, None, None)
+    }
+}
+
+impl Display for BinanceTradingPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }
 
