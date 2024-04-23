@@ -11,7 +11,10 @@ pub mod coinbase;
 #[cfg(feature = "us")]
 pub mod okex;
 
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    str::FromStr
+};
 
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
@@ -171,6 +174,26 @@ impl Display for CexExchange {
             CexExchange::Binance => write!(f, "binance"),
             #[cfg(feature = "non-us")]
             CexExchange::Kucoin => write!(f, "kucoin")
+        }
+    }
+}
+
+impl FromStr for CexExchange {
+    type Err = eyre::Report;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let str = s.to_lowercase();
+
+        match str.as_str() {
+            #[cfg(feature = "us")]
+            "coinbase" => Ok(CexExchange::Coinbase),
+            #[cfg(feature = "us")]
+            "okex" => Ok(CexExchange::Okex),
+            #[cfg(feature = "non-us")]
+            "binance" => Ok(CexExchange::Binance),
+            #[cfg(feature = "non-us")]
+            "kucoin" => Ok(CexExchange::Kucoin),
+            _ => Err(eyre::ErrReport::msg(format!("'{s}' is not a valid exchange")))
         }
     }
 }
