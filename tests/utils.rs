@@ -3,6 +3,7 @@ use cex_exchanges::{
     exchanges::Exchange
 };
 use futures::StreamExt;
+use serde::Serialize;
 
 pub async fn stream_util<E: Exchange + Send + Unpin + 'static>(exchange: E, iterations: usize) {
     let mut stream = WsStream::new(exchange);
@@ -70,4 +71,16 @@ pub async fn mutlithreaded_util<E: Exchange + Send + Unpin + 'static>(builder: M
         }
         i += 1;
     }
+}
+
+#[allow(unused)]
+pub fn write_json<D>(a: D, path: &str)
+where
+    D: Serialize
+{
+    use std::io::Write;
+
+    let mut f0 = std::fs::File::create(path).unwrap();
+
+    writeln!(f0, "{}", serde_json::to_string(&a).unwrap()).unwrap();
 }

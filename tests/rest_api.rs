@@ -1,5 +1,3 @@
-use serde::Serialize;
-
 #[cfg(feature = "us")]
 #[cfg(test)]
 mod coinbase_tests {
@@ -100,7 +98,7 @@ mod binance_tests {
     }
 }
 
-#[cfg(feature = "non-us")]
+#[cfg(feature = "us")]
 #[cfg(test)]
 mod okex_tests {
     use cex_exchanges::{clients::rest_api::ExchangeApi, okex::Okex};
@@ -150,13 +148,53 @@ mod okex_tests {
     }
 }
 
-pub fn write_json<D>(a: D)
-where
-    D: Serialize
-{
-    use std::io::Write;
+#[cfg(feature = "non-us")]
+#[cfg(test)]
+mod kucoin_tests {
+    use cex_exchanges::{clients::rest_api::ExchangeApi, kucoin::Kucoin};
+    use serial_test::serial;
 
-    let mut f0 = std::fs::File::create("/Users/josephnoorchashm/Desktop/SorellaLabs/GitHub/cex-exchanges/t.json").unwrap();
+    #[tokio::test]
+    #[serial]
+    async fn test_all_currencies() {
+        let exchange_api = ExchangeApi::new();
+        let all_currencies = exchange_api.all_currencies::<Kucoin>().await;
+        all_currencies.as_ref().unwrap();
+        assert!(all_currencies.is_ok());
 
-    writeln!(f0, "{}", serde_json::to_string(&a).unwrap()).unwrap();
+        {
+            let all_currencies = all_currencies.unwrap();
+            let test_length = all_currencies
+                .clone()
+                .take_kucoin_currencies()
+                .unwrap()
+                .len();
+            assert!(test_length > 10);
+
+            let normalized = all_currencies.clone().normalize();
+            let test_length = normalized.clone().take_currencies().unwrap().len();
+            assert!(test_length > 10);
+
+            assert_eq!(all_currencies, normalized);
+        }
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_all_symbols() {
+        let exchange_api = ExchangeApi::new();
+        let all_symbols = exchange_api.all_instruments::<Kucoin>().await;
+        all_symbols.as_ref().unwrap();
+        assert!(all_symbols.is_ok());
+
+        {
+            let all_symbols = all_symbols.unwrap();
+            let test_length = all_symbols.clone().take_kucoin_instruments().unwrap().len();
+            assert!(test_length > 10);
+
+            let normalized = all_symbols.clone().normalize();
+            let test_length = normalized.clone().take_instruments().unwrap().len();
+            assert!(test_length > 10);
+        }
+    }
 }

@@ -55,7 +55,25 @@ pub enum Blockchain {
     Horizen,
     Icp,
     Injective,
-    Tron
+    Tron,
+    Loki,
+    Energi,
+    Monero,
+    RSK,
+    BinanceSmartChain,
+    TRTL,
+    KucoinCommunityChain,
+    Komodo,
+    Nix,
+    ThunderCore,
+    Nimiq,
+    Coti,
+    Pivx,
+    NEM,
+    Sero,
+    EOSForce,
+    #[clap(skip)]
+    Other(String)
 }
 
 impl FromStr for Blockchain {
@@ -64,7 +82,7 @@ impl FromStr for Blockchain {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let lower_s = s.to_lowercase();
         match lower_s.as_str() {
-            "eth" | "ethereum" => Ok(Self::Ethereum),
+            "eth" | "ethereum" | "erc20" => Ok(Self::Ethereum),
             "sol" | "solana" => Ok(Self::Solana),
             "btx" | "bitcoin" | "ordinals - brc20" => Ok(Self::Bitcoin),
             "ada" | "cardano" => Ok(Self::Cardano),
@@ -115,7 +133,23 @@ impl FromStr for Blockchain {
             "icp" => Ok(Self::Icp),
             "inj" | "injective" => Ok(Self::Injective),
             "trx" | "tron20" => Ok(Self::Tron),
-            _ => Err(eyre::ErrReport::msg(format!("'{s}' is not a valid network")))
+            "loki" => Ok(Self::Loki),
+            "nrg" => Ok(Self::Energi),
+            "xmr" => Ok(Self::Monero),
+            "rbtc" => Ok(Self::RSK),
+            "bep20" | "bep2" => Ok(Self::BinanceSmartChain),
+            "trtl" => Ok(Self::TRTL),
+            "kcc" => Ok(Self::KucoinCommunityChain),
+            "kmd" => Ok(Self::Komodo),
+            "nix" => Ok(Self::Nix),
+            "tt" => Ok(Self::ThunderCore),
+            "nim" => Ok(Self::Nimiq),
+            "coti" => Ok(Self::Coti),
+            "pivx" => Ok(Self::Pivx),
+            "nem" => Ok(Self::NEM),
+            "sero" => Ok(Self::Sero),
+            "eosc" => Ok(Self::EOSForce),
+            _ => Ok(Self::Other(s.to_string()))
         }
     }
 }

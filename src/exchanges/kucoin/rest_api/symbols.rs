@@ -1,134 +1,142 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr, NoneAsEmptyString};
+use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{
-    normalized::{
-        rest_api::NormalizedRestApiDataTypes,
-        types::{Blockchain, NormalizedCurrency}
-    },
+    exchanges::normalized::types::NormalizedInstrument,
+    kucoin::KucoinTradingPair,
+    normalized::{rest_api::NormalizedRestApiDataTypes, types::NormalizedTradingType},
     CexExchange
 };
 
-#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct KucoinAllCurrencies {
+pub struct KucoinAllSymbols {
     #[serde(rename = "data")]
-    pub currencies: Vec<KucoinCurrency>
+    pub symbols: Vec<KucoinSymbol>
 }
-
-impl KucoinAllCurrencies {
-    pub fn normalize(self) -> Vec<NormalizedCurrency> {
-        self.currencies
+impl KucoinAllSymbols {
+    pub fn normalize(self) -> Vec<NormalizedInstrument> {
+        self.symbols
             .into_iter()
-            .map(KucoinCurrency::normalize)
+            .flat_map(KucoinSymbol::normalize)
             .collect()
     }
 }
 
-impl PartialEq<NormalizedRestApiDataTypes> for KucoinAllCurrencies {
+impl PartialEq<NormalizedRestApiDataTypes> for KucoinAllSymbols {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match other {
-            NormalizedRestApiDataTypes::AllCurrencies(other_currs) => {
-                let mut this_currencies = self.currencies.clone();
-                this_currencies.sort_by(|a, b| a.currency.partial_cmp(&b.currency).unwrap());
+            NormalizedRestApiDataTypes::AllInstruments(other_instrs) => {
+                let this_symbols = self
+                    .symbols
+                    .iter()
+                    .map(|instr| (instr.base_currency.clone(), instr.quote_currency.clone(), instr.symbol.normalize()))
+                    .collect::<HashSet<_>>();
 
-                let mut others_currencies = other_currs.clone();
-                others_currencies.sort_by(|a, b| a.symbol.partial_cmp(&b.symbol).unwrap());
+                let others_symbols = other_instrs
+                    .iter()
+                    .map(|instr| (instr.base_asset_symbol.clone(), instr.quote_asset_symbol.clone(), instr.trading_pair.clone()))
+                    .collect::<HashSet<_>>();
 
-                this_currencies == others_currencies
+                others_symbols
+                    .into_iter()
+                    .all(|instr| this_symbols.contains(&instr))
             }
             _ => false
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct KucoinCurrency {
-    pub currency:          String,
+#[serde_as]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
+pub struct KucoinSymbol {
+    pub symbol:            KucoinTradingPair,
     pub name:              String,
-    #[serde(rename = "fullName")]
-    pub full_name:         String,
-    pub precision:         u64,
-    pub confirms:          Option<u64>,
-    #[serde(rename = "contractAddress")]
-    pub contract_address:  Option<String>,
+    #[serde(rename = "baseCurrency")]
+    pub base_currency:     String,
+    #[serde(rename = "quoteCurrency")]
+    pub quote_currency:    String,
+    #[serde(rename = "feeCurrency")]
+    pub fee_currency:      String,
+    #[serde(rename = "market")]
+    pub market:            String,
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(rename = "baseMinSize")]
+    pub base_min_size:     f64,
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(rename = "quoteMinSize")]
+    pub quote_min_size:    f64,
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(rename = "baseMaxSize")]
+    pub base_max_size:     f64,
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(rename = "quoteMaxSize")]
+    pub quote_max_size:    f64,
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(rename = "baseIncrement")]
+    pub base_increment:    f64,
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(rename = "quoteIncrement")]
+    pub quote_increment:   f64,
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(rename = "priceIncrement")]
+    pub price_increment:   f64,
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(rename = "priceLimitRate")]
+    pub price_limit_rate:  f64,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    #[serde(rename = "minFunds")]
+    pub min_funds:         Option<f64>,
     #[serde(rename = "isMarginEnabled")]
     pub is_margin_enabled: bool,
-    #[serde(rename = "isDebitEnabled")]
-    pub is_debit_enabled:  bool,
-    pub chains:            Vec<KucoinCurrencyChain>
+    #[serde(rename = "enableTrading")]
+    pub enable_trading:    bool
 }
 
-impl KucoinCurrency {
-    pub fn normalize(self) -> NormalizedCurrency {
-        NormalizedCurrency {
-            exchange:     CexExchange::Kucoin,
-            symbol:       self.currency,
-            name:         self.name,
-            display_name: None,
-            status:       "".to_string(),
-            blockchains:  self
-                .chains
-                .into_iter()
-                .map(|c| c.parse_blockchain_address())
-                .collect()
-        }
-    }
-}
+impl KucoinSymbol {
+    pub fn normalize(self) -> Vec<NormalizedInstrument> {
+        let mut vals = vec![NormalizedInstrument {
+            exchange:           CexExchange::Binance,
+            trading_pair:       self.symbol.normalize(),
+            trading_type:       NormalizedTradingType::Spot,
+            base_asset_symbol:  self.base_currency.clone(),
+            quote_asset_symbol: self.quote_currency.clone(),
+            active:             self.enable_trading,
 
-#[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct KucoinCurrencyChain {
-    #[serde(rename = "chainName")]
-    pub chain_name:          String,
-    #[serde(rename = "withdrawalMinFee")]
-    #[serde_as(as = "DisplayFromStr")]
-    pub withdrawal_min_fee:  f64,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "withdrawalMinSize")]
-    pub withdrawal_min_size: f64,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "withdrawFeeRate")]
-    pub withdraw_fee_rate:   f64,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "depositMinSize")]
-    pub deposit_min_size:    f64,
-    #[serde(rename = "isWithdrawEnabled")]
-    pub is_withdraw_enabled: bool,
-    #[serde(rename = "isDepositEnabled")]
-    pub is_deposit_enabled:  bool,
-    #[serde(rename = "preConfirms")]
-    pub pre_confirms:        u64,
-    #[serde_as(as = "NoneAsEmptyString")]
-    #[serde(rename = "contractAddress")]
-    pub contract_address:    Option<String>,
-    #[serde(rename = "chainId")]
-    pub chain_id:            String,
-    pub confirms:            u64
-}
+            futures_expiry: None
+        }];
 
-impl KucoinCurrencyChain {
-    pub fn parse_blockchain_address(self) -> (Blockchain, Option<String>) {
-        (self.chain_name.parse().unwrap(), self.contract_address)
-    }
-}
+        if self.is_margin_enabled {
+            vals.push(NormalizedInstrument {
+                exchange:           CexExchange::Binance,
+                trading_pair:       self.symbol.normalize(),
+                trading_type:       NormalizedTradingType::Margin,
+                base_asset_symbol:  self.base_currency.clone(),
+                quote_asset_symbol: self.quote_currency.clone(),
+                active:             self.enable_trading,
 
-impl PartialEq<NormalizedCurrency> for KucoinCurrency {
-    fn eq(&self, other: &NormalizedCurrency) -> bool {
-        let equals = other.exchange == CexExchange::Kucoin
-            && other.symbol == self.currency
-            && other.name == self.name
-            && other.display_name.is_none()
-            && other.status == "".to_string()
-            && self.chains.iter().all(|c| {
-                other
-                    .blockchains
-                    .contains(&c.clone().parse_blockchain_address())
+                futures_expiry: None
             });
+        }
+
+        vals
+    }
+}
+
+impl PartialEq<NormalizedInstrument> for KucoinSymbol {
+    fn eq(&self, other: &NormalizedInstrument) -> bool {
+        let equals = other.exchange == CexExchange::Binance
+            && other.trading_pair == self.symbol.normalize()
+            && other.trading_type == NormalizedTradingType::Spot
+            && other.base_asset_symbol == *self.base_currency
+            && other.quote_asset_symbol == *self.quote_currency
+            && other.active == self.enable_trading
+            && other.futures_expiry == None;
 
         if !equals {
-            println!("\n\nSELF: {:?}\n", self);
-            println!("NORMALIZED: {:?}\n\n", other);
+            println!("SELF: {:?}", self);
+            println!("NORMALIZED: {:?}", other);
         }
 
         equals

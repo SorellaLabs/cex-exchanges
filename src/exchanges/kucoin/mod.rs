@@ -66,10 +66,10 @@ impl Exchange for Kucoin {
     ) -> Result<KucoinRestApiResponse, RestApiError> {
         let api_response = match api_channel {
             NormalizedRestApiRequest::AllCurrencies => {
-                KucoinRestApiResponse::Currencies(Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/v3/currencies")).await?)
+                KucoinRestApiResponse::Currencies(Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v3/currencies")).await?)
             }
             NormalizedRestApiRequest::AllInstruments => {
-                KucoinRestApiResponse::Symbols(Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/v2/symbols")).await?)
+                KucoinRestApiResponse::Symbols(Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v2/symbols")).await?)
             }
         };
 
