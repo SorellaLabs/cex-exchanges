@@ -66,7 +66,7 @@ impl KucoinCurrency {
         NormalizedCurrency {
             exchange:     CexExchange::Kucoin,
             symbol:       self.currency,
-            name:         self.name,
+            name:         self.full_name,
             display_name: None,
             status:       "".to_string(),
             blockchains:  self
@@ -119,7 +119,7 @@ impl PartialEq<NormalizedCurrency> for KucoinCurrency {
     fn eq(&self, other: &NormalizedCurrency) -> bool {
         let equals = other.exchange == CexExchange::Kucoin
             && other.symbol == self.currency
-            && other.name == self.name
+            && other.name == self.full_name
             && other.display_name.is_none()
             && other.status == "".to_string()
             && self.chains.iter().all(|c| {
