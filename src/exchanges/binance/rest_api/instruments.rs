@@ -114,7 +114,9 @@ impl BinanceInstrument {
                 if perm != NormalizedTradingType::Other {
                     Some(NormalizedInstrument {
                         exchange:           CexExchange::Binance,
-                        trading_pair:       self.symbol.normalize(),
+                        trading_pair:       self
+                            .symbol
+                            .normalize_with(&self.base_asset, &self.quote_asset),
                         trading_type:       perm,
                         base_asset_symbol:  self.base_asset.clone(),
                         quote_asset_symbol: self.quote_asset.clone(),
@@ -132,7 +134,10 @@ impl BinanceInstrument {
 impl PartialEq<NormalizedInstrument> for BinanceInstrument {
     fn eq(&self, other: &NormalizedInstrument) -> bool {
         let equals = other.exchange == CexExchange::Binance
-            && other.trading_pair == self.symbol.normalize()
+            && other.trading_pair
+                == self
+                    .symbol
+                    .normalize_with(&self.base_asset, &self.quote_asset)
             && self.permissions.iter().any(|t| t == &other.trading_type)
             && other.base_asset_symbol == *self.base_asset
             && other.quote_asset_symbol == *self.quote_asset

@@ -17,6 +17,10 @@ impl BinanceTradingPair {
     pub fn normalize(&self) -> NormalizedTradingPair {
         NormalizedTradingPair::new_no_base_quote(CexExchange::Binance, &self.0)
     }
+
+    pub fn normalize_with(&self, base: &str, quote: &str) -> NormalizedTradingPair {
+        NormalizedTradingPair::new_base_quote(CexExchange::Binance, base, quote, None, None)
+    }
 }
 
 impl Serialize for BinanceTradingPair {
