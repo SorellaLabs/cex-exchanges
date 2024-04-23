@@ -97,7 +97,7 @@ pub struct KucoinSymbol {
 impl KucoinSymbol {
     pub fn normalize(self) -> Vec<NormalizedInstrument> {
         let mut vals = vec![NormalizedInstrument {
-            exchange:           CexExchange::Binance,
+            exchange:           CexExchange::Kucoin,
             trading_pair:       self.symbol.normalize(),
             trading_type:       NormalizedTradingType::Spot,
             base_asset_symbol:  self.base_currency.clone(),
@@ -109,7 +109,7 @@ impl KucoinSymbol {
 
         if self.is_margin_enabled {
             vals.push(NormalizedInstrument {
-                exchange:           CexExchange::Binance,
+                exchange:           CexExchange::Kucoin,
                 trading_pair:       self.symbol.normalize(),
                 trading_type:       NormalizedTradingType::Margin,
                 base_asset_symbol:  self.base_currency.clone(),
@@ -126,7 +126,7 @@ impl KucoinSymbol {
 
 impl PartialEq<NormalizedInstrument> for KucoinSymbol {
     fn eq(&self, other: &NormalizedInstrument) -> bool {
-        let equals = other.exchange == CexExchange::Binance
+        let equals = other.exchange == CexExchange::Kucoin
             && other.trading_pair == self.symbol.normalize()
             && other.trading_type == NormalizedTradingType::Spot
             && other.base_asset_symbol == *self.base_currency
