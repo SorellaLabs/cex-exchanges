@@ -1,8 +1,8 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use serde_with::{serde_as, DefaultOnError, DisplayFromStr};
+use serde_with::{serde_as, DefaultOnError};
 
 use crate::{
     binance::BinanceTradingPair,
@@ -13,51 +13,14 @@ use crate::{
 
 #[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
 pub struct BinanceAllInstruments {
-    pub instruments: Vec<BinanceCompleteInstrument>
+    #[serde(rename = "symbols")]
+    pub instruments: Vec<BinanceInstrument>
 }
 impl BinanceAllInstruments {
-    pub fn new(instrument: Vec<BinanceInstrument>, trading_ticker: Vec<BinanceTradingDayTicker>) -> Self {
-        let ticker_map = trading_ticker
-            .into_iter()
-            .map(|ticker| (ticker.symbol.clone(), ticker))
-            .collect::<HashMap<_, _>>();
-
-        let complete = instrument
-            .into_iter()
-            .filter_map(|instr| {
-                ticker_map
-                    .get(&instr.symbol)
-                    .map(|s| BinanceCompleteInstrument {
-                        symbol: instr.symbol,
-                        status: instr.status,
-                        base_asset: instr.base_asset,
-                        base_asset_precision: instr.base_asset_precision,
-                        quote_asset: instr.quote_asset,
-                        quote_precision: instr.quote_precision,
-                        quote_asset_precision: instr.quote_asset_precision,
-                        order_types: instr.order_types,
-                        iceberg_allowed: instr.iceberg_allowed,
-                        oco_allowed: instr.oco_allowed,
-                        quote_order_qty_market_allowed: instr.quote_order_qty_market_allowed,
-                        allow_trailing_stop: instr.allow_trailing_stop,
-                        cancel_replace_allowed: instr.cancel_replace_allowed,
-                        is_spot_trading_allowed: instr.is_spot_trading_allowed,
-                        is_margin_trading_allowed: instr.is_margin_trading_allowed,
-                        permissions: instr.permissions,
-                        default_self_trade_prevention_mode: instr.default_self_trade_prevention_mode,
-                        allowed_self_trade_prevention_modes: instr.allowed_self_trade_prevention_modes,
-                        trade_count: s.count
-                    })
-            })
-            .collect();
-
-        Self { instruments: complete }
-    }
-
     pub fn normalize(self) -> Vec<NormalizedInstrument> {
         self.instruments
             .into_iter()
-            .flat_map(BinanceCompleteInstrument::normalize)
+            .flat_map(BinanceInstrument::normalize)
             .collect()
     }
 }
@@ -143,52 +106,20 @@ pub struct BinanceInstrument {
     pub allowed_self_trade_prevention_modes: Vec<String>
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
-pub(crate) struct BinanceAllInstrumentsUtil {
-    #[serde(rename = "symbols")]
-    pub(crate) instruments: Vec<BinanceInstrument>
-}
-
-#[serde_as]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
-pub struct BinanceCompleteInstrument {
-    pub symbol: BinanceTradingPair,
-    pub status: String,
-    pub base_asset: String,
-    pub base_asset_precision: u64,
-    pub quote_asset: String,
-    pub quote_precision: u64,
-    pub quote_asset_precision: u64,
-    pub order_types: Vec<String>,
-    pub iceberg_allowed: bool,
-    pub oco_allowed: bool,
-    pub quote_order_qty_market_allowed: bool,
-    pub allow_trailing_stop: bool,
-    pub cancel_replace_allowed: bool,
-    pub is_spot_trading_allowed: bool,
-    pub is_margin_trading_allowed: bool,
-    pub permissions: Vec<NormalizedTradingType>,
-    pub default_self_trade_prevention_mode: String,
-    pub allowed_self_trade_prevention_modes: Vec<String>,
-    pub trade_count: u64
-}
-
-impl BinanceCompleteInstrument {
+impl BinanceInstrument {
     pub fn normalize(self) -> Vec<NormalizedInstrument> {
         self.permissions
             .into_iter()
             .filter_map(|perm| {
                 if perm != NormalizedTradingType::Other {
                     Some(NormalizedInstrument {
-                        exchange:              CexExchange::Binance,
-                        trading_pair:          self.symbol.normalize(),
-                        trading_type:          perm,
-                        base_asset_symbol:     self.base_asset.clone(),
-                        quote_asset_symbol:    self.quote_asset.clone(),
-                        active:                (&self.status == "TRADING"),
-                        exchange_ranking:      self.trade_count as i64,
-                        exchange_ranking_kind: "trade count".to_string(),
-                        futures_expiry:        None
+                        exchange:           CexExchange::Binance,
+                        trading_pair:       self.symbol.normalize(),
+                        trading_type:       perm,
+                        base_asset_symbol:  self.base_asset.clone(),
+                        quote_asset_symbol: self.quote_asset.clone(),
+                        active:             (&self.status == "TRADING"),
+                        futures_expiry:     None
                     })
                 } else {
                     None
@@ -198,7 +129,7 @@ impl BinanceCompleteInstrument {
     }
 }
 
-impl PartialEq<NormalizedInstrument> for BinanceCompleteInstrument {
+impl PartialEq<NormalizedInstrument> for BinanceInstrument {
     fn eq(&self, other: &NormalizedInstrument) -> bool {
         let equals = other.exchange == CexExchange::Binance
             && other.trading_pair == self.symbol.normalize()
@@ -206,8 +137,6 @@ impl PartialEq<NormalizedInstrument> for BinanceCompleteInstrument {
             && other.base_asset_symbol == *self.base_asset
             && other.quote_asset_symbol == *self.quote_asset
             && other.active == (&self.status == "TRADING")
-            && other.exchange_ranking == self.trade_count as i64
-            && other.exchange_ranking_kind == "trade count".to_string()
             && other.futures_expiry == None;
 
         if !equals {
@@ -216,70 +145,5 @@ impl PartialEq<NormalizedInstrument> for BinanceCompleteInstrument {
         }
 
         equals
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
-pub struct BinanceAllTradingDayTickers {
-    pub symbols: Vec<BinanceTradingDayTicker>
-}
-
-#[serde_as]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
-pub struct BinanceTradingDayTicker {
-    pub symbol:               BinanceTradingPair,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "priceChange")]
-    pub price_change:         f64,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "priceChangePercent")]
-    pub price_change_percent: f64,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "weightedAvgPrice")]
-    pub weighted_avg_price:   f64,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "openPrice")]
-    pub open_price:           f64,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "highPrice")]
-    pub high_price:           f64,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "lowPrice")]
-    pub low_price:            f64,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "lastPrice")]
-    pub last_price:           f64,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "volume")]
-    pub base_volume:          f64,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(rename = "quoteVolume")]
-    pub quote_volume:         f64,
-    #[serde(rename = "openTime")]
-    pub open_time:            u64,
-    #[serde(rename = "closeTime")]
-    pub close_time:           u64,
-    #[serde_as(as = "DefaultOnError")]
-    #[serde(rename = "firstId")]
-    pub first_id:             Option<u64>,
-    #[serde_as(as = "DefaultOnError")]
-    #[serde(rename = "lastId")]
-    pub last_id:              Option<u64>,
-    pub count:                u64
-}
-
-impl BinanceTradingDayTicker {
-    pub fn build_url_extension_from_symbols(instruments: &[BinanceInstrument]) -> Vec<String> {
-        let all_symbols = instruments
-            .iter()
-            .map(|instr| instr.symbol.0.clone())
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>();
-
-        all_symbols
-            .chunks(50)
-            .map(|chk| format!("%5B%22{}%22%5D", chk.join("%22,%22")))
-            .collect()
     }
 }

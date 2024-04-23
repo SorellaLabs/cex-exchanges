@@ -11,11 +11,10 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
-    rest_api::{BinanceAllInstruments, BinanceRestApiResponse, BinanceTradingDayTicker},
+    rest_api::BinanceRestApiResponse,
     ws::{BinanceSubscription, BinanceWsMessage}
 };
 use crate::{
-    binance::rest_api::BinanceAllInstrumentsUtil,
     clients::{rest_api::RestApiError, ws::WsError},
     exchanges::Exchange,
     normalized::rest_api::NormalizedRestApiRequest,
@@ -34,15 +33,6 @@ pub struct Binance {
 impl Binance {
     pub fn new_ws_subscription(subscription: BinanceSubscription) -> Self {
         Self { subscription }
-    }
-
-    pub async fn get_all_instruments(web_client: &reqwest::Client) -> Result<BinanceAllInstruments, RestApiError> {
-        let trading_tickers: Vec<BinanceTradingDayTicker> =
-            Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/ticker/24hr")).await?;
-
-        let instruments: BinanceAllInstrumentsUtil = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?;
-
-        Ok(BinanceAllInstruments::new(instruments.instruments, trading_tickers))
     }
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
@@ -79,7 +69,9 @@ impl Exchange for Binance {
             NormalizedRestApiRequest::AllCurrencies => {
                 BinanceRestApiResponse::Symbols(Self::simple_rest_api_request(web_client, ALL_SYMBOLS_URL.to_string()).await?)
             }
-            NormalizedRestApiRequest::AllInstruments => BinanceRestApiResponse::Instruments(Self::get_all_instruments(web_client).await?)
+            NormalizedRestApiRequest::AllInstruments => {
+                BinanceRestApiResponse::Instruments(Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?)
+            }
         };
 
         Ok(api_response)

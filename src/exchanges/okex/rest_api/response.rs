@@ -1,4 +1,4 @@
-use super::{OkexAllSymbols, OkexCompleteAllInstruments};
+use super::{OkexAllInstruments, OkexAllSymbols};
 use crate::normalized::{rest_api::NormalizedRestApiDataTypes, types::NormalizedCurrency};
 
 #[serde_with::serde_as]
@@ -6,7 +6,7 @@ use crate::normalized::{rest_api::NormalizedRestApiDataTypes, types::NormalizedC
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum OkexRestApiResponse {
     Symbols(OkexAllSymbols),
-    Instruments(OkexCompleteAllInstruments)
+    Instruments(OkexAllInstruments)
 }
 
 impl OkexRestApiResponse {
@@ -24,7 +24,7 @@ impl OkexRestApiResponse {
         }
     }
 
-    pub fn take_instruments(self) -> Option<OkexCompleteAllInstruments> {
+    pub fn take_instruments(self) -> Option<OkexAllInstruments> {
         match self {
             OkexRestApiResponse::Instruments(val) => Some(val),
             _ => None

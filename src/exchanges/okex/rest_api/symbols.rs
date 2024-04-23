@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use super::OkexCompleteInstrument;
+use super::OkexInstrument;
 use crate::{exchanges::normalized::types::NormalizedCurrency, normalized::rest_api::NormalizedRestApiDataTypes};
 
 #[serde_as]
@@ -11,17 +11,16 @@ pub struct OkexAllSymbols {
 }
 
 impl OkexAllSymbols {
-    pub(crate) fn new(mut currencies: Vec<NormalizedCurrency>, instruments: Vec<OkexCompleteInstrument>) -> Self {
+    pub(crate) fn new(mut currencies: Vec<NormalizedCurrency>, instruments: Vec<OkexInstrument>) -> Self {
         currencies.retain(|curr| {
             instruments.iter().any(|instr| {
-                let base = if let Some(s) = &instr.instrument.base_currency { s.to_uppercase() == curr.symbol.to_uppercase() } else { false };
+                let base = if let Some(s) = &instr.base_currency { s.to_uppercase() == curr.symbol.to_uppercase() } else { false };
 
-                let quote = if let Some(s) = &instr.instrument.quote_currency { s.to_uppercase() == curr.symbol.to_uppercase() } else { false };
+                let quote = if let Some(s) = &instr.quote_currency { s.to_uppercase() == curr.symbol.to_uppercase() } else { false };
 
-                let contract = if let Some(s) = &instr.instrument.contract_currency { s.to_uppercase() == curr.symbol.to_uppercase() } else { false };
+                let contract = if let Some(s) = &instr.contract_currency { s.to_uppercase() == curr.symbol.to_uppercase() } else { false };
 
-                let settlement =
-                    if let Some(s) = &instr.instrument.settlement_currency { s.to_uppercase() == curr.symbol.to_uppercase() } else { false };
+                let settlement = if let Some(s) = &instr.settlement_currency { s.to_uppercase() == curr.symbol.to_uppercase() } else { false };
 
                 base || quote || contract || settlement
             })

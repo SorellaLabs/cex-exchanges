@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{BinanceAllInstruments, BinanceAllSymbols, BinanceCompleteInstrument, BinanceSymbol};
+use super::{BinanceAllInstruments, BinanceAllSymbols, BinanceInstrument, BinanceSymbol};
 use crate::exchanges::normalized::rest_api::NormalizedRestApiDataTypes;
 
 #[serde_with::serde_as]
@@ -26,7 +26,7 @@ impl BinanceRestApiResponse {
         }
     }
 
-    pub fn take_instruments(self) -> Option<Vec<BinanceCompleteInstrument>> {
+    pub fn take_instruments(self) -> Option<Vec<BinanceInstrument>> {
         match self {
             BinanceRestApiResponse::Instruments(val) => Some(val.instruments),
             _ => None

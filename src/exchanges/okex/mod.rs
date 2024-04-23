@@ -11,7 +11,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
-    rest_api::{OkexAllInstrumentsResponse, OkexAllSymbols, OkexAllTickersResponse, OkexCompleteAllInstruments, OkexRestApiResponse},
+    rest_api::{OkexAllInstruments, OkexAllSymbols, OkexRestApiResponse},
     ws::{OkexSubscription, OkexWsMessage}
 };
 use crate::{
@@ -44,35 +44,25 @@ impl Okex {
         Ok(OkexAllSymbols::new(proxy_symbols, instruments.instruments))
     }
 
-    pub async fn get_all_instruments(&self, web_client: &reqwest::Client) -> Result<OkexCompleteAllInstruments, RestApiError> {
+    pub async fn get_all_instruments(&self, web_client: &reqwest::Client) -> Result<OkexAllInstruments, RestApiError> {
         let complete_instruments = join_all(NormalizedTradingType::iter().map(|t| async move {
             if t != NormalizedTradingType::Rfq {
-                let tickers: OkexAllTickersResponse = if t == NormalizedTradingType::Margin {
-                    Self::simple_rest_api_request(
-                        web_client,
-                        format!("{BASE_REST_API_URL}/api/v5/market/tickers?instType={}", NormalizedTradingType::Spot.fmt_okex().unwrap())
-                    )
-                    .await?
-                } else {
-                    Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v5/market/tickers?instType={t}")).await?
-                };
-
-                let instruments_no_vol: OkexAllInstrumentsResponse =
+                let instruments_with_type: OkexAllInstruments =
                     Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v5/public/instruments?instType={t}")).await?;
 
-                Ok((tickers, instruments_no_vol).into())
+                Ok(instruments_with_type)
             } else {
-                Ok(OkexCompleteAllInstruments { instruments: vec![] })
+                Ok(OkexAllInstruments { instruments: vec![] })
             }
         }))
         .await
         .into_iter()
-        .collect::<Result<Vec<OkexCompleteAllInstruments>, RestApiError>>()?
+        .collect::<Result<Vec<OkexAllInstruments>, RestApiError>>()?
         .into_iter()
         .flat_map(|instr| instr.instruments)
         .collect::<Vec<_>>();
 
-        Ok(OkexCompleteAllInstruments { instruments: complete_instruments })
+        Ok(OkexAllInstruments { instruments: complete_instruments })
     }
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>

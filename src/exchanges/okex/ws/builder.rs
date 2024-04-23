@@ -152,10 +152,9 @@ impl OkexWsBuilder {
             .take_okex_instruments()
             .unwrap();
 
-        all_symbols_vec.retain(|sy| sy.instrument.state == "live");
+        all_symbols_vec.retain(|sy| sy.state == "live");
 
         // reverse sort by the sort order (low to high)
-        all_symbols_vec.sort_by(|a, b| a.reverse_usd_vol_24hr.cmp(&b.reverse_usd_vol_24hr));
 
         let mut all_symbols = all_symbols_vec.into_iter();
 
@@ -169,7 +168,7 @@ impl OkexWsBuilder {
 
                 let mut symbols_chunk = Vec::new();
                 while let Some(s) = all_symbols.next() {
-                    symbols_chunk.push(s.instrument.instrument.try_into()?);
+                    symbols_chunk.push(s.instrument.try_into()?);
                     num_channels -= 1;
                     if num_channels == 0 {
                         break
@@ -191,7 +190,7 @@ impl OkexWsBuilder {
         }
 
         let rest = all_symbols
-            .map(|val| val.instrument.instrument.try_into())
+            .map(|val| val.instrument.try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
         let rest_stream_size = std::cmp::min(1024, rest.len());

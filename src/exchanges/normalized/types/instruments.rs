@@ -9,16 +9,13 @@ use crate::exchanges::CexExchange;
 
 #[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
 pub struct NormalizedInstrument {
-    pub exchange:              CexExchange,
-    pub trading_pair:          NormalizedTradingPair,
-    pub trading_type:          NormalizedTradingType,
-    pub base_asset_symbol:     String,
-    pub quote_asset_symbol:    String,
-    pub active:                bool,
-    /// Some metric that (as an estimate) ranks the instrument in the exchange
-    pub exchange_ranking:      i64,
-    pub exchange_ranking_kind: String,
-    pub futures_expiry:        Option<NaiveDate>
+    pub exchange:           CexExchange,
+    pub trading_pair:       NormalizedTradingPair,
+    pub trading_type:       NormalizedTradingType,
+    pub base_asset_symbol:  String,
+    pub quote_asset_symbol: String,
+    pub active:             bool,
+    pub futures_expiry:     Option<NaiveDate>
 }
 
 #[derive(Debug, Default, Clone, Serialize, PartialEq, Eq, Hash, EnumIter, PartialOrd, Ord)]

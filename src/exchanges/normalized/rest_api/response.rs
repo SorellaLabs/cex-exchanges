@@ -6,11 +6,11 @@ use crate::exchanges::binance::rest_api::BinanceRestApiResponse;
 #[cfg(feature = "us")]
 use crate::exchanges::{coinbase::rest_api::CoinbaseRestApiResponse, okex::rest_api::OkexRestApiResponse};
 use crate::{
-    binance::rest_api::{BinanceCompleteInstrument, BinanceSymbol},
-    coinbase::rest_api::{CoinbaseCompleteInstrument, CoinbaseCurrency},
+    binance::rest_api::{BinanceInstrument, BinanceSymbol},
+    coinbase::rest_api::{CoinbaseCurrency, CoinbaseProduct},
     kucoin::rest_api::{KucoinCurrency, KucoinRestApiResponse, KucoinSymbol},
     normalized::types::NormalizedCurrency,
-    okex::rest_api::OkexCompleteInstrument
+    okex::rest_api::OkexInstrument
 };
 
 #[derive(Debug, Clone, Serialize)]
@@ -46,7 +46,7 @@ impl CombinedRestApiResponse {
         }
     }
 
-    pub fn take_coinbase_instruments(self) -> Option<Vec<CoinbaseCompleteInstrument>> {
+    pub fn take_coinbase_instruments(self) -> Option<Vec<CoinbaseProduct>> {
         self.take_coinbase().map(|v| v.take_instruments()).flatten()
     }
 
@@ -65,7 +65,7 @@ impl CombinedRestApiResponse {
         self.take_binance().map(|v| v.take_currencies()).flatten()
     }
 
-    pub fn take_binance_instruments(self) -> Option<Vec<BinanceCompleteInstrument>> {
+    pub fn take_binance_instruments(self) -> Option<Vec<BinanceInstrument>> {
         self.take_binance().map(|v| v.take_instruments()).flatten()
     }
 
@@ -76,7 +76,7 @@ impl CombinedRestApiResponse {
         }
     }
 
-    pub fn take_okex_instruments(self) -> Option<Vec<OkexCompleteInstrument>> {
+    pub fn take_okex_instruments(self) -> Option<Vec<OkexInstrument>> {
         self.take_okex()
             .map(|v| v.take_instruments().map(|instr| instr.instruments))
             .flatten()

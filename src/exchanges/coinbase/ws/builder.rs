@@ -143,9 +143,6 @@ impl CoinbaseWsBuilder {
 
         all_symbols_vec.retain(|sy| sy.status == "online");
 
-        // reverse sort by the sort order (low to high)
-        all_symbols_vec.sort_by(|a, b| a.sort_order.cmp(&b.sort_order));
-
         let mut all_symbols = all_symbols_vec.into_iter();
 
         let mut map = weighted_map;

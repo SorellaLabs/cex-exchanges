@@ -145,12 +145,11 @@ impl BinanceWsBuilder {
     async fn build_all_weighted_util(weighted_map: Vec<(usize, usize)>, channels: &[BinanceWsChannelKind]) -> eyre::Result<Self> {
         let mut this = Self::default();
 
-        let mut all_symbols_vec = ExchangeApi::new()
+        let all_symbols_vec = ExchangeApi::new()
             .all_instruments::<Binance>()
             .await?
             .take_binance_instruments()
             .unwrap();
-        all_symbols_vec.sort_by(|a, b| b.trade_count.cmp(&a.trade_count));
 
         let mut all_symbols = all_symbols_vec.into_iter();
 

@@ -115,28 +115,26 @@ pub struct KucoinSymbol {
 impl KucoinSymbol {
     pub fn normalize(self) -> Vec<NormalizedInstrument> {
         let mut vals = vec![NormalizedInstrument {
-            exchange:              CexExchange::Binance,
-            trading_pair:          self.symbol.normalize(),
-            trading_type:          NormalizedTradingType::Spot,
-            base_asset_symbol:     self.base_currency.clone(),
-            quote_asset_symbol:    self.quote_currency.clone(),
-            active:                self.enable_trading,
-            exchange_ranking:      0 as i64,
-            exchange_ranking_kind: "".to_string(),
-            futures_expiry:        None
+            exchange:           CexExchange::Binance,
+            trading_pair:       self.symbol.normalize(),
+            trading_type:       NormalizedTradingType::Spot,
+            base_asset_symbol:  self.base_currency.clone(),
+            quote_asset_symbol: self.quote_currency.clone(),
+            active:             self.enable_trading,
+
+            futures_expiry: None
         }];
 
         if self.is_margin_enabled {
             vals.push(NormalizedInstrument {
-                exchange:              CexExchange::Binance,
-                trading_pair:          self.symbol.normalize(),
-                trading_type:          NormalizedTradingType::Margin,
-                base_asset_symbol:     self.base_currency.clone(),
-                quote_asset_symbol:    self.quote_currency.clone(),
-                active:                self.enable_trading,
-                exchange_ranking:      0 as i64,
-                exchange_ranking_kind: "".to_string(),
-                futures_expiry:        None
+                exchange:           CexExchange::Binance,
+                trading_pair:       self.symbol.normalize(),
+                trading_type:       NormalizedTradingType::Margin,
+                base_asset_symbol:  self.base_currency.clone(),
+                quote_asset_symbol: self.quote_currency.clone(),
+                active:             self.enable_trading,
+
+                futures_expiry: None
             });
         }
 
@@ -152,8 +150,6 @@ impl PartialEq<NormalizedInstrument> for KucoinSymbol {
             && other.base_asset_symbol == *self.base_currency
             && other.quote_asset_symbol == *self.quote_currency
             && other.active == self.enable_trading
-            && other.exchange_ranking == 0 as i64
-            && other.exchange_ranking_kind == "".to_string()
             && other.futures_expiry == None;
 
         if !equals {
