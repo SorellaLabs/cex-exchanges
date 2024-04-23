@@ -92,7 +92,7 @@ impl<'de> Deserialize<'de> for Blockchain {
     {
         let s = String::deserialize(deserializer)?;
 
-        Ok(s.try_into().unwrap())
+        Ok(s.parse().unwrap())
     }
 }
 
