@@ -3,7 +3,7 @@ use std::{fmt::Display, str::FromStr};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord, ValueEnum)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, PartialOrd, Ord, ValueEnum)]
 pub enum Blockchain {
     Bitcoin,
     Ethereum,
@@ -82,6 +82,17 @@ impl Display for Blockchain {
             Blockchain::Other(s) => s.fmt(f),
             _ => format!("{:?}", self).fmt(f)
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for Blockchain {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>
+    {
+        let s = String::deserialize(deserializer)?;
+
+        Ok(s.try_into().unwrap())
     }
 }
 
