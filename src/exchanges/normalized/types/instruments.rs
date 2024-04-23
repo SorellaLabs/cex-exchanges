@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
@@ -53,10 +53,10 @@ impl<'de> Deserialize<'de> for NormalizedTradingType {
     }
 }
 
-impl TryFrom<&str> for NormalizedTradingType {
-    type Error = eyre::Report;
+impl FromStr for NormalizedTradingType {
+    type Err = eyre::Report;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
         let s = value.to_lowercase();
 
         match s.as_str() {
@@ -73,7 +73,7 @@ impl TryFrom<String> for NormalizedTradingType {
     type Error = eyre::Report;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        value.as_str().try_into()
+        value.as_str().parse()
     }
 }
 
