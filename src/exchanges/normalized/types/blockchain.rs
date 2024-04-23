@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
@@ -74,6 +74,15 @@ pub enum Blockchain {
     EOSForce,
     #[clap(skip)]
     Other(String)
+}
+
+impl Display for Blockchain {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Blockchain::Other(s) => s.fmt(f),
+            _ => format!("{:?}", self).fmt(f)
+        }
+    }
 }
 
 impl FromStr for Blockchain {
