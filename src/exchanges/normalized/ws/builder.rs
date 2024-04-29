@@ -18,6 +18,10 @@ pub struct NormalizedExchangeBuilder {
 }
 
 impl NormalizedExchangeBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn add_channels_one_exchange(mut self, exchange: CexExchange, channels: &[NormalizedWsChannelKinds]) -> Self {
         self.ws_exchanges.entry(exchange).or_insert_with(|| {
             channels
@@ -102,8 +106,7 @@ impl NormalizedExchangeBuilder {
         let mut multistream_ws: Option<MutliWsStream> = None;
 
         self.ws_exchanges.into_iter().try_for_each(|(exch, map)| {
-            let channel_map = map.into_values()
-                .collect::<Vec<_>>();
+            let channel_map = map.into_values().collect::<Vec<_>>();
 
             let new_stream = exch.build_multistream_ws_from_normalized(channel_map, self.exch_currency_proxy)?;
             if let Some(ws) = multistream_ws.take() {
