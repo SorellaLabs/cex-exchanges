@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::{
     exchanges::{
-        kucoin::pairs::BybitTradingPair,
+        bybit::pairs::BybitTradingPair,
         normalized::{
             types::{NormalizedTradingPair, RawTradingPair},
             ws::NormalizedWsChannels
@@ -16,7 +16,7 @@ use crate::{
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum BybitWsChannel {
     Trade(Vec<BybitTradingPair>),
-    BookTicker(Vec<BybitTradingPair>)
+    Ticker(Vec<BybitTradingPair>)
 }
 
 impl BybitWsChannel {
@@ -39,7 +39,7 @@ impl BybitWsChannel {
             .map(|pair| pair.get_normalized_pair(CexExchange::Bybit))
             .collect();
 
-        Self::new_from_normalized(normalized, BybitWsChannel::BookTicker(Vec::new()))
+        Self::new_from_normalized(normalized, BybitWsChannel::Ticker(Vec::new()))
     }
 
     pub(crate) fn new_from_normalized(pairs: Vec<NormalizedTradingPair>, kind: BybitWsChannel) -> eyre::Result<Self> {
@@ -50,7 +50,7 @@ impl BybitWsChannel {
                     .map(TryInto::try_into)
                     .collect::<Result<_, _>>()?
             )),
-            BybitWsChannel::BookTicker(_) => Ok(BybitWsChannel::BookTicker(
+            BybitWsChannel::Ticker(_) => Ok(BybitWsChannel::Ticker(
                 pairs
                     .into_iter()
                     .map(TryInto::try_into)
@@ -62,7 +62,7 @@ impl BybitWsChannel {
     pub fn count_entries(&self) -> usize {
         match self {
             BybitWsChannel::Trade(vals) => vals.len(),
-            BybitWsChannel::BookTicker(vals) => vals.len()
+            BybitWsChannel::Ticker(vals) => vals.len()
         }
     }
 }
@@ -71,7 +71,7 @@ impl Display for BybitWsChannel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             BybitWsChannel::Trade(_) => write!(f, "trade"),
-            BybitWsChannel::BookTicker(_) => write!(f, "bookTicker")
+            BybitWsChannel::Ticker(_) => write!(f, "bookTicker")
         }
     }
 }
@@ -82,7 +82,7 @@ impl TryFrom<String> for BybitWsChannel {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
             "trade" => Ok(Self::Trade(Vec::new())),
-            "bookTicker" => Ok(Self::BookTicker(Vec::new())),
+            "bookTicker" => Ok(Self::Ticker(Vec::new())),
             _ => Err(eyre::ErrReport::msg(format!("channel is not valid: {value}")))
         }
     }
@@ -110,14 +110,14 @@ impl TryFrom<NormalizedWsChannels> for BybitWsChannel {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum BybitWsChannelKind {
     Trade,
-    BookTicker
+    Ticker
 }
 
 impl Display for BybitWsChannelKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             BybitWsChannelKind::Trade => write!(f, "trade"),
-            BybitWsChannelKind::BookTicker => write!(f, "bookTicker")
+            BybitWsChannelKind::Ticker => write!(f, "bookTicker")
         }
     }
 }
@@ -126,7 +126,7 @@ impl From<&BybitWsChannel> for BybitWsChannelKind {
     fn from(value: &BybitWsChannel) -> Self {
         match value {
             BybitWsChannel::Trade(_) => BybitWsChannelKind::Trade,
-            BybitWsChannel::BookTicker(_) => BybitWsChannelKind::BookTicker
+            BybitWsChannel::Ticker(_) => BybitWsChannelKind::Ticker
         }
     }
 }
@@ -180,7 +180,7 @@ impl Into<Vec<BybitSubscriptionInner>> for BybitWsChannel {
                 .collect::<HashSet<_>>()
                 .into_iter()
                 .collect(),
-            BybitWsChannel::BookTicker(pairs) => pairs
+            BybitWsChannel::Ticker(pairs) => pairs
                 .into_iter()
                 .collect::<HashSet<_>>()
                 .into_iter()

@@ -18,13 +18,14 @@ pub struct NormalizedInstrument {
     pub futures_expiry:     Option<NaiveDate>
 }
 
-#[derive(Debug, Default, Clone, Serialize, PartialEq, Eq, Hash, EnumIter, PartialOrd, Ord)]
+#[derive(Debug, Default, Clone, Copy, Serialize, PartialEq, Eq, Hash, EnumIter, PartialOrd, Ord)]
 pub enum NormalizedTradingType {
     Spot,
     Perpetual,
     Margin,
     Futures,
     Rfq,
+    Option,
     #[default]
     Other
 }
@@ -37,6 +38,7 @@ impl NormalizedTradingType {
             NormalizedTradingType::Margin => Some("MARGIN"),
             NormalizedTradingType::Futures => Some("FUTURES"),
             NormalizedTradingType::Rfq => None,
+            NormalizedTradingType::Option => None,
             NormalizedTradingType::Other => None
         }
     }
@@ -61,9 +63,10 @@ impl FromStr for NormalizedTradingType {
 
         match s.as_str() {
             "spot" => Ok(NormalizedTradingType::Spot),
-            "perpetual" | "perp" | "swap" => Ok(NormalizedTradingType::Perpetual),
+            "perpetual" | "perp" | "swap" | "linear" | "inverse" => Ok(NormalizedTradingType::Perpetual),
             "futures" => Ok(NormalizedTradingType::Futures),
             "margin" => Ok(NormalizedTradingType::Margin),
+            "option" => Ok(NormalizedTradingType::Option),
             _ => Err(eyre::ErrReport::msg(format!("'{value}' is not a valid trading type")))
         }
     }

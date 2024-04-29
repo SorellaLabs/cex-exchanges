@@ -12,7 +12,7 @@ use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
     rest_api::KucoinRestApiResponse,
-    ws::{KucoinSubscription, KucoinWsMessage}
+    ws::{KucoinMultiSubscription, KucoinSubscription, KucoinWsEndpointResponse, KucoinWsMessage}
 };
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
@@ -21,17 +21,29 @@ use crate::{
     CexExchange
 };
 
-const WSS_URL: &str = "wss://stream.kucoin.com:443/stream";
 const BASE_REST_API_URL: &str = "https://api.kucoin.com";
 
 #[derive(Debug, Default, Clone)]
 pub struct Kucoin {
-    subscription: KucoinSubscription
+    subscriptions: Vec<KucoinSubscription>
 }
 
 impl Kucoin {
-    pub fn new_ws_subscription(subscription: KucoinSubscription) -> Self {
-        Self { subscription }
+    pub fn new_ws_subscription(subscription: KucoinMultiSubscription) -> Self {
+        Self { subscriptions: subscription.all_subscriptions() }
+    }
+
+    pub async fn get_websocket_endpoint() -> Result<KucoinWsEndpointResponse, WsError> {
+        let data: KucoinWsEndpointResponse = reqwest::Client::new()
+            .post(&format!("{BASE_REST_API_URL}/api/v1/bullet-public"))
+            .send()
+            .await
+            .map_err(|e| WsError::WebInitializationError(e.to_string()))?
+            .json()
+            .await
+            .map_err(|e| WsError::WebInitializationError(e.to_string()))?;
+
+        Ok(data)
     }
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
@@ -51,10 +63,20 @@ impl Exchange for Kucoin {
     const EXCHANGE: CexExchange = CexExchange::Kucoin;
 
     async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError> {
-        let (mut ws, _) = tokio_tungstenite::connect_async(WSS_URL).await?;
+        let dyn_url = Self::get_websocket_endpoint().await?;
 
-        let sub_message = serde_json::to_string(&self.subscription)?;
-        ws.send(Message::Text(sub_message)).await?;
+        let wss_endpoint = dyn_url
+            .get_ws_endpoint()
+            .ok_or(WsError::WebInitializationError("no websocket endpoints for Kucoin".to_string()))?;
+        let wss_token = dyn_url.get_token();
+
+        let wss_url = format!("{wss_endpoint}?token={wss_token}");
+        let (mut ws, _) = tokio_tungstenite::connect_async(&wss_url).await?;
+
+        for sub in self.subscriptions.iter() {
+            let sub_message = serde_json::to_string(&sub)?;
+            ws.send(Message::Text(sub_message)).await?;
+        }
 
         Ok(ws)
     }

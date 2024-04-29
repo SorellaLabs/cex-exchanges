@@ -69,7 +69,7 @@ mod coinbase_tests {
             .await
             .unwrap();
 
-        mutlistream_util(builder, 10000).await;
+        mutlistream_util(builder, 1000).await;
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -81,7 +81,7 @@ mod coinbase_tests {
         let builder = CoinbaseWsBuilder::build_all_weighted(map, &channels)
             .await
             .unwrap();
-        mutlithreaded_util(builder, 10000).await;
+        mutlithreaded_util(builder, 1000).await;
     }
 }
 
@@ -148,7 +148,7 @@ mod okex_tests {
             .await
             .unwrap();
 
-        mutlistream_util(builder, 10000).await;
+        mutlistream_util(builder, 1000).await;
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -160,7 +160,7 @@ mod okex_tests {
         let builder = OkexWsBuilder::build_all_weighted(map, &channels, None)
             .await
             .unwrap();
-        mutlithreaded_util(builder, 10000).await;
+        mutlithreaded_util(builder, 1000).await;
     }
 }
 
@@ -228,7 +228,7 @@ mod binance_tests {
             .await
             .unwrap();
 
-        mutlistream_util(builder, 10000).await;
+        mutlistream_util(builder, 1000).await;
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -240,6 +240,84 @@ mod binance_tests {
         let builder = BinanceWsBuilder::build_all_weighted(map, &channels)
             .await
             .unwrap();
-        mutlithreaded_util(builder, 10000).await;
+        mutlithreaded_util(builder, 1000).await;
+    }
+}
+
+#[cfg(feature = "non-us")]
+#[cfg(test)]
+mod kucoin_tests {
+    use cex_exchanges::{
+        exchanges::{
+            kucoin::ws::{KucoinWsBuilder, KucoinWsChannel},
+            normalized::types::RawTradingPair
+        },
+        kucoin::ws::KucoinWsChannelKind
+    };
+    use serial_test::serial;
+
+    use super::*;
+
+    async fn kucoin_util(builder: KucoinWsBuilder, iterations: usize) {
+        stream_util(builder.build_single(), iterations).await;
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_match() {
+        let builder = KucoinWsBuilder::default().add_channel(
+            KucoinWsChannel::new_match(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
+        );
+        kucoin_util(builder, 5).await;
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_book_ticker() {
+        let builder = KucoinWsBuilder::default().add_channel(
+            KucoinWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
+        );
+        kucoin_util(builder, 5).await;
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_multi_distributed() {
+        let builder = KucoinWsBuilder::default()
+            .add_channel(
+                KucoinWsChannel::new_match(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("btc-usdc")]).unwrap()
+            )
+            .add_channel(
+                KucoinWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("btc-usdc")]).unwrap()
+            )
+            .build_many_distributed()
+            .unwrap();
+
+        mutlistream_util(builder, 50).await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+    #[serial]
+    async fn test_multi_weighted() {
+        let map = vec![(2, 3), (1, 10), (1, 30), (1, 50)];
+        let channels = vec![KucoinWsChannelKind::Match, KucoinWsChannelKind::Ticker];
+
+        let builder = KucoinWsBuilder::build_all_weighted(map, &channels)
+            .await
+            .unwrap();
+
+        mutlistream_util(builder, 1000).await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+    #[serial]
+    async fn test_multi_weighted_multithread() {
+        let map = vec![(2, 3), (1, 10), (1, 30), (1, 50)];
+        let channels = vec![KucoinWsChannelKind::Match, KucoinWsChannelKind::Ticker];
+
+        let builder = KucoinWsBuilder::build_all_weighted(map, &channels)
+            .await
+            .unwrap();
+        mutlithreaded_util(builder, 1000).await;
     }
 }

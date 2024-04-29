@@ -1,58 +1,46 @@
-use chrono::DateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{
-    exchanges::{kucoin::pairs::KucoinTradingPair, normalized::types::NormalizedTrade},
+    exchanges::{bybit::pairs::BybitTradingPair, normalized::types::NormalizedTrade},
     CexExchange
 };
 
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
-pub struct KucoinTrade {
-    #[serde(rename = "s")]
-    pub pair:                  KucoinTradingPair,
-    #[serde(rename = "p")]
-    #[serde_as(as = "DisplayFromStr")]
-    pub price:                 f64,
-    #[serde(rename = "q")]
-    #[serde_as(as = "DisplayFromStr")]
-    pub quantity:              f64,
-    #[serde(rename = "t")]
-    pub trade_id:              u64,
-    #[serde(rename = "b")]
-    pub buyer_order_id:        u64,
-    #[serde(rename = "a")]
-    pub seller_order_id:       u64,
-    #[serde(rename = "m")]
-    pub is_buyer_market_maker: bool,
-    #[serde(rename = "T")]
-    pub trade_time:            u64
+pub struct BybitTrade {
+    pub topic:             String,
+    #[serde(rename = "type")]
+    pub kind:              String,
+    #[serde(rename = "ts")]
+    pub request_timestamp: u64,
+    pub data:              BybitTradeInner
 }
 
-impl KucoinTrade {
+impl BybitTrade {
     pub fn normalize(self) -> NormalizedTrade {
         NormalizedTrade {
-            exchange: CexExchange::Kucoin,
-            pair:     self.pair.normalize(),
-            time:     DateTime::from_timestamp_millis(self.trade_time as i64).unwrap(),
-            side:     if self.is_buyer_market_maker { "buy".to_string() } else { "sell".to_string() },
-            price:    self.price,
-            amount:   self.quantity,
-            trade_id: Some(self.trade_id.to_string())
+            exchange: CexExchange::Bybit,
+            pair:     self.data.pair.normalize(),
+            time:     DateTime::<Utc>::from_timestamp_nanos(self.data.timestamp as i64),
+            side:     self.data.side.to_lowercase(),
+            price:    self.data.price,
+            amount:   self.data.amount,
+            trade_id: Some(self.data.trade_id.to_string())
         }
     }
 }
 
-impl PartialEq<NormalizedTrade> for KucoinTrade {
+impl PartialEq<NormalizedTrade> for BybitTrade {
     fn eq(&self, other: &NormalizedTrade) -> bool {
-        let equals = other.exchange == CexExchange::Kucoin
-            && other.pair == self.pair.normalize()
-            && other.time == DateTime::from_timestamp_millis(self.trade_time as i64).unwrap()
-            && other.side == if self.is_buyer_market_maker { "buy".to_string() } else { "sell".to_string() }
-            && other.price == self.price
-            && other.amount == self.quantity
-            && other.trade_id.as_ref().unwrap() == &self.trade_id.to_string();
+        let equals = other.exchange == CexExchange::Bybit
+            && other.pair == self.data.pair.normalize()
+            && other.time == DateTime::<Utc>::from_timestamp_nanos(self.data.timestamp as i64)
+            && other.side == self.data.side.to_lowercase()
+            && other.price == self.data.price
+            && other.amount == self.data.amount
+            && other.trade_id.as_ref().unwrap() == &self.data.trade_id.to_string();
 
         if !equals {
             println!("SELF: {:?}", self);
@@ -61,4 +49,27 @@ impl PartialEq<NormalizedTrade> for KucoinTrade {
 
         equals
     }
+}
+
+#[serde_as]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
+pub struct BybitTradeInner {
+    #[serde(rename = "T")]
+    pub timestamp: u64,
+    #[serde(rename = "s")]
+    pub pair: BybitTradingPair,
+    #[serde(rename = "S")]
+    pub side: String,
+    #[serde(rename = "v")]
+    #[serde_as(as = "DisplayFromStr")]
+    pub amount: f64,
+    #[serde(rename = "p")]
+    #[serde_as(as = "DisplayFromStr")]
+    pub price: f64,
+    #[serde(rename = "L")]
+    pub direction_of_price_change: String,
+    #[serde(rename = "i")]
+    pub trade_id: u64,
+    #[serde(rename = "BT")]
+    pub is_block_trade_order: bool
 }

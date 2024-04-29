@@ -1,5 +1,5 @@
-mod book_ticker;
-pub use book_ticker::*;
+mod ticker;
+pub use ticker::*;
 
 mod builder;
 pub use builder::*;

@@ -7,6 +7,7 @@ use crate::exchanges::binance::rest_api::BinanceRestApiResponse;
 use crate::exchanges::{coinbase::rest_api::CoinbaseRestApiResponse, okex::rest_api::OkexRestApiResponse};
 use crate::{
     binance::rest_api::{BinanceInstrument, BinanceSymbol},
+    bybit::rest_api::{BybitCoin, BybitIntrument, BybitRestApiResponse},
     coinbase::rest_api::{CoinbaseCurrency, CoinbaseProduct},
     kucoin::rest_api::{KucoinCurrency, KucoinRestApiResponse, KucoinSymbol},
     normalized::types::NormalizedCurrency,
@@ -22,7 +23,9 @@ pub enum CombinedRestApiResponse {
     #[cfg(feature = "non-us")]
     Binance(BinanceRestApiResponse),
     #[cfg(feature = "non-us")]
-    Kucoin(KucoinRestApiResponse)
+    Kucoin(KucoinRestApiResponse),
+    #[cfg(feature = "non-us")]
+    Bybit(BybitRestApiResponse)
 }
 
 impl CombinedRestApiResponse {
@@ -35,7 +38,9 @@ impl CombinedRestApiResponse {
             #[cfg(feature = "non-us")]
             CombinedRestApiResponse::Binance(c) => c.normalize(),
             #[cfg(feature = "non-us")]
-            CombinedRestApiResponse::Kucoin(c) => c.normalize()
+            CombinedRestApiResponse::Kucoin(c) => c.normalize(),
+            #[cfg(feature = "non-us")]
+            CombinedRestApiResponse::Bybit(c) => c.normalize()
         }
     }
 
@@ -100,6 +105,22 @@ impl CombinedRestApiResponse {
     pub fn take_kucoin_currencies(self) -> Option<Vec<KucoinCurrency>> {
         self.take_kucoin().map(|v| v.take_currencies()).flatten()
     }
+
+    pub fn take_bybit(self) -> Option<BybitRestApiResponse> {
+        match self {
+            CombinedRestApiResponse::Bybit(vals) => Some(vals),
+            _ => None
+        }
+    }
+
+    pub fn take_bybit_instruments(self) -> Option<Vec<BybitIntrument>> {
+        self.take_bybit().map(|v| v.take_instruments()).flatten()
+    }
+
+    // need to fix this
+    // pub fn take_bybit_currencies(self) -> Option<Vec<BybitCoin>> {
+    //     self.take_bybit().map(|v| v.take_coins()).flatten()
+    // }
 }
 
 macro_rules! combined_rest {
@@ -126,6 +147,9 @@ combined_rest!(Binance);
 #[cfg(feature = "non-us")]
 combined_rest!(Kucoin);
 
+#[cfg(feature = "non-us")]
+combined_rest!(Bybit);
+
 impl PartialEq<NormalizedRestApiDataTypes> for CombinedRestApiResponse {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match self {
@@ -136,7 +160,9 @@ impl PartialEq<NormalizedRestApiDataTypes> for CombinedRestApiResponse {
             #[cfg(feature = "non-us")]
             CombinedRestApiResponse::Binance(vals) => vals == other,
             #[cfg(feature = "non-us")]
-            CombinedRestApiResponse::Kucoin(vals) => vals == other
+            CombinedRestApiResponse::Kucoin(vals) => vals == other,
+            #[cfg(feature = "non-us")]
+            CombinedRestApiResponse::Bybit(vals) => vals == other
         }
     }
 }

@@ -1,6 +1,4 @@
-use std::{collections::HashSet, fmt::Display};
-
-use serde::Serialize;
+use std::fmt::Display;
 
 use crate::{
     exchanges::{
@@ -15,42 +13,42 @@ use crate::{
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum KucoinWsChannel {
-    Trade(Vec<KucoinTradingPair>),
-    BookTicker(Vec<KucoinTradingPair>)
+    Match(Vec<KucoinTradingPair>),
+    Ticker(Vec<KucoinTradingPair>)
 }
 
 impl KucoinWsChannel {
     /// builds trade channel from a vec of raw trading pairs
     /// return an error if the symbol is incorrectly formatted
-    pub fn new_trade(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+    pub fn new_match(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Kucoin))
             .collect();
 
-        Self::new_from_normalized(normalized, KucoinWsChannel::Trade(Vec::new()))
+        Self::new_from_normalized(normalized, KucoinWsChannel::Match(Vec::new()))
     }
 
     /// builds the book ticker channel from a vec of raw trading
     /// pairs return an error if the symbol is incorrectly formatted
-    pub fn new_book_ticker(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+    pub fn new_ticker(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Kucoin))
             .collect();
 
-        Self::new_from_normalized(normalized, KucoinWsChannel::BookTicker(Vec::new()))
+        Self::new_from_normalized(normalized, KucoinWsChannel::Ticker(Vec::new()))
     }
 
     pub(crate) fn new_from_normalized(pairs: Vec<NormalizedTradingPair>, kind: KucoinWsChannel) -> eyre::Result<Self> {
         match kind {
-            KucoinWsChannel::Trade(_) => Ok(KucoinWsChannel::Trade(
+            KucoinWsChannel::Match(_) => Ok(KucoinWsChannel::Match(
                 pairs
                     .into_iter()
                     .map(TryInto::try_into)
                     .collect::<Result<_, _>>()?
             )),
-            KucoinWsChannel::BookTicker(_) => Ok(KucoinWsChannel::BookTicker(
+            KucoinWsChannel::Ticker(_) => Ok(KucoinWsChannel::Ticker(
                 pairs
                     .into_iter()
                     .map(TryInto::try_into)
@@ -61,8 +59,8 @@ impl KucoinWsChannel {
 
     pub fn count_entries(&self) -> usize {
         match self {
-            KucoinWsChannel::Trade(vals) => vals.len(),
-            KucoinWsChannel::BookTicker(vals) => vals.len()
+            KucoinWsChannel::Match(vals) => vals.len(),
+            KucoinWsChannel::Ticker(vals) => vals.len()
         }
     }
 }
@@ -70,8 +68,8 @@ impl KucoinWsChannel {
 impl Display for KucoinWsChannel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            KucoinWsChannel::Trade(_) => write!(f, "trade"),
-            KucoinWsChannel::BookTicker(_) => write!(f, "bookTicker")
+            KucoinWsChannel::Match(_) => write!(f, "match"),
+            KucoinWsChannel::Ticker(_) => write!(f, "ticker")
         }
     }
 }
@@ -81,8 +79,8 @@ impl TryFrom<String> for KucoinWsChannel {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
-            "trade" => Ok(Self::Trade(Vec::new())),
-            "bookTicker" => Ok(Self::BookTicker(Vec::new())),
+            "match" => Ok(Self::Match(Vec::new())),
+            "ticker" => Ok(Self::Ticker(Vec::new())),
             _ => Err(eyre::ErrReport::msg(format!("channel is not valid: {value}")))
         }
     }
@@ -99,7 +97,7 @@ impl TryFrom<NormalizedWsChannels> for KucoinWsChannel {
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<_>, Self::Error>>()?;
 
-                Ok(KucoinWsChannel::Trade(norm_pairs))
+                Ok(KucoinWsChannel::Match(norm_pairs))
             }
 
             _ => unimplemented!()
@@ -109,15 +107,15 @@ impl TryFrom<NormalizedWsChannels> for KucoinWsChannel {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum KucoinWsChannelKind {
-    Trade,
-    BookTicker
+    Match,
+    Ticker
 }
 
 impl Display for KucoinWsChannelKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            KucoinWsChannelKind::Trade => write!(f, "trade"),
-            KucoinWsChannelKind::BookTicker => write!(f, "bookTicker")
+            KucoinWsChannelKind::Match => write!(f, "match"),
+            KucoinWsChannelKind::Ticker => write!(f, "ticker")
         }
     }
 }
@@ -125,71 +123,8 @@ impl Display for KucoinWsChannelKind {
 impl From<&KucoinWsChannel> for KucoinWsChannelKind {
     fn from(value: &KucoinWsChannel) -> Self {
         match value {
-            KucoinWsChannel::Trade(_) => KucoinWsChannelKind::Trade,
-            KucoinWsChannel::BookTicker(_) => KucoinWsChannelKind::BookTicker
+            KucoinWsChannel::Match(_) => KucoinWsChannelKind::Match,
+            KucoinWsChannel::Ticker(_) => KucoinWsChannelKind::Ticker
         }
-    }
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct KucoinSubscription {
-    method: String,
-    params: Vec<KucoinSubscriptionInner>,
-    id:     u64
-}
-
-impl KucoinSubscription {
-    pub fn new() -> Self {
-        KucoinSubscription { method: "SUBSCRIBE".to_string(), params: Vec::new(), id: 1 }
-    }
-
-    pub fn add_channel(&mut self, channel: KucoinWsChannel) {
-        let new: Vec<KucoinSubscriptionInner> = channel.into();
-        self.params.extend(new);
-    }
-}
-
-impl Default for KucoinSubscription {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Debug, Clone)]
-struct KucoinSubscriptionInner {
-    channel:      KucoinWsChannelKind,
-    trading_pair: KucoinTradingPair
-}
-
-impl Serialize for KucoinSubscriptionInner {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer
-    {
-        format!("{}@{}", self.trading_pair.0.to_lowercase(), self.channel.to_string()).serialize(serializer)
-    }
-}
-
-impl Into<Vec<KucoinSubscriptionInner>> for KucoinWsChannel {
-    fn into(self) -> Vec<KucoinSubscriptionInner> {
-        let channel = (&self).into();
-
-        let all_pairs: Vec<_> = match self {
-            KucoinWsChannel::Trade(pairs) => pairs
-                .into_iter()
-                .collect::<HashSet<_>>()
-                .into_iter()
-                .collect(),
-            KucoinWsChannel::BookTicker(pairs) => pairs
-                .into_iter()
-                .collect::<HashSet<_>>()
-                .into_iter()
-                .collect()
-        };
-
-        all_pairs
-            .into_iter()
-            .map(|p| KucoinSubscriptionInner { channel, trading_pair: p })
-            .collect()
     }
 }

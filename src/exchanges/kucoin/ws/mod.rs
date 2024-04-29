@@ -1,5 +1,5 @@
-mod book_ticker;
-pub use book_ticker::*;
+mod ticker;
+pub use ticker::*;
 
 mod builder;
 pub use builder::*;
@@ -10,5 +10,8 @@ pub use channels::*;
 mod message;
 pub use message::*;
 
-mod trades;
-pub use trades::*;
+mod matches;
+pub use matches::*;
+
+mod subscription;
+pub use subscription::*;

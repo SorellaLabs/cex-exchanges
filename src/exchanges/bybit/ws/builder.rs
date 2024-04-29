@@ -1,7 +1,7 @@
 use super::{BybitSubscription, BybitWsChannel, BybitWsChannelKind};
 use crate::{
+    bybit::Bybit,
     clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},
-    kucoin::Bybit,
     normalized::ws::NormalizedWsChannels
 };
 
@@ -41,12 +41,12 @@ impl BybitWsBuilder {
                     .collect::<Vec<_>>();
                 self.channels.extend(split_channels)
             }
-            BybitWsChannel::BookTicker(vals) => {
+            BybitWsChannel::Ticker(vals) => {
                 let split_size = std::cmp::min(split_channel_size.unwrap_or(1), vals.len());
                 let chunks = vals.chunks(split_size).collect::<Vec<_>>();
                 let split_channels = chunks
                     .into_iter()
-                    .map(|chk| BybitWsChannel::BookTicker(chk.to_vec()))
+                    .map(|chk| BybitWsChannel::Ticker(chk.to_vec()))
                     .collect::<Vec<_>>();
                 self.channels.extend(split_channels)
             }
@@ -145,10 +145,10 @@ impl BybitWsBuilder {
         let mut all_symbols_vec = ExchangeApi::new()
             .all_instruments::<Bybit>()
             .await?
-            .take_kucoin_instruments()
+            .take_bybit_instruments()
             .unwrap();
 
-        all_symbols_vec.retain(|sym| sym.enable_trading);
+        all_symbols_vec.retain(|sym| &sym.inner.status == "Trading");
 
         let mut all_symbols = all_symbols_vec.into_iter();
 
@@ -162,7 +162,7 @@ impl BybitWsBuilder {
 
                 let mut symbols_chunk = Vec::new();
                 while let Some(s) = all_symbols.next() {
-                    symbols_chunk.push(s.symbol.try_into()?);
+                    symbols_chunk.push(s.inner.symbol.try_into()?);
                     num_channels -= 1;
                     if num_channels == 0 {
                         break
@@ -173,7 +173,7 @@ impl BybitWsBuilder {
                     .iter()
                     .map(|ch| match ch {
                         BybitWsChannelKind::Trade => BybitWsChannel::Trade(symbols_chunk.clone()),
-                        BybitWsChannelKind::BookTicker => BybitWsChannel::BookTicker(symbols_chunk.clone())
+                        BybitWsChannelKind::Ticker => BybitWsChannel::Ticker(symbols_chunk.clone())
                     })
                     .collect::<Vec<_>>();
 
@@ -184,7 +184,7 @@ impl BybitWsBuilder {
         }
 
         let rest = all_symbols
-            .map(|val| val.symbol.try_into())
+            .map(|val| val.inner.symbol.try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
         let rest_stream_size = std::cmp::min(MAX_BINANCE_WS_CONNS_PER_STREAM, rest.len());
@@ -195,7 +195,7 @@ impl BybitWsBuilder {
                 .iter()
                 .map(|ch| match ch {
                     BybitWsChannelKind::Trade => BybitWsChannel::Trade(chk.to_vec()),
-                    BybitWsChannelKind::BookTicker => BybitWsChannel::BookTicker(chk.to_vec())
+                    BybitWsChannelKind::Ticker => BybitWsChannel::Ticker(chk.to_vec())
                 })
                 .collect::<Vec<_>>();
 
@@ -230,14 +230,14 @@ mod tests {
     fn len_kind(channel: &BybitWsChannel) -> (usize, BybitWsChannelKind) {
         match channel {
             BybitWsChannel::Trade(vals) => (vals.len(), BybitWsChannelKind::Trade),
-            BybitWsChannel::BookTicker(vals) => (vals.len(), BybitWsChannelKind::BookTicker)
+            BybitWsChannel::Ticker(vals) => (vals.len(), BybitWsChannelKind::Ticker)
         }
     }
 
     #[tokio::test]
     async fn test_build_many_weighted_util() {
         let map = vec![(2, 3), (1, 10), (1, 30), (1, 50)];
-        let channels = vec![BybitWsChannelKind::Trade, BybitWsChannelKind::BookTicker];
+        let channels = vec![BybitWsChannelKind::Trade, BybitWsChannelKind::Ticker];
 
         let calculated = BybitWsBuilder::build_all_weighted_util(map, &channels)
             .await
@@ -246,43 +246,43 @@ mod tests {
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 3);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::BookTicker);
+        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 3);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::BookTicker);
+        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 3);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::BookTicker);
+        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 3);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::BookTicker);
+        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 10);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::BookTicker);
+        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 10);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::BookTicker);
+        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 30);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::BookTicker);
+        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 30);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::BookTicker);
+        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 50);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::BookTicker);
+        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 50);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::BookTicker);
+        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
 
         let rest = calculated_channels.collect::<Vec<_>>();
         assert_eq!(rest.len(), MAX_BINANCE_STREAMS - 10);

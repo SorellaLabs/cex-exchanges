@@ -21,10 +21,6 @@ impl BinanceTradingPair {
     }
 
     pub fn normalize_with(&self, base: &str, quote: &str) -> NormalizedTradingPair {
-        if self.0 != format!("{base}{quote}") {
-            println!("SELF: {self}");
-            println!("BQ: {base} -- {quote}");
-        }
         NormalizedTradingPair::new_base_quote(CexExchange::Binance, base, quote, None, None)
     }
 }

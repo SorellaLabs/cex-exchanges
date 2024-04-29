@@ -1,34 +1,34 @@
 use serde::{Deserialize, Serialize};
 
-use super::{BybitAllCurrencies, BybitAllSymbols, BybitCurrency, BybitSymbol};
+use super::{BybitAllCoins, BybitAllIntruments, BybitCoin, BybitIntrument};
 use crate::exchanges::normalized::rest_api::NormalizedRestApiDataTypes;
 
 #[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum BybitRestApiResponse {
-    Currencies(BybitAllCurrencies),
-    Symbols(BybitAllSymbols)
+    Coins(BybitAllCoins),
+    Instruments(BybitAllIntruments)
 }
 
 impl BybitRestApiResponse {
     pub fn normalize(self) -> NormalizedRestApiDataTypes {
         match self {
-            BybitRestApiResponse::Currencies(v) => NormalizedRestApiDataTypes::AllCurrencies(v.normalize()),
-            BybitRestApiResponse::Symbols(v) => NormalizedRestApiDataTypes::AllInstruments(v.normalize())
+            BybitRestApiResponse::Coins(v) => NormalizedRestApiDataTypes::AllCurrencies(v.normalize()),
+            BybitRestApiResponse::Instruments(v) => NormalizedRestApiDataTypes::AllInstruments(v.normalize())
         }
     }
 
-    pub fn take_currencies(self) -> Option<Vec<BybitCurrency>> {
+    pub fn take_coins(self) -> Option<Vec<BybitCoin>> {
         match self {
-            BybitRestApiResponse::Currencies(val) => Some(val.currencies),
+            BybitRestApiResponse::Coins(val) => Some(val.coins),
             _ => None
         }
     }
 
-    pub fn take_symbols(self) -> Option<Vec<BybitSymbol>> {
+    pub fn take_instruments(self) -> Option<Vec<BybitIntrument>> {
         match self {
-            BybitRestApiResponse::Symbols(val) => Some(val.symbols),
+            BybitRestApiResponse::Instruments(val) => Some(val.instruments),
             _ => None
         }
     }
@@ -37,8 +37,8 @@ impl BybitRestApiResponse {
 impl PartialEq<NormalizedRestApiDataTypes> for BybitRestApiResponse {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match self {
-            BybitRestApiResponse::Currencies(vals) => vals == other,
-            BybitRestApiResponse::Symbols(vals) => vals == other
+            BybitRestApiResponse::Coins(vals) => vals == other,
+            BybitRestApiResponse::Instruments(vals) => vals == other
         }
     }
 }

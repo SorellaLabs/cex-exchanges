@@ -6,8 +6,12 @@ pub mod binance;
 #[cfg(feature = "non-us")]
 pub mod kucoin;
 
+#[cfg(feature = "non-us")]
+pub mod bybit;
+
 #[cfg(feature = "us")]
 pub mod coinbase;
+
 #[cfg(feature = "us")]
 pub mod okex;
 
@@ -25,6 +29,7 @@ use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 use self::{
     binance::{ws::BinanceWsBuilder, Binance},
+    bybit::{ws::BybitWsBuilder, Bybit},
     coinbase::{ws::CoinbaseWsBuilder, Coinbase},
     kucoin::{ws::KucoinWsBuilder, Kucoin},
     normalized::{
@@ -51,7 +56,9 @@ pub enum CexExchange {
     #[cfg(feature = "non-us")]
     Binance,
     #[cfg(feature = "non-us")]
-    Kucoin
+    Kucoin,
+    #[cfg(feature = "non-us")]
+    Bybit
 }
 
 impl CexExchange {
@@ -83,6 +90,10 @@ impl CexExchange {
                 .build_multistream_unconnected(),
             #[cfg(feature = "non-us")]
             CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map, channels_per_stream)?
+                .build_many_packed()?
+                .build_multistream_unconnected(),
+            #[cfg(feature = "non-us")]
+            CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map, channels_per_stream)?
                 .build_many_packed()?
                 .build_multistream_unconnected()
         };
@@ -117,6 +128,13 @@ impl CexExchange {
             #[cfg(feature = "non-us")]
             CexExchange::Kucoin => exchange_api
                 .all_currencies::<Kucoin>()
+                .await?
+                .normalize()
+                .take_currencies()
+                .unwrap(),
+            #[cfg(feature = "non-us")]
+            CexExchange::Bybit => exchange_api
+                .all_currencies::<Bybit>()
                 .await?
                 .normalize()
                 .take_currencies()
@@ -156,6 +174,13 @@ impl CexExchange {
                 .await?
                 .normalize()
                 .take_instruments()
+                .unwrap(),
+            #[cfg(feature = "non-us")]
+            CexExchange::Bybit => exchange_api
+                .all_instruments::<Bybit>()
+                .await?
+                .normalize()
+                .take_instruments()
                 .unwrap()
         };
 
@@ -173,7 +198,9 @@ impl Display for CexExchange {
             #[cfg(feature = "non-us")]
             CexExchange::Binance => write!(f, "binance"),
             #[cfg(feature = "non-us")]
-            CexExchange::Kucoin => write!(f, "kucoin")
+            CexExchange::Kucoin => write!(f, "kucoin"),
+            #[cfg(feature = "non-us")]
+            CexExchange::Bybit => write!(f, "bybit")
         }
     }
 }
@@ -193,6 +220,8 @@ impl FromStr for CexExchange {
             "binance" => Ok(CexExchange::Binance),
             #[cfg(feature = "non-us")]
             "kucoin" => Ok(CexExchange::Kucoin),
+            #[cfg(feature = "non-us")]
+            "bybit" => Ok(CexExchange::Bybit),
             _ => Err(eyre::ErrReport::msg(format!("'{s}' is not a valid exchange")))
         }
     }

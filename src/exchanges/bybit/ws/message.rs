@@ -2,7 +2,7 @@ use eyre::Ok;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{book_ticker::BybitBookTicker, trades::BybitTrade};
+use super::{ticker::BybitTicker, trades::BybitTrade};
 use crate::{exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 
 #[serde_with::serde_as]
@@ -10,7 +10,7 @@ use crate::{exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 #[serde(rename_all = "snake_case", tag = "data")]
 pub enum BybitWsMessage {
     Trade(BybitTrade),
-    BookTicker(BybitBookTicker),
+    Ticker(BybitTicker),
     SuscriptionResponse { result: Option<String>, id: u64 }
 }
 
@@ -31,8 +31,8 @@ impl BybitWsMessage {
                 let trade: BybitTrade = serde_json::from_value(data.clone())?;
                 Ok(Self::Trade(trade))
             } else if data_type.contains("@bookTicker") {
-                let book_ticker: BybitBookTicker = serde_json::from_value(data.clone())?;
-                Ok(Self::BookTicker(book_ticker))
+                let book_ticker: BybitTicker = serde_json::from_value(data.clone())?;
+                Ok(Self::Ticker(book_ticker))
             } else {
                 Err(eyre::ErrReport::msg(format!("Event type '{data_type}' cannot be deserialized")))
             }
@@ -67,7 +67,7 @@ impl BybitWsMessage {
     pub fn normalize(self) -> NormalizedWsDataTypes {
         match self {
             BybitWsMessage::Trade(v) => NormalizedWsDataTypes::Trade(v.normalize()),
-            BybitWsMessage::BookTicker(v) => NormalizedWsDataTypes::Quote(v.normalize()),
+            BybitWsMessage::Ticker(v) => NormalizedWsDataTypes::Quote(v.normalize()),
             BybitWsMessage::SuscriptionResponse { result, id } => NormalizedWsDataTypes::Other {
                 exchange: CexExchange::Bybit,
                 kind:     "SUBSCRIBE".to_string(),
@@ -81,7 +81,7 @@ impl PartialEq<NormalizedWsDataTypes> for BybitWsMessage {
     fn eq(&self, other: &NormalizedWsDataTypes) -> bool {
         match (self, other) {
             (BybitWsMessage::Trade(this), NormalizedWsDataTypes::Trade(that)) => this == that,
-            (BybitWsMessage::BookTicker(this), NormalizedWsDataTypes::Quote(that)) => this == that,
+            (BybitWsMessage::Ticker(this), NormalizedWsDataTypes::Quote(that)) => this == that,
             (BybitWsMessage::SuscriptionResponse { .. }, NormalizedWsDataTypes::Other { .. }) => true,
             _ => false
         }

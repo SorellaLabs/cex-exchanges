@@ -179,6 +179,7 @@ dependencies = [
  "eyre",
  "futures",
  "paste",
+ "rand",
  "reqwest",
  "serde",
  "serde_json",

@@ -1,4 +1,4 @@
-use super::{KucoinSubscription, KucoinWsChannel, KucoinWsChannelKind};
+use super::{KucoinMultiSubscription, KucoinWsChannel, KucoinWsChannelKind};
 use crate::{
     clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},
     kucoin::Kucoin,
@@ -32,21 +32,21 @@ impl KucoinWsBuilder {
     /// own stream
     pub fn add_split_channel(mut self, channel: KucoinWsChannel, split_channel_size: Option<usize>) -> Self {
         match channel {
-            KucoinWsChannel::Trade(vals) => {
+            KucoinWsChannel::Match(vals) => {
                 let split_size = std::cmp::min(split_channel_size.unwrap_or(1), vals.len());
                 let chunks = vals.chunks(split_size).collect::<Vec<_>>();
                 let split_channels = chunks
                     .into_iter()
-                    .map(|chk| KucoinWsChannel::Trade(chk.to_vec()))
+                    .map(|chk| KucoinWsChannel::Match(chk.to_vec()))
                     .collect::<Vec<_>>();
                 self.channels.extend(split_channels)
             }
-            KucoinWsChannel::BookTicker(vals) => {
+            KucoinWsChannel::Ticker(vals) => {
                 let split_size = std::cmp::min(split_channel_size.unwrap_or(1), vals.len());
                 let chunks = vals.chunks(split_size).collect::<Vec<_>>();
                 let split_channels = chunks
                     .into_iter()
-                    .map(|chk| KucoinWsChannel::BookTicker(chk.to_vec()))
+                    .map(|chk| KucoinWsChannel::Ticker(chk.to_vec()))
                     .collect::<Vec<_>>();
                 self.channels.extend(split_channels)
             }
@@ -58,7 +58,7 @@ impl KucoinWsBuilder {
     /// builds a single ws instance of [Kucoin], handling all channels on 1
     /// stream
     pub fn build_single(self) -> Kucoin {
-        let mut subscription = KucoinSubscription::new();
+        let mut subscription = KucoinMultiSubscription::default();
 
         self.channels
             .into_iter()
@@ -80,7 +80,7 @@ impl KucoinWsBuilder {
         let split_exchange = chunks
             .into_iter()
             .map(|chk| {
-                let mut subscription = KucoinSubscription::new();
+                let mut subscription = KucoinMultiSubscription::default();
                 chk.iter()
                     .for_each(|ch| subscription.add_channel(ch.clone()));
 
@@ -103,7 +103,7 @@ impl KucoinWsBuilder {
         let split_exchange = chunks
             .into_iter()
             .map(|chk| {
-                let mut subscription = KucoinSubscription::new();
+                let mut subscription = KucoinMultiSubscription::default();
                 chk.iter()
                     .for_each(|ch| subscription.add_channel(ch.clone()));
 
@@ -132,7 +132,7 @@ impl KucoinWsBuilder {
             .channels
             .into_iter()
             .map(|ch| {
-                let mut subscription = KucoinSubscription::new();
+                let mut subscription = KucoinMultiSubscription::default();
                 subscription.add_channel(ch);
 
                 Kucoin::new_ws_subscription(subscription)
@@ -175,8 +175,8 @@ impl KucoinWsBuilder {
                 let all_channels = channels
                     .iter()
                     .map(|ch| match ch {
-                        KucoinWsChannelKind::Trade => KucoinWsChannel::Trade(symbols_chunk.clone()),
-                        KucoinWsChannelKind::BookTicker => KucoinWsChannel::BookTicker(symbols_chunk.clone())
+                        KucoinWsChannelKind::Match => KucoinWsChannel::Match(symbols_chunk.clone()),
+                        KucoinWsChannelKind::Ticker => KucoinWsChannel::Ticker(symbols_chunk.clone())
                     })
                     .collect::<Vec<_>>();
 
@@ -197,8 +197,8 @@ impl KucoinWsBuilder {
             let all_channels = channels
                 .iter()
                 .map(|ch| match ch {
-                    KucoinWsChannelKind::Trade => KucoinWsChannel::Trade(chk.to_vec()),
-                    KucoinWsChannelKind::BookTicker => KucoinWsChannel::BookTicker(chk.to_vec())
+                    KucoinWsChannelKind::Match => KucoinWsChannel::Match(chk.to_vec()),
+                    KucoinWsChannelKind::Ticker => KucoinWsChannel::Ticker(chk.to_vec())
                 })
                 .collect::<Vec<_>>();
 
@@ -232,15 +232,15 @@ mod tests {
 
     fn len_kind(channel: &KucoinWsChannel) -> (usize, KucoinWsChannelKind) {
         match channel {
-            KucoinWsChannel::Trade(vals) => (vals.len(), KucoinWsChannelKind::Trade),
-            KucoinWsChannel::BookTicker(vals) => (vals.len(), KucoinWsChannelKind::BookTicker)
+            KucoinWsChannel::Match(vals) => (vals.len(), KucoinWsChannelKind::Match),
+            KucoinWsChannel::Ticker(vals) => (vals.len(), KucoinWsChannelKind::Ticker)
         }
     }
 
     #[tokio::test]
     async fn test_build_many_weighted_util() {
         let map = vec![(2, 3), (1, 10), (1, 30), (1, 50)];
-        let channels = vec![KucoinWsChannelKind::Trade, KucoinWsChannelKind::BookTicker];
+        let channels = vec![KucoinWsChannelKind::Match, KucoinWsChannelKind::Ticker];
 
         let calculated = KucoinWsBuilder::build_all_weighted_util(map, &channels)
             .await
@@ -249,43 +249,43 @@ mod tests {
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 3);
-        assert!(n_kind == KucoinWsChannelKind::Trade || n_kind == KucoinWsChannelKind::BookTicker);
+        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 3);
-        assert!(n_kind == KucoinWsChannelKind::Trade || n_kind == KucoinWsChannelKind::BookTicker);
+        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 3);
-        assert!(n_kind == KucoinWsChannelKind::Trade || n_kind == KucoinWsChannelKind::BookTicker);
+        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 3);
-        assert!(n_kind == KucoinWsChannelKind::Trade || n_kind == KucoinWsChannelKind::BookTicker);
+        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 10);
-        assert!(n_kind == KucoinWsChannelKind::Trade || n_kind == KucoinWsChannelKind::BookTicker);
+        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 10);
-        assert!(n_kind == KucoinWsChannelKind::Trade || n_kind == KucoinWsChannelKind::BookTicker);
+        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 30);
-        assert!(n_kind == KucoinWsChannelKind::Trade || n_kind == KucoinWsChannelKind::BookTicker);
+        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 30);
-        assert!(n_kind == KucoinWsChannelKind::Trade || n_kind == KucoinWsChannelKind::BookTicker);
+        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 50);
-        assert!(n_kind == KucoinWsChannelKind::Trade || n_kind == KucoinWsChannelKind::BookTicker);
+        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
 
         let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
         assert_eq!(n_len, 50);
-        assert!(n_kind == KucoinWsChannelKind::Trade || n_kind == KucoinWsChannelKind::BookTicker);
+        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
 
         let rest = calculated_channels.collect::<Vec<_>>();
         assert_eq!(rest.len(), MAX_BINANCE_STREAMS - 10);

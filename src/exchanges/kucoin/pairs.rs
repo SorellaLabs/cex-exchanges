@@ -34,7 +34,8 @@ impl<'de> Deserialize<'de> for KucoinTradingPair {
     where
         D: serde::Deserializer<'de>
     {
-        let s = String::deserialize(deserializer)?;
+        let mut s = String::deserialize(deserializer)?;
+        s = s.replace("/market/ticker:", "");
 
         Ok(KucoinTradingPair(s))
     }
