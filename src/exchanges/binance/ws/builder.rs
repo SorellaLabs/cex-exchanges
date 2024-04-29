@@ -74,7 +74,6 @@ impl BinanceWsBuilder {
     /// WARNING: too many channels may break the stream
     pub fn build_many_distributed(self) -> eyre::Result<MutliWsStreamBuilder<Binance>> {
         let stream_size = if self.channels.len() <= MAX_BINANCE_STREAMS { 1 } else { self.channels.len() / MAX_BINANCE_STREAMS };
-
         let chunks = self.channels.chunks(stream_size).collect::<Vec<_>>();
 
         let split_exchange = chunks
@@ -114,19 +113,9 @@ impl BinanceWsBuilder {
         Ok(MutliWsStreamBuilder::new(split_exchange))
     }
 
-    /// builds a mutlistream channel with a weighted mapping (how many channels
-    /// to put per stream based on their 'exchange_ranking')
-    ///
-    /// [(#streams, #symbols/channel), ...]
-    ///
-    /// ex: [(2,3), (1,10), (1, 30), (1,55)]
-    /// 2 streams with 3 symbols, 1 with 10 symbols, 1 with 20 symbols, 1
-    /// with 55 symbols, 'n' streams with up to 1024 channels with the rest
-    pub async fn build_all_weighted(
-        weighted_map: Vec<(usize, usize)>,
-        channels: &[BinanceWsChannelKind]
-    ) -> eyre::Result<MutliWsStreamBuilder<Binance>> {
-        let this = Self::build_all_weighted_util(weighted_map, channels).await?;
+    /// builds a mutlistream channel from all active instruments
+    pub async fn build_from_all_instruments(channels: &[BinanceWsChannelKind]) -> eyre::Result<MutliWsStreamBuilder<Binance>> {
+        let this = Self::build_from_all_instruments_util(channels).await?;
 
         let all_streams = this
             .channels
@@ -142,56 +131,24 @@ impl BinanceWsBuilder {
         Ok(MutliWsStreamBuilder::new(all_streams))
     }
 
-    async fn build_all_weighted_util(weighted_map: Vec<(usize, usize)>, channels: &[BinanceWsChannelKind]) -> eyre::Result<Self> {
+    async fn build_from_all_instruments_util(channels: &[BinanceWsChannelKind]) -> eyre::Result<Self> {
         let mut this = Self::default();
 
-        let all_symbols_vec = ExchangeApi::new()
+        let mut all_symbols_vec = ExchangeApi::new()
             .all_instruments::<Binance>()
             .await?
             .take_binance_instruments()
             .unwrap();
+        all_symbols_vec.retain(|sym| &sym.status == "TRADING");
 
-        let mut all_symbols = all_symbols_vec.into_iter();
-
-        let mut map = weighted_map;
-        map.sort_by(|a, b| b.1.cmp(&a.1));
-
-        while let Some(nxt) = map.pop() {
-            let (mut streams, num_channels) = nxt;
-            while streams > 0 {
-                let mut num_channels = num_channels;
-
-                let mut symbols_chunk = Vec::new();
-                while let Some(s) = all_symbols.next() {
-                    symbols_chunk.push(s.symbol.try_into()?);
-                    num_channels -= 1;
-                    if num_channels == 0 {
-                        break
-                    }
-                }
-
-                let all_channels = channels
-                    .iter()
-                    .map(|ch| match ch {
-                        BinanceWsChannelKind::Trade => BinanceWsChannel::Trade(symbols_chunk.clone()),
-                        BinanceWsChannelKind::BookTicker => BinanceWsChannel::BookTicker(symbols_chunk.clone())
-                    })
-                    .collect::<Vec<_>>();
-
-                this.channels.extend(all_channels);
-
-                streams -= 1;
-            }
-        }
-
-        let rest = all_symbols
+        let all_symbols = all_symbols_vec
+            .into_iter()
             .map(|val| val.symbol.try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
-        let rest_stream_size = std::cmp::min(MAX_BINANCE_WS_CONNS_PER_STREAM, rest.len());
-        let rest_chunks = rest.chunks(rest_stream_size);
+        let chunks = all_symbols.chunks(MAX_BINANCE_WS_CONNS_PER_STREAM);
 
-        rest_chunks.into_iter().for_each(|chk| {
+        chunks.into_iter().for_each(|chk| {
             let all_channels = channels
                 .iter()
                 .map(|ch| match ch {
@@ -226,66 +183,78 @@ impl BinanceWsBuilder {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // use super::*;
 
-    fn len_kind(channel: &BinanceWsChannel) -> (usize, BinanceWsChannelKind) {
-        match channel {
-            BinanceWsChannel::Trade(vals) => (vals.len(), BinanceWsChannelKind::Trade),
-            BinanceWsChannel::BookTicker(vals) => (vals.len(), BinanceWsChannelKind::BookTicker)
-        }
-    }
+    // fn len_kind(channel: &BinanceWsChannel) -> (usize, BinanceWsChannelKind)
+    // {     match channel {
+    //         BinanceWsChannel::Trade(vals) => (vals.len(),
+    // BinanceWsChannelKind::Trade),
+    //         BinanceWsChannel::BookTicker(vals) => (vals.len(),
+    // BinanceWsChannelKind::BookTicker)     }
+    // }
 
-    #[tokio::test]
-    async fn test_build_many_weighted_util() {
-        let map = vec![(2, 3), (1, 10), (1, 30), (1, 50)];
-        let channels = vec![BinanceWsChannelKind::Trade, BinanceWsChannelKind::BookTicker];
+    // #[tokio::test]
+    // async fn test_build_many_weighted_util() {
+    //     let map = vec![(2, 3), (1, 10), (1, 30), (1, 50)];
+    //     let channels = vec![BinanceWsChannelKind::Trade,
+    // BinanceWsChannelKind::BookTicker];
 
-        let calculated = BinanceWsBuilder::build_all_weighted_util(map, &channels)
-            .await
-            .unwrap();
-        let mut calculated_channels = calculated.channels.into_iter();
+    //     let calculated = BinanceWsBuilder::build_all_weighted_util(map,
+    // &channels)         .await
+    //         .unwrap();
+    //     let mut calculated_channels = calculated.channels.into_iter();
 
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 3);
-        assert!(n_kind == BinanceWsChannelKind::Trade || n_kind == BinanceWsChannelKind::BookTicker);
+    //     let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
+    //     assert_eq!(n_len, 3);
+    //     assert!(n_kind == BinanceWsChannelKind::Trade || n_kind ==
+    // BinanceWsChannelKind::BookTicker);
 
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 3);
-        assert!(n_kind == BinanceWsChannelKind::Trade || n_kind == BinanceWsChannelKind::BookTicker);
+    //     let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
+    //     assert_eq!(n_len, 3);
+    //     assert!(n_kind == BinanceWsChannelKind::Trade || n_kind ==
+    // BinanceWsChannelKind::BookTicker);
 
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 3);
-        assert!(n_kind == BinanceWsChannelKind::Trade || n_kind == BinanceWsChannelKind::BookTicker);
+    //     let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
+    //     assert_eq!(n_len, 3);
+    //     assert!(n_kind == BinanceWsChannelKind::Trade || n_kind ==
+    // BinanceWsChannelKind::BookTicker);
 
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 3);
-        assert!(n_kind == BinanceWsChannelKind::Trade || n_kind == BinanceWsChannelKind::BookTicker);
+    //     let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
+    //     assert_eq!(n_len, 3);
+    //     assert!(n_kind == BinanceWsChannelKind::Trade || n_kind ==
+    // BinanceWsChannelKind::BookTicker);
 
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 10);
-        assert!(n_kind == BinanceWsChannelKind::Trade || n_kind == BinanceWsChannelKind::BookTicker);
+    //     let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
+    //     assert_eq!(n_len, 10);
+    //     assert!(n_kind == BinanceWsChannelKind::Trade || n_kind ==
+    // BinanceWsChannelKind::BookTicker);
 
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 10);
-        assert!(n_kind == BinanceWsChannelKind::Trade || n_kind == BinanceWsChannelKind::BookTicker);
+    //     let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
+    //     assert_eq!(n_len, 10);
+    //     assert!(n_kind == BinanceWsChannelKind::Trade || n_kind ==
+    // BinanceWsChannelKind::BookTicker);
 
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 30);
-        assert!(n_kind == BinanceWsChannelKind::Trade || n_kind == BinanceWsChannelKind::BookTicker);
+    //     let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
+    //     assert_eq!(n_len, 30);
+    //     assert!(n_kind == BinanceWsChannelKind::Trade || n_kind ==
+    // BinanceWsChannelKind::BookTicker);
 
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 30);
-        assert!(n_kind == BinanceWsChannelKind::Trade || n_kind == BinanceWsChannelKind::BookTicker);
+    //     let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
+    //     assert_eq!(n_len, 30);
+    //     assert!(n_kind == BinanceWsChannelKind::Trade || n_kind ==
+    // BinanceWsChannelKind::BookTicker);
 
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 50);
-        assert!(n_kind == BinanceWsChannelKind::Trade || n_kind == BinanceWsChannelKind::BookTicker);
+    //     let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
+    //     assert_eq!(n_len, 50);
+    //     assert!(n_kind == BinanceWsChannelKind::Trade || n_kind ==
+    // BinanceWsChannelKind::BookTicker);
 
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 50);
-        assert!(n_kind == BinanceWsChannelKind::Trade || n_kind == BinanceWsChannelKind::BookTicker);
+    //     let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
+    //     assert_eq!(n_len, 50);
+    //     assert!(n_kind == BinanceWsChannelKind::Trade || n_kind ==
+    // BinanceWsChannelKind::BookTicker);
 
-        let rest = calculated_channels.collect::<Vec<_>>();
-        assert_eq!(rest.len(), MAX_BINANCE_STREAMS - 10);
-    }
+    //     let rest = calculated_channels.collect::<Vec<_>>();
+    //     assert_eq!(rest.len(), MAX_BINANCE_STREAMS - 10);
+    // }
 }

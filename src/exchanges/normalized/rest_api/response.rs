@@ -7,7 +7,7 @@ use crate::exchanges::binance::rest_api::BinanceRestApiResponse;
 use crate::exchanges::{coinbase::rest_api::CoinbaseRestApiResponse, okex::rest_api::OkexRestApiResponse};
 use crate::{
     binance::rest_api::{BinanceInstrument, BinanceSymbol},
-    bybit::rest_api::{BybitCoin, BybitIntrument, BybitRestApiResponse},
+    bybit::rest_api::{BybitIntrument, BybitRestApiResponse},
     coinbase::rest_api::{CoinbaseCurrency, CoinbaseProduct},
     kucoin::rest_api::{KucoinCurrency, KucoinRestApiResponse, KucoinSymbol},
     normalized::types::NormalizedCurrency,

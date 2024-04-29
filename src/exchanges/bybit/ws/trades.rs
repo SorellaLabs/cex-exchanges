@@ -15,39 +15,47 @@ pub struct BybitTrade {
     pub kind:              String,
     #[serde(rename = "ts")]
     pub request_timestamp: u64,
-    pub data:              BybitTradeInner
+    pub data:              Vec<BybitTradeInner>
 }
 
 impl BybitTrade {
-    pub fn normalize(self) -> NormalizedTrade {
-        NormalizedTrade {
-            exchange: CexExchange::Bybit,
-            pair:     self.data.pair.normalize(),
-            time:     DateTime::<Utc>::from_timestamp_nanos(self.data.timestamp as i64),
-            side:     self.data.side.to_lowercase(),
-            price:    self.data.price,
-            amount:   self.data.amount,
-            trade_id: Some(self.data.trade_id.to_string())
-        }
+    pub fn normalize(self) -> Vec<NormalizedTrade> {
+        self.data
+            .into_iter()
+            .map(|inner| NormalizedTrade {
+                exchange: CexExchange::Bybit,
+                pair:     inner.pair.normalize(),
+                time:     DateTime::<Utc>::from_timestamp_millis(inner.timestamp as i64).unwrap(),
+                side:     inner.side.to_lowercase(),
+                price:    inner.price,
+                amount:   inner.amount,
+                trade_id: Some(inner.trade_id.to_string())
+            })
+            .collect()
     }
 }
 
-impl PartialEq<NormalizedTrade> for BybitTrade {
-    fn eq(&self, other: &NormalizedTrade) -> bool {
-        let equals = other.exchange == CexExchange::Bybit
-            && other.pair == self.data.pair.normalize()
-            && other.time == DateTime::<Utc>::from_timestamp_nanos(self.data.timestamp as i64)
-            && other.side == self.data.side.to_lowercase()
-            && other.price == self.data.price
-            && other.amount == self.data.amount
-            && other.trade_id.as_ref().unwrap() == &self.data.trade_id.to_string();
+impl PartialEq<Vec<NormalizedTrade>> for BybitTrade {
+    fn eq(&self, other: &Vec<NormalizedTrade>) -> bool {
+        let all_equals = self.data.iter().all(|inner| {
+            other.iter().any(|other_data| {
+                let equals = other_data.exchange == CexExchange::Bybit
+                    && other_data.pair == inner.pair.normalize()
+                    && other_data.time == DateTime::<Utc>::from_timestamp_millis(inner.timestamp as i64).unwrap()
+                    && other_data.side == inner.side.to_lowercase()
+                    && other_data.price == inner.price
+                    && other_data.amount == inner.amount
+                    && other_data.trade_id.as_ref().unwrap() == &inner.trade_id.to_string();
+                equals
+            })
+        });
 
-        if !equals {
+        if !all_equals {
             println!("SELF: {:?}", self);
             println!("NORMALIZED: {:?}", other);
         }
 
-        equals
+        all_equals
     }
 }
 
@@ -60,14 +68,15 @@ pub struct BybitTradeInner {
     pub pair: BybitTradingPair,
     #[serde(rename = "S")]
     pub side: String,
+    #[serde_as(as = "DisplayFromStr")]
     #[serde(rename = "v")]
-    #[serde_as(as = "DisplayFromStr")]
     pub amount: f64,
-    #[serde(rename = "p")]
     #[serde_as(as = "DisplayFromStr")]
+    #[serde(rename = "p")]
     pub price: f64,
     #[serde(rename = "L")]
-    pub direction_of_price_change: String,
+    pub direction_of_price_change: Option<String>,
+    #[serde_as(as = "DisplayFromStr")]
     #[serde(rename = "i")]
     pub trade_id: u64,
     #[serde(rename = "BT")]

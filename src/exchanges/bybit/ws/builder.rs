@@ -1,16 +1,14 @@
 use super::{BybitSubscription, BybitWsChannel, BybitWsChannelKind};
 use crate::{
-    bybit::Bybit,
+    bybit::{Bybit, BybitTradingType},
     clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},
     normalized::ws::NormalizedWsChannels
 };
 
-/// There is a limit of 300 connections per attempt every 5 minutes per IP.
-/// (https://kucoin-docs.github.io/apidocs/spot/en/#limits)
-const MAX_BINANCE_STREAMS: usize = 300;
-/// A single connection can listen to a maximum of 1024 streams.
-/// (https://kucoin-docs.github.io/apidocs/spot/en/#limits)
-const MAX_BINANCE_WS_CONNS_PER_STREAM: usize = 1024;
+/// There is a limit of 500 connections per 5 minutes per IP.
+const MAX_BYBIT_STREAMS: usize = 300;
+/// A single connection can listen to a maximum of 10 streams.
+const MAX_BYBIT_WS_CONNS_PER_STREAM: usize = 10;
 
 #[derive(Debug, Clone, Default)]
 pub struct BybitWsBuilder {
@@ -41,12 +39,12 @@ impl BybitWsBuilder {
                     .collect::<Vec<_>>();
                 self.channels.extend(split_channels)
             }
-            BybitWsChannel::Ticker(vals) => {
+            BybitWsChannel::OrderbookL1(vals) => {
                 let split_size = std::cmp::min(split_channel_size.unwrap_or(1), vals.len());
                 let chunks = vals.chunks(split_size).collect::<Vec<_>>();
                 let split_channels = chunks
                     .into_iter()
-                    .map(|chk| BybitWsChannel::Ticker(chk.to_vec()))
+                    .map(|chk| BybitWsChannel::OrderbookL1(chk.to_vec()))
                     .collect::<Vec<_>>();
                 self.channels.extend(split_channels)
             }
@@ -69,11 +67,11 @@ impl BybitWsBuilder {
 
     /// builds many ws instances of the [Bybit] as the inner streams of
     /// [MutliWsStreamBuilder], splitting the channels into different streams,
-    /// each with size # channels / `MAX_BINANCE_STREAMS` (300),
+    /// each with size # channels / `MAX_BYBIT_STREAMS` (300),
     ///
     /// WARNING: too many channels may break the stream
     pub fn build_many_distributed(self) -> eyre::Result<MutliWsStreamBuilder<Bybit>> {
-        let stream_size = if self.channels.len() <= MAX_BINANCE_STREAMS { 1 } else { self.channels.len() / MAX_BINANCE_STREAMS };
+        let stream_size = if self.channels.len() <= MAX_BYBIT_STREAMS { 1 } else { self.channels.len() / MAX_BYBIT_STREAMS };
 
         let chunks = self.channels.chunks(stream_size).collect::<Vec<_>>();
 
@@ -97,7 +95,7 @@ impl BybitWsBuilder {
     pub fn build_many_packed(self) -> eyre::Result<MutliWsStreamBuilder<Bybit>> {
         let chunks = self
             .channels
-            .chunks(MAX_BINANCE_WS_CONNS_PER_STREAM)
+            .chunks(MAX_BYBIT_WS_CONNS_PER_STREAM)
             .collect::<Vec<_>>();
 
         let split_exchange = chunks
@@ -114,16 +112,9 @@ impl BybitWsBuilder {
         Ok(MutliWsStreamBuilder::new(split_exchange))
     }
 
-    /// builds a mutlistream channel with a weighted mapping (how many channels
-    /// to put per stream based on their 'exchange_ranking')
-    ///
-    /// [(#streams, #symbols/channel), ...]
-    ///
-    /// ex: [(2,3), (1,10), (1, 30), (1,55)]
-    /// 2 streams with 3 symbols, 1 with 10 symbols, 1 with 20 symbols, 1
-    /// with 55 symbols, 'n' streams with up to 1024 channels with the rest
-    pub async fn build_all_weighted(weighted_map: Vec<(usize, usize)>, channels: &[BybitWsChannelKind]) -> eyre::Result<MutliWsStreamBuilder<Bybit>> {
-        let this = Self::build_all_weighted_util(weighted_map, channels).await?;
+    /// builds a mutlistream channel from all active instruments
+    pub async fn build_from_all_instruments(channels: &[BybitWsChannelKind]) -> eyre::Result<MutliWsStreamBuilder<Bybit>> {
+        let this = Self::build_from_all_instruments_util(channels).await?;
 
         let all_streams = this
             .channels
@@ -139,7 +130,7 @@ impl BybitWsBuilder {
         Ok(MutliWsStreamBuilder::new(all_streams))
     }
 
-    async fn build_all_weighted_util(weighted_map: Vec<(usize, usize)>, channels: &[BybitWsChannelKind]) -> eyre::Result<Self> {
+    async fn build_from_all_instruments_util(channels: &[BybitWsChannelKind]) -> eyre::Result<Self> {
         let mut this = Self::default();
 
         let mut all_symbols_vec = ExchangeApi::new()
@@ -147,55 +138,21 @@ impl BybitWsBuilder {
             .await?
             .take_bybit_instruments()
             .unwrap();
+        all_symbols_vec.retain(|sym| &sym.inner.status == "Trading" && matches!(sym.trading_type, BybitTradingType::Spot));
 
-        all_symbols_vec.retain(|sym| &sym.inner.status == "Trading");
-
-        let mut all_symbols = all_symbols_vec.into_iter();
-
-        let mut map = weighted_map;
-        map.sort_by(|a, b| b.1.cmp(&a.1));
-
-        while let Some(nxt) = map.pop() {
-            let (mut streams, num_channels) = nxt;
-            while streams > 0 {
-                let mut num_channels = num_channels;
-
-                let mut symbols_chunk = Vec::new();
-                while let Some(s) = all_symbols.next() {
-                    symbols_chunk.push(s.inner.symbol.try_into()?);
-                    num_channels -= 1;
-                    if num_channels == 0 {
-                        break
-                    }
-                }
-
-                let all_channels = channels
-                    .iter()
-                    .map(|ch| match ch {
-                        BybitWsChannelKind::Trade => BybitWsChannel::Trade(symbols_chunk.clone()),
-                        BybitWsChannelKind::Ticker => BybitWsChannel::Ticker(symbols_chunk.clone())
-                    })
-                    .collect::<Vec<_>>();
-
-                this.channels.extend(all_channels);
-
-                streams -= 1;
-            }
-        }
-
-        let rest = all_symbols
+        let all_symbols = all_symbols_vec
+            .into_iter()
             .map(|val| val.inner.symbol.try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
-        let rest_stream_size = std::cmp::min(MAX_BINANCE_WS_CONNS_PER_STREAM, rest.len());
-        let rest_chunks = rest.chunks(rest_stream_size);
+        let chunks = all_symbols.chunks(MAX_BYBIT_WS_CONNS_PER_STREAM);
 
-        rest_chunks.into_iter().for_each(|chk| {
+        chunks.into_iter().for_each(|chk| {
             let all_channels = channels
                 .iter()
                 .map(|ch| match ch {
                     BybitWsChannelKind::Trade => BybitWsChannel::Trade(chk.to_vec()),
-                    BybitWsChannelKind::Ticker => BybitWsChannel::Ticker(chk.to_vec())
+                    BybitWsChannelKind::OrderbookL1 => BybitWsChannel::OrderbookL1(chk.to_vec())
                 })
                 .collect::<Vec<_>>();
 
@@ -220,71 +177,5 @@ impl BybitWsBuilder {
         })?;
 
         Ok(this)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn len_kind(channel: &BybitWsChannel) -> (usize, BybitWsChannelKind) {
-        match channel {
-            BybitWsChannel::Trade(vals) => (vals.len(), BybitWsChannelKind::Trade),
-            BybitWsChannel::Ticker(vals) => (vals.len(), BybitWsChannelKind::Ticker)
-        }
-    }
-
-    #[tokio::test]
-    async fn test_build_many_weighted_util() {
-        let map = vec![(2, 3), (1, 10), (1, 30), (1, 50)];
-        let channels = vec![BybitWsChannelKind::Trade, BybitWsChannelKind::Ticker];
-
-        let calculated = BybitWsBuilder::build_all_weighted_util(map, &channels)
-            .await
-            .unwrap();
-        let mut calculated_channels = calculated.channels.into_iter();
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 3);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 3);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 3);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 3);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 10);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 10);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 30);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 30);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 50);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 50);
-        assert!(n_kind == BybitWsChannelKind::Trade || n_kind == BybitWsChannelKind::Ticker);
-
-        let rest = calculated_channels.collect::<Vec<_>>();
-        assert_eq!(rest.len(), MAX_BINANCE_STREAMS - 10);
     }
 }

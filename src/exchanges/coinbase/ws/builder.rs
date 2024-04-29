@@ -5,6 +5,11 @@ use crate::{
     normalized::ws::NormalizedWsChannels
 };
 
+/// There is a limit of 300 connections per attempt every 5 minutes per IP.
+const MAX_COINBASE_STREAMS: usize = 300;
+/// A single connection can listen to a maximum of 1024 streams.
+const MAX_COINBASE_WS_CONNS_PER_STREAM: usize = 1024;
+
 #[derive(Debug, Clone, Default)]
 pub struct CoinbaseWsBuilder {
     pub channels: Vec<CoinbaseWsChannel>
@@ -65,10 +70,9 @@ impl CoinbaseWsBuilder {
     ///
     /// WARNING: too many channels may break the stream
     pub fn build_many_distributed(self) -> eyre::Result<MutliWsStreamBuilder<Coinbase>> {
-        let chunks = self
-            .channels
-            .chunks(self.channels.len())
-            .collect::<Vec<_>>();
+        let stream_size = if self.channels.len() <= MAX_COINBASE_STREAMS { 1 } else { self.channels.len() / MAX_COINBASE_STREAMS };
+
+        let chunks = self.channels.chunks(stream_size).collect::<Vec<_>>();
 
         let split_exchange = chunks
             .into_iter()
@@ -88,7 +92,10 @@ impl CoinbaseWsBuilder {
     /// [MutliWsStreamBuilder], splitting the channels into different streams,
     /// each of size 1024
     pub fn build_many_packed(self) -> eyre::Result<MutliWsStreamBuilder<Coinbase>> {
-        let chunks = self.channels.chunks(1024).collect::<Vec<_>>();
+        let chunks = self
+            .channels
+            .chunks(MAX_COINBASE_WS_CONNS_PER_STREAM)
+            .collect::<Vec<_>>();
 
         let split_exchange = chunks
             .into_iter()
@@ -104,19 +111,9 @@ impl CoinbaseWsBuilder {
         Ok(MutliWsStreamBuilder::new(split_exchange))
     }
 
-    /// builds a mutlistream channel with a weighted mapping (how many channels
-    /// to put per stream based on their 'exchange_ranking')
-    ///
-    /// [(#streams, #symbols/channel), ...]
-    ///
-    /// ex: [(2,3), (1,10), (1, 30), (1,55)]
-    /// 2 streams with 3 symbols, 1 with 10 symbols, 1 with 20 symbols, 1
-    /// with 55 symbols, 'n' streams with up to 1024 channels with the rest
-    pub async fn build_all_weighted(
-        weighted_map: Vec<(usize, usize)>,
-        channels: &[CoinbaseWsChannelKind]
-    ) -> eyre::Result<MutliWsStreamBuilder<Coinbase>> {
-        let this = Self::build_all_weighted_util(weighted_map, channels).await?;
+    /// builds a mutlistream channel from all active instruments
+    pub async fn build_from_all_instruments(channels: &[CoinbaseWsChannelKind]) -> eyre::Result<MutliWsStreamBuilder<Coinbase>> {
+        let this = Self::build_from_all_instruments_util(channels).await?;
 
         let all_streams = this
             .channels
@@ -132,7 +129,7 @@ impl CoinbaseWsBuilder {
         Ok(MutliWsStreamBuilder::new(all_streams))
     }
 
-    async fn build_all_weighted_util(weighted_map: Vec<(usize, usize)>, channels: &[CoinbaseWsChannelKind]) -> eyre::Result<Self> {
+    async fn build_from_all_instruments_util(channels: &[CoinbaseWsChannelKind]) -> eyre::Result<Self> {
         let mut this = Self::default();
 
         let mut all_symbols_vec = ExchangeApi::new()
@@ -140,51 +137,16 @@ impl CoinbaseWsBuilder {
             .await?
             .take_coinbase_instruments()
             .unwrap();
+        all_symbols_vec.retain(|sym| &sym.status == "online");
 
-        all_symbols_vec.retain(|sy| sy.status == "online");
-
-        let mut all_symbols = all_symbols_vec.into_iter();
-
-        let mut map = weighted_map;
-        map.sort_by(|a, b| b.1.cmp(&a.1));
-
-        while let Some(nxt) = map.pop() {
-            let (mut streams, num_channels) = nxt;
-            while streams > 0 {
-                let mut num_channels = num_channels;
-
-                let mut symbols_chunk = Vec::new();
-                while let Some(s) = all_symbols.next() {
-                    symbols_chunk.push(s.id.try_into()?);
-                    num_channels -= 1;
-                    if num_channels == 0 {
-                        break
-                    }
-                }
-
-                let all_channels = channels
-                    .iter()
-                    .map(|ch| match ch {
-                        CoinbaseWsChannelKind::Matches => CoinbaseWsChannel::Matches(symbols_chunk.clone()),
-                        CoinbaseWsChannelKind::Ticker => CoinbaseWsChannel::Ticker(symbols_chunk.clone()),
-                        CoinbaseWsChannelKind::Status => CoinbaseWsChannel::Status
-                    })
-                    .collect::<Vec<_>>();
-
-                this.channels.extend(all_channels);
-
-                streams -= 1;
-            }
-        }
-
-        let rest = all_symbols
+        let all_symbols = all_symbols_vec
+            .into_iter()
             .map(|val| val.id.try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
-        let rest_stream_size = std::cmp::min(1024, rest.len());
-        let rest_chunks = rest.chunks(rest_stream_size);
+        let chunks = all_symbols.chunks(MAX_COINBASE_WS_CONNS_PER_STREAM);
 
-        rest_chunks.into_iter().for_each(|chk| {
+        chunks.into_iter().for_each(|chk| {
             let all_channels = channels
                 .iter()
                 .map(|ch| match ch {

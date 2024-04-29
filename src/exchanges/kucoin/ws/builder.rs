@@ -6,11 +6,9 @@ use crate::{
 };
 
 /// There is a limit of 300 connections per attempt every 5 minutes per IP.
-/// (https://kucoin-docs.github.io/apidocs/spot/en/#limits)
-const MAX_BINANCE_STREAMS: usize = 300;
+const MAX_KUCOIN_STREAMS: usize = 300;
 /// A single connection can listen to a maximum of 1024 streams.
-/// (https://kucoin-docs.github.io/apidocs/spot/en/#limits)
-const MAX_BINANCE_WS_CONNS_PER_STREAM: usize = 1024;
+const MAX_KUCOIN_WS_CONNS_PER_STREAM: usize = 1024;
 
 #[derive(Debug, Clone, Default)]
 pub struct KucoinWsBuilder {
@@ -73,7 +71,7 @@ impl KucoinWsBuilder {
     ///
     /// WARNING: too many channels may break the stream
     pub fn build_many_distributed(self) -> eyre::Result<MutliWsStreamBuilder<Kucoin>> {
-        let stream_size = if self.channels.len() <= MAX_BINANCE_STREAMS { 1 } else { self.channels.len() / MAX_BINANCE_STREAMS };
+        let stream_size = if self.channels.len() <= MAX_KUCOIN_STREAMS { 1 } else { self.channels.len() / MAX_KUCOIN_STREAMS };
 
         let chunks = self.channels.chunks(stream_size).collect::<Vec<_>>();
 
@@ -97,7 +95,7 @@ impl KucoinWsBuilder {
     pub fn build_many_packed(self) -> eyre::Result<MutliWsStreamBuilder<Kucoin>> {
         let chunks = self
             .channels
-            .chunks(MAX_BINANCE_WS_CONNS_PER_STREAM)
+            .chunks(MAX_KUCOIN_WS_CONNS_PER_STREAM)
             .collect::<Vec<_>>();
 
         let split_exchange = chunks
@@ -114,19 +112,9 @@ impl KucoinWsBuilder {
         Ok(MutliWsStreamBuilder::new(split_exchange))
     }
 
-    /// builds a mutlistream channel with a weighted mapping (how many channels
-    /// to put per stream based on their 'exchange_ranking')
-    ///
-    /// [(#streams, #symbols/channel), ...]
-    ///
-    /// ex: [(2,3), (1,10), (1, 30), (1,55)]
-    /// 2 streams with 3 symbols, 1 with 10 symbols, 1 with 20 symbols, 1
-    /// with 55 symbols, 'n' streams with up to 1024 channels with the rest
-    pub async fn build_all_weighted(
-        weighted_map: Vec<(usize, usize)>,
-        channels: &[KucoinWsChannelKind]
-    ) -> eyre::Result<MutliWsStreamBuilder<Kucoin>> {
-        let this = Self::build_all_weighted_util(weighted_map, channels).await?;
+    /// builds a mutlistream channel from all active instruments
+    pub async fn build_from_all_instruments(channels: &[KucoinWsChannelKind]) -> eyre::Result<MutliWsStreamBuilder<Kucoin>> {
+        let this = Self::build_from_all_instruments_util(channels).await?;
 
         let all_streams = this
             .channels
@@ -142,7 +130,7 @@ impl KucoinWsBuilder {
         Ok(MutliWsStreamBuilder::new(all_streams))
     }
 
-    async fn build_all_weighted_util(weighted_map: Vec<(usize, usize)>, channels: &[KucoinWsChannelKind]) -> eyre::Result<Self> {
+    async fn build_from_all_instruments_util(channels: &[KucoinWsChannelKind]) -> eyre::Result<Self> {
         let mut this = Self::default();
 
         let mut all_symbols_vec = ExchangeApi::new()
@@ -150,50 +138,16 @@ impl KucoinWsBuilder {
             .await?
             .take_kucoin_instruments()
             .unwrap();
-
         all_symbols_vec.retain(|sym| sym.enable_trading);
 
-        let mut all_symbols = all_symbols_vec.into_iter();
-
-        let mut map = weighted_map;
-        map.sort_by(|a, b| b.1.cmp(&a.1));
-
-        while let Some(nxt) = map.pop() {
-            let (mut streams, num_channels) = nxt;
-            while streams > 0 {
-                let mut num_channels = num_channels;
-
-                let mut symbols_chunk = Vec::new();
-                while let Some(s) = all_symbols.next() {
-                    symbols_chunk.push(s.symbol.try_into()?);
-                    num_channels -= 1;
-                    if num_channels == 0 {
-                        break
-                    }
-                }
-
-                let all_channels = channels
-                    .iter()
-                    .map(|ch| match ch {
-                        KucoinWsChannelKind::Match => KucoinWsChannel::Match(symbols_chunk.clone()),
-                        KucoinWsChannelKind::Ticker => KucoinWsChannel::Ticker(symbols_chunk.clone())
-                    })
-                    .collect::<Vec<_>>();
-
-                this.channels.extend(all_channels);
-
-                streams -= 1;
-            }
-        }
-
-        let rest = all_symbols
+        let all_symbols = all_symbols_vec
+            .into_iter()
             .map(|val| val.symbol.try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
-        let rest_stream_size = std::cmp::min(MAX_BINANCE_WS_CONNS_PER_STREAM, rest.len());
-        let rest_chunks = rest.chunks(rest_stream_size);
+        let chunks = all_symbols.chunks(MAX_KUCOIN_WS_CONNS_PER_STREAM);
 
-        rest_chunks.into_iter().for_each(|chk| {
+        chunks.into_iter().for_each(|chk| {
             let all_channels = channels
                 .iter()
                 .map(|ch| match ch {
@@ -223,71 +177,5 @@ impl KucoinWsBuilder {
         })?;
 
         Ok(this)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn len_kind(channel: &KucoinWsChannel) -> (usize, KucoinWsChannelKind) {
-        match channel {
-            KucoinWsChannel::Match(vals) => (vals.len(), KucoinWsChannelKind::Match),
-            KucoinWsChannel::Ticker(vals) => (vals.len(), KucoinWsChannelKind::Ticker)
-        }
-    }
-
-    #[tokio::test]
-    async fn test_build_many_weighted_util() {
-        let map = vec![(2, 3), (1, 10), (1, 30), (1, 50)];
-        let channels = vec![KucoinWsChannelKind::Match, KucoinWsChannelKind::Ticker];
-
-        let calculated = KucoinWsBuilder::build_all_weighted_util(map, &channels)
-            .await
-            .unwrap();
-        let mut calculated_channels = calculated.channels.into_iter();
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 3);
-        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 3);
-        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 3);
-        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 3);
-        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 10);
-        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 10);
-        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 30);
-        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 30);
-        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 50);
-        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
-
-        let (n_len, n_kind) = len_kind(&calculated_channels.next().unwrap());
-        assert_eq!(n_len, 50);
-        assert!(n_kind == KucoinWsChannelKind::Match || n_kind == KucoinWsChannelKind::Ticker);
-
-        let rest = calculated_channels.collect::<Vec<_>>();
-        assert_eq!(rest.len(), MAX_BINANCE_STREAMS - 10);
     }
 }

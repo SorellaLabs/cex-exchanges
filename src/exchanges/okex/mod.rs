@@ -108,3 +108,106 @@ impl Default for Okex {
         Self { subscription: Default::default(), exch_currency_proxy: CexExchange::Binance }
     }
 }
+
+/*
+    /// builds a mutlistream channel with a weighted mapping (how many channels
+    /// to put per stream based on their 'exchange_ranking')
+    ///
+    /// [(#streams, #symbols/channel), ...]
+    ///
+    /// ex: [(2,3), (1,10), (1, 30), (1,55)]
+    /// 2 streams with 3 symbols, 1 with 10 symbols, 1 with 20 symbols, 1
+    /// with 55 symbols, 'n' streams with up to 1024 channels with the rest
+    ///
+    /// the default proxy exchange is [CexExchange::Binance]
+    pub async fn build_all_weighted(
+        weighted_map: Vec<(usize, usize)>,
+        channels: &[OkexWsChannelKind],
+        proxy: Option<CexExchange>
+    ) -> eyre::Result<MutliWsStreamBuilder<Okex>> {
+        let proxy = proxy.unwrap_or(CexExchange::Binance);
+        let this = Self::build_all_weighted_util(weighted_map, channels, proxy).await?;
+
+        let all_streams = this
+            .channels
+            .into_iter()
+            .map(|ch| {
+                let mut subscription = OkexSubscription::new();
+                subscription.add_channel(ch);
+
+                Okex::new_ws_subscription(subscription, proxy)
+            })
+            .collect::<Vec<_>>();
+
+        Ok(MutliWsStreamBuilder::new(all_streams))
+    }
+
+    async fn build_all_weighted_util(weighted_map: Vec<(usize, usize)>, channels: &[OkexWsChannelKind], proxy: CexExchange) -> eyre::Result<Self> {
+        let mut this = Self::new(Some(proxy));
+
+        let mut all_symbols_vec = ExchangeApi::new()
+            .all_instruments::<Okex>()
+            .await?
+            .take_okex_instruments()
+            .unwrap();
+
+        all_symbols_vec.retain(|sy| sy.state == "live");
+
+        // reverse sort by the sort order (low to high)
+
+        let mut all_symbols = all_symbols_vec.into_iter();
+
+        let mut map = weighted_map;
+        map.sort_by(|a, b| b.1.cmp(&a.1));
+
+        while let Some(nxt) = map.pop() {
+            let (mut streams, num_channels) = nxt;
+            while streams > 0 {
+                let mut num_channels = num_channels;
+
+                let mut symbols_chunk = Vec::new();
+                while let Some(s) = all_symbols.next() {
+                    symbols_chunk.push(s.instrument.try_into()?);
+                    num_channels -= 1;
+                    if num_channels == 0 {
+                        break
+                    }
+                }
+
+                let all_channels = channels
+                    .iter()
+                    .map(|ch| match ch {
+                        OkexWsChannelKind::TradesAll => OkexWsChannel::TradesAll(symbols_chunk.clone()),
+                        OkexWsChannelKind::BookTicker => OkexWsChannel::BookTicker(symbols_chunk.clone())
+                    })
+                    .collect::<Vec<_>>();
+
+                this.channels.extend(all_channels);
+
+                streams -= 1;
+            }
+        }
+
+        let rest = all_symbols
+            .map(|val| val.instrument.try_into())
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let rest_stream_size = std::cmp::min(1024, rest.len());
+        let rest_chunks = rest.chunks(rest_stream_size);
+
+        rest_chunks.into_iter().for_each(|chk| {
+            let all_channels = channels
+                .iter()
+                .map(|ch| match ch {
+                    OkexWsChannelKind::TradesAll => OkexWsChannel::TradesAll(chk.to_vec()),
+                    OkexWsChannelKind::BookTicker => OkexWsChannel::BookTicker(chk.to_vec())
+                })
+                .collect::<Vec<_>>();
+
+            this.channels.extend(all_channels);
+        });
+
+        Ok(this)
+    }
+
+*/

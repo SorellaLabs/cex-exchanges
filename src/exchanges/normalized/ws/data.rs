@@ -6,9 +6,9 @@ use crate::{
 #[derive(Debug, Clone)]
 pub enum NormalizedWsDataTypes {
     Trade(NormalizedTrade),
-    //    Trades(Vec<NormalizedTrade>),
+    Trades(Vec<NormalizedTrade>),
     Quote(NormalizedQuote),
-    // Quotes(Vec<NormalizedQuote>),
+    Quotes(Vec<NormalizedQuote>),
     Disconnect { exchange: CexExchange, message: String },
     Other { exchange: CexExchange, kind: String, value: String }
 }

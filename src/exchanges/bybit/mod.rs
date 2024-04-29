@@ -1,6 +1,5 @@
 mod pairs;
 
-use chrono::Utc;
 use futures::SinkExt;
 pub use pairs::*;
 
@@ -12,7 +11,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
-    rest_api::{BybitAllCoins, BybitAllIntruments, BybitRestApiResponse},
+    rest_api::{BybitAllIntruments, BybitRestApiResponse},
     ws::{BybitSubscription, BybitWsMessage}
 };
 use crate::{
@@ -41,7 +40,7 @@ impl Bybit {
         let mut instruments = Vec::new();
         for cat in categories {
             println!("STARTING: {cat}");
-            let url = format!("https://api.bybit.com/v5/market/instruments-info?category={cat}");
+            let url = format!("{BASE_REST_API_URL}/v5/market/instruments-info?category={cat}");
             let cat_instruments: BybitAllIntruments = Self::simple_rest_api_request(web_client, url).await?;
             instruments.extend(cat_instruments.instruments);
         }
