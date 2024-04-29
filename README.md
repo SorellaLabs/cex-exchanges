@@ -8,6 +8,6 @@
 - Binance - YES
 - Coinbase - YES
 - Okex - YES
-- BybitSpot - TBD
+- BybitSpot - WIP
 - Kucoin - YES
 
