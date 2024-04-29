@@ -24,7 +24,7 @@ use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
-use tokio::net::TcpStream;
+use tokio::{net::TcpStream, sync::mpsc::UnboundedReceiver};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 use self::normalized::{
@@ -70,7 +70,7 @@ impl CexExchange {
         Self::iter().collect()
     }
 
-    pub fn build_multistream_ws_from_normalized(
+    pub(crate) fn build_multistream_ws_from_normalized(
         &self,
         map: Vec<NormalizedWsChannels>,
         _exch_currency_proxy: Option<CexExchange>
@@ -102,6 +102,45 @@ impl CexExchange {
             CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
                 .build_multistream_unconnected()
+        };
+
+        Ok(res)
+    }
+
+    pub(crate) fn build_multithreaded_multistream_ws_from_normalized(
+        &self,
+        map: Vec<NormalizedWsChannels>,
+        _exch_currency_proxy: Option<CexExchange>,
+        handle: tokio::runtime::Handle,
+        number_threads: usize
+    ) -> eyre::Result<UnboundedReceiver<CombinedWsMessage>> {
+        let res = match self {
+            #[cfg(feature = "us")]
+            CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map)?
+                .build_many_packed()?
+                .spawn_multithreaded(number_threads, handle),
+            #[cfg(feature = "us")]
+            CexExchange::Okex => OkexWsBuilder::make_from_normalized_map(
+                map,
+                #[cfg(not(feature = "non-us"))]
+                _exch_currency_proxy.unwrap_or(CexExchange::Coinbase),
+                #[cfg(feature = "non-us")]
+                _exch_currency_proxy.unwrap_or(CexExchange::Binance)
+            )?
+            .build_many_packed()?
+            .spawn_multithreaded(number_threads, handle),
+            #[cfg(feature = "non-us")]
+            CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map)?
+                .build_many_packed()?
+                .spawn_multithreaded(number_threads, handle),
+            #[cfg(feature = "non-us")]
+            CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map)?
+                .build_many_packed()?
+                .spawn_multithreaded(number_threads, handle),
+            #[cfg(feature = "non-us")]
+            CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map)?
+                .build_many_packed()?
+                .spawn_multithreaded(number_threads, handle)
         };
 
         Ok(res)

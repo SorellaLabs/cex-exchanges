@@ -1,5 +1,9 @@
 use std::collections::HashMap;
 
+use futures::stream::{select_all, SelectAll};
+use tokio_stream::wrappers::UnboundedReceiverStream;
+
+use super::CombinedWsMessage;
 use crate::{
     clients::ws::MutliWsStream,
     exchanges::normalized::{
@@ -102,7 +106,7 @@ impl NormalizedExchangeBuilder {
     }
 
     /// builds the multistream ws client
-    pub fn build_all(self) -> eyre::Result<Option<MutliWsStream>> {
+    pub fn build_all_multistream(self) -> eyre::Result<Option<MutliWsStream>> {
         let mut multistream_ws: Option<MutliWsStream> = None;
 
         self.ws_exchanges.into_iter().try_for_each(|(exch, map)| {
@@ -119,5 +123,30 @@ impl NormalizedExchangeBuilder {
         })?;
 
         Ok(multistream_ws)
+    }
+
+    /// builds the multithreaded multistream ws client
+    pub fn build_all_multithreaded(
+        self,
+        handle: tokio::runtime::Handle,
+        number_threads: usize
+    ) -> eyre::Result<Option<SelectAll<UnboundedReceiverStream<CombinedWsMessage>>>> {
+        let all_streams = self
+            .ws_exchanges
+            .into_iter()
+            .map(|(exch, map)| {
+                let channel_map = map.into_values().collect::<Vec<_>>();
+
+                let new_stream =
+                    exch.build_multithreaded_multistream_ws_from_normalized(channel_map, self.exch_currency_proxy, handle.clone(), number_threads)?;
+                Ok::<_, eyre::Report>(UnboundedReceiverStream::new(new_stream))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        if all_streams.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(select_all(all_streams)))
+        }
     }
 }
