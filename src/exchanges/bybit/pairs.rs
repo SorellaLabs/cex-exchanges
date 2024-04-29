@@ -60,7 +60,7 @@ impl TryFrom<NormalizedTradingPair> for BybitTradingPair {
         }
 
         if let (Some(raw_pair), delim) = (value.pair(), value.delimiter()) {
-            if let Ok(v) = Self::new_checked(&raw_pair) {
+            if let Ok(v) = Self::new_checked(raw_pair) {
                 return Ok(v)
             }
 
@@ -69,7 +69,7 @@ impl TryFrom<NormalizedTradingPair> for BybitTradingPair {
                 return Ok(BybitTradingPair(format!("{}{}", split.next().unwrap().to_uppercase(), split.next().unwrap().to_uppercase())));
             }
 
-            let new_str = raw_pair.replace('_', "").replace('-', "").replace('/', "");
+            let new_str = raw_pair.replace(['_', '-', '/'], "");
             if let Ok(this) = Self::new_checked(&new_str) {
                 return Ok(this)
             }
@@ -77,7 +77,7 @@ impl TryFrom<NormalizedTradingPair> for BybitTradingPair {
             return Err(eyre::ErrReport::msg(format!("INVALID Bybit trading pair '{raw_pair}'")))
         }
 
-        return Err(eyre::ErrReport::msg(format!("INVALID Bybit trading pair '{:?}'", value)))
+        Err(eyre::ErrReport::msg(format!("INVALID Bybit trading pair '{:?}'", value)))
     }
 }
 
@@ -109,9 +109,9 @@ pub enum BybitTradingType {
     Spot,
     Option
 }
-impl Into<NormalizedTradingType> for BybitTradingType {
-    fn into(self) -> NormalizedTradingType {
-        match self {
+impl From<BybitTradingType> for NormalizedTradingType {
+    fn from(val: BybitTradingType) -> Self {
+        match val {
             BybitTradingType::Linear => NormalizedTradingType::Perpetual,
             BybitTradingType::Inverse => NormalizedTradingType::Perpetual,
             BybitTradingType::Spot => NormalizedTradingType::Spot,

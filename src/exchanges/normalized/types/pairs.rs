@@ -20,12 +20,10 @@ impl NormalizedTradingPair {
             } else {
                 format!("{}{del}{}", base.to_uppercase(), quote.to_uppercase())
             }
+        } else if let Some(ed) = extra_data {
+            format!("{}{}{ed}", base.to_uppercase(), quote.to_uppercase())
         } else {
-            if let Some(ed) = extra_data {
-                format!("{}{}{ed}", base.to_uppercase(), quote.to_uppercase())
-            } else {
-                format!("{}{}", base.to_uppercase(), quote.to_uppercase())
-            }
+            format!("{}{}", base.to_uppercase(), quote.to_uppercase())
         };
 
         Self { pair: Some(pair), base_quote: Some((base.to_uppercase(), quote.to_uppercase())), exchange, delimiter }

@@ -154,7 +154,7 @@ impl PartialEq<NormalizedInstrument> for BinanceInstrument {
             && other.base_asset_symbol == *self.base_asset
             && other.quote_asset_symbol == *self.quote_asset
             && other.active == (&self.status == "TRADING")
-            && other.futures_expiry == None;
+            && other.futures_expiry.is_none();
 
         if !equals {
             println!("SELF: {:?}", self);

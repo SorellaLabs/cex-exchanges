@@ -78,7 +78,7 @@ impl NormalizedExchangeBuilder {
         let entry = self.ws_exchanges.entry(exchange).or_default();
 
         channels.iter().for_each(|c| {
-            let channel_kind: NormalizedWsChannelKinds = (*c).into();
+            let channel_kind: NormalizedWsChannelKinds = *c;
             entry
                 .entry(channel_kind)
                 .or_insert(NormalizedWsChannels::new_default(channel_kind))
@@ -90,7 +90,7 @@ impl NormalizedExchangeBuilder {
     pub fn add_pairs_single_channel(&mut self, exchange: CexExchange, channel: NormalizedWsChannelKinds, pairs: &[RawTradingPair]) {
         let entry = self.ws_exchanges.entry(exchange).or_default();
 
-        let channel_kind: NormalizedWsChannelKinds = channel.into();
+        let channel_kind: NormalizedWsChannelKinds = channel;
         entry
             .entry(channel_kind)
             .or_insert(NormalizedWsChannels::new_default(channel_kind))
@@ -102,9 +102,7 @@ impl NormalizedExchangeBuilder {
         let mut multistream_ws: Option<MutliWsStream> = None;
 
         self.ws_exchanges.into_iter().try_for_each(|(exch, map)| {
-            let channel_map = map
-                .into_iter()
-                .map(|(_, channel)| channel)
+            let channel_map = map.into_values()
                 .collect::<Vec<_>>();
 
             let new_stream = exch.build_multistream_ws_from_normalized(channel_map, self.exch_currency_proxy)?;

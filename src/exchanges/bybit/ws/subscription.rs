@@ -33,15 +33,15 @@ impl Serialize for BybitSubscriptionInner {
     where
         S: serde::Serializer
     {
-        format!("{}.{}", self.channel.to_string(), self.trading_pair.0.to_uppercase()).serialize(serializer)
+        format!("{}.{}", self.channel, self.trading_pair.0.to_uppercase()).serialize(serializer)
     }
 }
 
-impl Into<Vec<BybitSubscriptionInner>> for BybitWsChannel {
-    fn into(self) -> Vec<BybitSubscriptionInner> {
-        let channel = (&self).into();
+impl From<BybitWsChannel> for Vec<BybitSubscriptionInner> {
+    fn from(val: BybitWsChannel) -> Self {
+        let channel = (&val).into();
 
-        let all_pairs: Vec<_> = match self {
+        let all_pairs: Vec<_> = match val {
             BybitWsChannel::Trade(pairs) => pairs
                 .into_iter()
                 .collect::<HashSet<_>>()

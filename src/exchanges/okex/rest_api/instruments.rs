@@ -166,7 +166,6 @@ impl OkexInstrument {
             active:             &self.state == "live",
             futures_expiry:     self
                 .expiry_time
-                .clone()
                 .map(|t| Utc.timestamp_millis_opt(t as i64).unwrap().date_naive())
         }
     }
@@ -181,12 +180,12 @@ impl PartialEq<NormalizedInstrument> for OkexInstrument {
                 == *self
                     .base_currency
                     .as_ref()
-                    .unwrap_or_else(|| &self.contract_currency.as_ref().unwrap())
+                    .unwrap_or_else(|| self.contract_currency.as_ref().unwrap())
             && other.quote_asset_symbol
                 == *self
                     .quote_currency
                     .as_ref()
-                    .unwrap_or_else(|| &self.settlement_currency.as_ref().unwrap())
+                    .unwrap_or_else(|| self.settlement_currency.as_ref().unwrap())
             && other.active == (&self.state == "live");
 
         if !equals {

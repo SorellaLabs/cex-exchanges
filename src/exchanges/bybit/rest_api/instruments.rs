@@ -163,12 +163,12 @@ impl BybitIntrumentInner {
     pub fn normalize(self, trading_type: NormalizedTradingType) -> NormalizedInstrument {
         let futures_expiry = if matches!(trading_type, NormalizedTradingType::Option) {
             let ds = self.symbol.0.clone();
-            let date_str = ds.split('-').skip(1).next().unwrap();
-            let mut date_chars = date_str.chars();
+            let date_str = ds.split('-').nth(1).unwrap();
+            let date_chars = date_str.chars();
             let mut day = "".to_string();
             let mut month = "".to_string();
             let mut year = "".to_string();
-            while let Some(ch) = date_chars.next() {
+            for ch in date_chars {
                 if ch.is_numeric() {
                     if month.is_empty() {
                         day.push(ch);
@@ -208,7 +208,7 @@ impl PartialEq<NormalizedInstrument> for BybitIntrumentInner {
             && other.base_asset_symbol == *self.base_currency
             && other.quote_asset_symbol == *self.quote_currency
             && other.active == (&self.status == "Trading")
-            && other.futures_expiry == None;
+            && other.futures_expiry.is_none();
 
         if !equals {
             println!("SELF: {:?}", self);

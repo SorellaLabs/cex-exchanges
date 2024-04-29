@@ -90,7 +90,7 @@ impl PartialEq<NormalizedQuote> for OkexTicker {
             && other.bid_price == self.bid_price
             && other.ask_amount == self.ask_amt
             && other.ask_price == self.ask_price
-            && other.quote_id == None;
+            && other.quote_id.is_none();
 
         if !equals {
             println!("SELF: {:?}", self);

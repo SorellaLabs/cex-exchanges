@@ -132,7 +132,7 @@ impl PartialEq<NormalizedInstrument> for KucoinSymbol {
             && other.base_asset_symbol == *self.base_currency
             && other.quote_asset_symbol == *self.quote_currency
             && other.active == self.enable_trading
-            && other.futures_expiry == None;
+            && other.futures_expiry.is_none();
 
         if !equals {
             println!("SELF: {:?}", self);

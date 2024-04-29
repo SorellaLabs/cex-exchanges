@@ -80,7 +80,7 @@ impl TryFrom<String> for BinanceWsChannel {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
             "trade" => Ok(Self::Trade(Vec::new())),
-            "bookTicker" => Ok(Self::BookTicker(Vec::new())),
+            "bookticker" => Ok(Self::BookTicker(Vec::new())),
             _ => Err(eyre::ErrReport::msg(format!("channel is not valid: {value}")))
         }
     }

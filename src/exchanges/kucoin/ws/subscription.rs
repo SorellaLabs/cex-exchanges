@@ -87,7 +87,7 @@ impl Serialize for KucoinSubscriptionInner {
             .map(|pair| pair.0.to_uppercase())
             .collect::<Vec<_>>()
             .join(",");
-        format!("/market/{}:{}", self.channel.to_string(), pairs).serialize(serializer)
+        format!("/market/{}:{}", self.channel, pairs).serialize(serializer)
     }
 }
 

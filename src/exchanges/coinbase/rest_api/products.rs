@@ -123,7 +123,7 @@ impl PartialEq<NormalizedInstrument> for CoinbaseProduct {
             && other.trading_pair == self.id.normalize()
             && other.base_asset_symbol == *self.base_currency
             && other.quote_asset_symbol == *self.quote_currency
-            && other.active == !self.trading_disabled
+            && other.active != self.trading_disabled
             && (other.trading_type == NormalizedTradingType::Spot || (other.trading_type == NormalizedTradingType::Margin && self.margin_enabled));
 
         if !equals {

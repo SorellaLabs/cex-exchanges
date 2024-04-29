@@ -121,7 +121,7 @@ impl PartialEq<NormalizedCurrency> for KucoinCurrency {
             && other.symbol == self.currency
             && other.name == self.full_name
             && other.display_name.is_none()
-            && other.status == "".to_string()
+            && other.status == *""
             && self.chains.iter().all(|c| {
                 other
                     .blockchains

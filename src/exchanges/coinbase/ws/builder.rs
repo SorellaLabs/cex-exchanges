@@ -174,7 +174,7 @@ mod tests {
             .ws_exchanges
             .get(&CexExchange::Coinbase)
             .unwrap()
-            .into_iter()
+            .iter()
             .map(|(_, vals)| vals.to_owned())
             .collect::<Vec<_>>();
 

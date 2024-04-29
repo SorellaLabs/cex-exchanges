@@ -164,11 +164,11 @@ struct OkexSubscriptionInner {
     trading_pair: OkexTradingPair
 }
 
-impl Into<Vec<OkexSubscriptionInner>> for OkexWsChannel {
-    fn into(self) -> Vec<OkexSubscriptionInner> {
-        let name = self.to_string();
+impl From<OkexWsChannel> for Vec<OkexSubscriptionInner> {
+    fn from(val: OkexWsChannel) -> Self {
+        let name = val.to_string();
 
-        let all_pairs: Vec<_> = match self {
+        let all_pairs: Vec<_> = match val {
             OkexWsChannel::TradesAll(pairs) => pairs
                 .into_iter()
                 .collect::<HashSet<_>>()

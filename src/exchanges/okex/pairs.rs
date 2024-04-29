@@ -78,7 +78,7 @@ impl TryFrom<NormalizedTradingPair> for OkexTradingPair {
         }
 
         if let (Some(raw_pair), delim) = (value.pair(), value.delimiter()) {
-            if let Ok(v) = OkexTradingPair::new_checked(&raw_pair) {
+            if let Ok(v) = OkexTradingPair::new_checked(raw_pair) {
                 return Ok(v)
             }
 
@@ -100,7 +100,7 @@ impl TryFrom<NormalizedTradingPair> for OkexTradingPair {
                 }
             }
 
-            let new_str = raw_pair.replace('_', "-").replace('/', "-");
+            let new_str = raw_pair.replace(['_', '/'], "-");
             if let Ok(this) = Self::new_checked(&new_str) {
                 return Ok(this)
             }

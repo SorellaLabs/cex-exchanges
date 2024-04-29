@@ -54,12 +54,12 @@ impl CombinedRestApiResponse {
 
     #[cfg(feature = "us")]
     pub fn take_coinbase_instruments(self) -> Option<Vec<CoinbaseProduct>> {
-        self.take_coinbase().map(|v| v.take_instruments()).flatten()
+        self.take_coinbase().and_then(|v| v.take_instruments())
     }
 
     #[cfg(feature = "us")]
     pub fn take_coinbase_currencies(self) -> Option<Vec<CoinbaseCurrency>> {
-        self.take_coinbase().map(|v| v.take_currencies()).flatten()
+        self.take_coinbase().and_then(|v| v.take_currencies())
     }
 
     #[cfg(feature = "non-us")]
@@ -72,12 +72,12 @@ impl CombinedRestApiResponse {
 
     #[cfg(feature = "non-us")]
     pub fn take_binance_currencies(self) -> Option<Vec<BinanceSymbol>> {
-        self.take_binance().map(|v| v.take_symbols()).flatten()
+        self.take_binance().and_then(|v| v.take_symbols())
     }
 
     #[cfg(feature = "non-us")]
     pub fn take_binance_instruments(self) -> Option<Vec<BinanceInstrument>> {
-        self.take_binance().map(|v| v.take_instruments()).flatten()
+        self.take_binance().and_then(|v| v.take_instruments())
     }
 
     #[cfg(feature = "us")]
@@ -91,13 +91,12 @@ impl CombinedRestApiResponse {
     #[cfg(feature = "us")]
     pub fn take_okex_instruments(self) -> Option<Vec<OkexInstrument>> {
         self.take_okex()
-            .map(|v| v.take_instruments().map(|instr| instr.instruments))
-            .flatten()
+            .and_then(|v| v.take_instruments().map(|instr| instr.instruments))
     }
 
     #[cfg(feature = "us")]
     pub fn take_okex_currencies(self) -> Option<Vec<NormalizedCurrency>> {
-        self.take_okex().map(|v| v.take_currencies()).flatten()
+        self.take_okex().and_then(|v| v.take_currencies())
     }
 
     #[cfg(feature = "non-us")]
@@ -110,12 +109,12 @@ impl CombinedRestApiResponse {
 
     #[cfg(feature = "non-us")]
     pub fn take_kucoin_instruments(self) -> Option<Vec<KucoinSymbol>> {
-        self.take_kucoin().map(|v| v.take_symbols()).flatten()
+        self.take_kucoin().and_then(|v| v.take_symbols())
     }
 
     #[cfg(feature = "non-us")]
     pub fn take_kucoin_currencies(self) -> Option<Vec<KucoinCurrency>> {
-        self.take_kucoin().map(|v| v.take_currencies()).flatten()
+        self.take_kucoin().and_then(|v| v.take_currencies())
     }
 
     #[cfg(feature = "non-us")]
@@ -128,7 +127,7 @@ impl CombinedRestApiResponse {
 
     #[cfg(feature = "non-us")]
     pub fn take_bybit_instruments(self) -> Option<Vec<BybitIntrument>> {
-        self.take_bybit().map(|v| v.take_instruments()).flatten()
+        self.take_bybit().and_then(|v| v.take_instruments())
     }
 
     // need to fix this

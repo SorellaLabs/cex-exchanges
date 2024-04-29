@@ -40,15 +40,15 @@ impl Serialize for BinanceSubscriptionInner {
     where
         S: serde::Serializer
     {
-        format!("{}@{}", self.trading_pair.0.to_lowercase(), self.channel.to_string()).serialize(serializer)
+        format!("{}@{}", self.trading_pair.0.to_lowercase(), self.channel).serialize(serializer)
     }
 }
 
-impl Into<Vec<BinanceSubscriptionInner>> for BinanceWsChannel {
-    fn into(self) -> Vec<BinanceSubscriptionInner> {
-        let channel = (&self).into();
+impl From<BinanceWsChannel> for Vec<BinanceSubscriptionInner> {
+    fn from(val: BinanceWsChannel) -> Self {
+        let channel = (&val).into();
 
-        let all_pairs: Vec<_> = match self {
+        let all_pairs: Vec<_> = match val {
             BinanceWsChannel::Trade(pairs) => pairs
                 .into_iter()
                 .collect::<HashSet<_>>()

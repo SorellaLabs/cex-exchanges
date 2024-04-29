@@ -50,7 +50,7 @@ impl TryFrom<NormalizedTradingPair> for KucoinTradingPair {
         }
 
         if let (Some(raw_pair), delim) = (value.pair(), value.delimiter()) {
-            if let Ok(v) = Self::new_checked(&raw_pair) {
+            if let Ok(v) = Self::new_checked(raw_pair) {
                 return Ok(v)
             }
 
@@ -59,7 +59,7 @@ impl TryFrom<NormalizedTradingPair> for KucoinTradingPair {
                 return Ok(KucoinTradingPair(format!("{}-{}", split.next().unwrap().to_uppercase(), split.next().unwrap().to_uppercase())));
             }
 
-            let new_str = raw_pair.replace('_', "-").replace('/', "-");
+            let new_str = raw_pair.replace(['_', '/'], "-");
             if let Ok(this) = Self::new_checked(&new_str) {
                 return Ok(this)
             }
