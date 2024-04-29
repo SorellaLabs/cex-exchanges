@@ -105,7 +105,13 @@ impl Exchange for Okex {
 
 impl Default for Okex {
     fn default() -> Self {
-        Self { subscription: Default::default(), exch_currency_proxy: CexExchange::Binance }
+        Self {
+            subscription: Default::default(),
+            #[cfg(feature = "non-us")]
+            exch_currency_proxy: CexExchange::Binance,
+            #[cfg(not(feature = "non-us"))]
+            exch_currency_proxy: CexExchange::Coinbase
+        }
     }
 }
 

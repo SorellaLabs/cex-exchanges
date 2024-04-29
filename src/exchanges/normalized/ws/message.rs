@@ -1,9 +1,9 @@
 use super::NormalizedWsDataTypes;
+use crate::CexExchange;
 #[cfg(feature = "non-us")]
-use crate::exchanges::binance::ws::BinanceWsMessage;
+use crate::{binance::ws::BinanceWsMessage, bybit::ws::BybitWsMessage, kucoin::ws::KucoinWsMessage};
 #[cfg(feature = "us")]
-use crate::exchanges::coinbase::ws::CoinbaseWsMessage;
-use crate::{bybit::ws::BybitWsMessage, exchanges::okex::ws::OkexWsMessage, kucoin::ws::KucoinWsMessage, CexExchange};
+use crate::{exchanges::coinbase::ws::CoinbaseWsMessage, exchanges::okex::ws::OkexWsMessage};
 
 #[derive(Debug, Clone)]
 pub enum CombinedWsMessage {

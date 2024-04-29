@@ -2,16 +2,16 @@ use serde::Serialize;
 
 use super::NormalizedRestApiDataTypes;
 #[cfg(feature = "non-us")]
-use crate::exchanges::binance::rest_api::BinanceRestApiResponse;
-#[cfg(feature = "us")]
-use crate::exchanges::{coinbase::rest_api::CoinbaseRestApiResponse, okex::rest_api::OkexRestApiResponse};
 use crate::{
-    binance::rest_api::{BinanceInstrument, BinanceSymbol},
+    binance::rest_api::{BinanceInstrument, BinanceRestApiResponse, BinanceSymbol},
     bybit::rest_api::{BybitIntrument, BybitRestApiResponse},
-    coinbase::rest_api::{CoinbaseCurrency, CoinbaseProduct},
-    kucoin::rest_api::{KucoinCurrency, KucoinRestApiResponse, KucoinSymbol},
+    kucoin::rest_api::{KucoinCurrency, KucoinRestApiResponse, KucoinSymbol}
+};
+#[cfg(feature = "us")]
+use crate::{
+    coinbase::rest_api::{CoinbaseCurrency, CoinbaseProduct, CoinbaseRestApiResponse},
     normalized::types::NormalizedCurrency,
-    okex::rest_api::OkexInstrument
+    okex::rest_api::{OkexInstrument, OkexRestApiResponse}
 };
 
 #[derive(Debug, Clone, Serialize)]
@@ -44,6 +44,7 @@ impl CombinedRestApiResponse {
         }
     }
 
+    #[cfg(feature = "us")]
     pub fn take_coinbase(self) -> Option<CoinbaseRestApiResponse> {
         match self {
             CombinedRestApiResponse::Coinbase(vals) => Some(vals),
@@ -51,14 +52,17 @@ impl CombinedRestApiResponse {
         }
     }
 
+    #[cfg(feature = "us")]
     pub fn take_coinbase_instruments(self) -> Option<Vec<CoinbaseProduct>> {
         self.take_coinbase().map(|v| v.take_instruments()).flatten()
     }
 
+    #[cfg(feature = "us")]
     pub fn take_coinbase_currencies(self) -> Option<Vec<CoinbaseCurrency>> {
         self.take_coinbase().map(|v| v.take_currencies()).flatten()
     }
 
+    #[cfg(feature = "non-us")]
     pub fn take_binance(self) -> Option<BinanceRestApiResponse> {
         match self {
             CombinedRestApiResponse::Binance(vals) => Some(vals),
@@ -66,14 +70,17 @@ impl CombinedRestApiResponse {
         }
     }
 
+    #[cfg(feature = "non-us")]
     pub fn take_binance_currencies(self) -> Option<Vec<BinanceSymbol>> {
         self.take_binance().map(|v| v.take_symbols()).flatten()
     }
 
+    #[cfg(feature = "non-us")]
     pub fn take_binance_instruments(self) -> Option<Vec<BinanceInstrument>> {
         self.take_binance().map(|v| v.take_instruments()).flatten()
     }
 
+    #[cfg(feature = "us")]
     pub fn take_okex(self) -> Option<OkexRestApiResponse> {
         match self {
             CombinedRestApiResponse::Okex(vals) => Some(vals),
@@ -81,16 +88,19 @@ impl CombinedRestApiResponse {
         }
     }
 
+    #[cfg(feature = "us")]
     pub fn take_okex_instruments(self) -> Option<Vec<OkexInstrument>> {
         self.take_okex()
             .map(|v| v.take_instruments().map(|instr| instr.instruments))
             .flatten()
     }
 
+    #[cfg(feature = "us")]
     pub fn take_okex_currencies(self) -> Option<Vec<NormalizedCurrency>> {
         self.take_okex().map(|v| v.take_currencies()).flatten()
     }
 
+    #[cfg(feature = "non-us")]
     pub fn take_kucoin(self) -> Option<KucoinRestApiResponse> {
         match self {
             CombinedRestApiResponse::Kucoin(vals) => Some(vals),
@@ -98,14 +108,17 @@ impl CombinedRestApiResponse {
         }
     }
 
+    #[cfg(feature = "non-us")]
     pub fn take_kucoin_instruments(self) -> Option<Vec<KucoinSymbol>> {
         self.take_kucoin().map(|v| v.take_symbols()).flatten()
     }
 
+    #[cfg(feature = "non-us")]
     pub fn take_kucoin_currencies(self) -> Option<Vec<KucoinCurrency>> {
         self.take_kucoin().map(|v| v.take_currencies()).flatten()
     }
 
+    #[cfg(feature = "non-us")]
     pub fn take_bybit(self) -> Option<BybitRestApiResponse> {
         match self {
             CombinedRestApiResponse::Bybit(vals) => Some(vals),
@@ -113,6 +126,7 @@ impl CombinedRestApiResponse {
         }
     }
 
+    #[cfg(feature = "non-us")]
     pub fn take_bybit_instruments(self) -> Option<Vec<BybitIntrument>> {
         self.take_bybit().map(|v| v.take_instruments()).flatten()
     }

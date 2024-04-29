@@ -27,16 +27,20 @@ use strum_macros::EnumIter;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
+use self::normalized::{
+    rest_api::NormalizedRestApiRequest,
+    types::{NormalizedCurrency, NormalizedInstrument},
+    ws::{CombinedWsMessage, NormalizedWsChannels}
+};
+#[cfg(feature = "non-us")]
 use self::{
     binance::{ws::BinanceWsBuilder, Binance},
     bybit::{ws::BybitWsBuilder, Bybit},
+    kucoin::{ws::KucoinWsBuilder, Kucoin}
+};
+#[cfg(feature = "us")]
+use self::{
     coinbase::{ws::CoinbaseWsBuilder, Coinbase},
-    kucoin::{ws::KucoinWsBuilder, Kucoin},
-    normalized::{
-        rest_api::NormalizedRestApiRequest,
-        types::{NormalizedCurrency, NormalizedInstrument},
-        ws::{CombinedWsMessage, NormalizedWsChannels}
-    },
     okex::{ws::OkexWsBuilder, Okex}
 };
 use crate::{
@@ -69,7 +73,7 @@ impl CexExchange {
     pub fn build_multistream_ws_from_normalized(
         &self,
         map: Vec<NormalizedWsChannels>,
-        exch_currency_proxy: Option<CexExchange>
+        _exch_currency_proxy: Option<CexExchange>
     ) -> eyre::Result<MutliWsStream> {
         let res = match self {
             #[cfg(feature = "us")]
@@ -77,9 +81,15 @@ impl CexExchange {
                 .build_many_packed()?
                 .build_multistream_unconnected(),
             #[cfg(feature = "us")]
-            CexExchange::Okex => OkexWsBuilder::make_from_normalized_map(map, exch_currency_proxy.unwrap_or(CexExchange::Binance))?
-                .build_many_packed()?
-                .build_multistream_unconnected(),
+            CexExchange::Okex => OkexWsBuilder::make_from_normalized_map(
+                map,
+                #[cfg(not(feature = "non-us"))]
+                _exch_currency_proxy.unwrap_or(CexExchange::Coinbase),
+                #[cfg(feature = "non-us")]
+                _exch_currency_proxy.unwrap_or(CexExchange::Binance)
+            )?
+            .build_many_packed()?
+            .build_multistream_unconnected(),
             #[cfg(feature = "non-us")]
             CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
