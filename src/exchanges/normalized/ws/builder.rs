@@ -1,9 +1,6 @@
 use std::{collections::HashMap, pin::Pin};
 
-use futures::{
-    stream::{select_all, SelectAll},
-    Stream
-};
+use futures::{stream::select_all, Stream};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use super::CombinedWsMessage;
