@@ -232,7 +232,7 @@ impl CexExchange {
         Ok(out)
     }
 
-    pub async fn denormalize_raw_trading_pair(self, pair: NormalizedTradingPair) -> eyre::Result<String> {
+    pub fn denormalize_raw_trading_pair(self, pair: NormalizedTradingPair) -> eyre::Result<String> {
         let out = match self {
             #[cfg(feature = "us")]
             CexExchange::Coinbase => {
