@@ -71,7 +71,7 @@ impl CexExchange {
     }
 
     pub(crate) fn build_multistream_ws_from_normalized(
-        &self,
+        self,
         map: Vec<NormalizedWsChannels>,
         _exch_currency_proxy: Option<CexExchange>
     ) -> eyre::Result<MutliWsStream> {
@@ -108,7 +108,7 @@ impl CexExchange {
     }
 
     pub(crate) fn build_multithreaded_multistream_ws_from_normalized(
-        &self,
+        self,
         map: Vec<NormalizedWsChannels>,
         _exch_currency_proxy: Option<CexExchange>,
         handle: tokio::runtime::Handle,
@@ -146,7 +146,7 @@ impl CexExchange {
         Ok(res)
     }
 
-    pub async fn get_all_currencies(&self) -> Result<Vec<NormalizedCurrency>, RestApiError> {
+    pub async fn get_all_currencies(self) -> Result<Vec<NormalizedCurrency>, RestApiError> {
         let exchange_api = ExchangeApi::new();
         let out = match self {
             #[cfg(feature = "us")]
@@ -189,7 +189,7 @@ impl CexExchange {
         Ok(out)
     }
 
-    pub async fn get_all_instruments(&self) -> Result<Vec<NormalizedInstrument>, RestApiError> {
+    pub async fn get_all_instruments(self) -> Result<Vec<NormalizedInstrument>, RestApiError> {
         let exchange_api = ExchangeApi::new();
         let out = match self {
             #[cfg(feature = "us")]
