@@ -12,3 +12,6 @@ pub use message::*;
 
 mod trades;
 pub use trades::*;
+
+mod subscription;
+pub use subscription::*;

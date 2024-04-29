@@ -90,6 +90,7 @@ mod binance_tests {
             assert!(test_length > 10);
 
             let normalized = all_instruments.clone().normalize();
+            println!("{:?}", normalized);
 
             let test_length = normalized.clone().take_instruments().unwrap().len();
             assert!(test_length > 10);

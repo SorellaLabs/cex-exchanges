@@ -69,31 +69,27 @@ impl CexExchange {
     pub fn build_multistream_ws_from_normalized(
         &self,
         map: Vec<NormalizedWsChannels>,
-        channels_per_stream: Option<usize>,
-        split_channel_size: Option<usize>,
         exch_currency_proxy: Option<CexExchange>
     ) -> eyre::Result<MutliWsStream> {
         let res = match self {
             #[cfg(feature = "us")]
-            CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map, split_channel_size)?
+            CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
                 .build_multistream_unconnected(),
             #[cfg(feature = "us")]
-            CexExchange::Okex => {
-                OkexWsBuilder::make_from_normalized_map(map, channels_per_stream, exch_currency_proxy.unwrap_or(CexExchange::Binance))?
-                    .build_many_packed()?
-                    .build_multistream_unconnected()
-            }
-            #[cfg(feature = "non-us")]
-            CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map, channels_per_stream)?
+            CexExchange::Okex => OkexWsBuilder::make_from_normalized_map(map, exch_currency_proxy.unwrap_or(CexExchange::Binance))?
                 .build_many_packed()?
                 .build_multistream_unconnected(),
             #[cfg(feature = "non-us")]
-            CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map, channels_per_stream)?
+            CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
                 .build_multistream_unconnected(),
             #[cfg(feature = "non-us")]
-            CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map, channels_per_stream)?
+            CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map)?
+                .build_many_packed()?
+                .build_multistream_unconnected(),
+            #[cfg(feature = "non-us")]
+            CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
                 .build_multistream_unconnected()
         };

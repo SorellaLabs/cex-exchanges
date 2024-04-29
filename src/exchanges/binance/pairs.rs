@@ -1,8 +1,8 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{exchanges::normalized::types::NormalizedTradingPair, CexExchange};
+use crate::{exchanges::normalized::types::NormalizedTradingPair, normalized::types::NormalizedTradingType, CexExchange};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd)]
 pub struct BinanceTradingPair(pub(crate) String);
@@ -98,5 +98,46 @@ impl TryFrom<String> for BinanceTradingPair {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         value.as_str().try_into()
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, Deserialize, Serialize, PartialEq, PartialOrd)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum BinanceTradingType {
+    Spot,
+    Perpetual,
+    Margin,
+    Futures,
+    Option,
+    #[default]
+    Other
+}
+impl Into<NormalizedTradingType> for BinanceTradingType {
+    fn into(self) -> NormalizedTradingType {
+        match self {
+            BinanceTradingType::Perpetual => NormalizedTradingType::Perpetual,
+            BinanceTradingType::Margin => NormalizedTradingType::Margin,
+            BinanceTradingType::Spot => NormalizedTradingType::Spot,
+            BinanceTradingType::Option => NormalizedTradingType::Option,
+            BinanceTradingType::Futures => NormalizedTradingType::Futures,
+            BinanceTradingType::Other => NormalizedTradingType::Other
+        }
+    }
+}
+
+impl FromStr for BinanceTradingType {
+    type Err = eyre::Report;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let s = value.to_lowercase();
+
+        match s.as_str() {
+            "spot" => Ok(BinanceTradingType::Spot),
+            "perpetual" | "perp" | "swap" | "linear" | "inverse" => Ok(BinanceTradingType::Perpetual),
+            "futures" => Ok(BinanceTradingType::Futures),
+            "margin" => Ok(BinanceTradingType::Margin),
+            "option" => Ok(BinanceTradingType::Option),
+            _ => Ok(BinanceTradingType::Other)
+        }
     }
 }

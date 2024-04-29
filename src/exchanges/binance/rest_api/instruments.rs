@@ -2,10 +2,10 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use serde_with::{serde_as, DefaultOnError};
+use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{
-    binance::BinanceTradingPair,
+    binance::{BinanceTradingPair, BinanceTradingType},
     exchanges::normalized::types::NormalizedInstrument,
     normalized::{rest_api::NormalizedRestApiDataTypes, types::NormalizedTradingType},
     CexExchange
@@ -103,8 +103,10 @@ pub struct BinanceInstrument {
     pub is_spot_trading_allowed: bool,
     #[serde(rename = "isMarginTradingAllowed")]
     pub is_margin_trading_allowed: bool,
-    #[serde_as(deserialize_as = "Vec<DefaultOnError>")]
-    pub permissions: Vec<NormalizedTradingType>,
+    #[serde_as(deserialize_as = "Vec<Vec<DisplayFromStr>>")]
+    #[serde(rename = "permissionSets")]
+    pub permission_sets: Vec<Vec<BinanceTradingType>>,
+    pub permissions: Vec<Vec<String>>,
     #[serde(rename = "defaultSelfTradePreventionMode")]
     pub default_self_trade_prevention_mode: String,
     #[serde(rename = "allowedSelfTradePreventionModes")]
@@ -113,16 +115,17 @@ pub struct BinanceInstrument {
 
 impl BinanceInstrument {
     pub fn normalize(self) -> Vec<NormalizedInstrument> {
-        self.permissions
+        self.permission_sets
             .into_iter()
+            .flatten()
             .filter_map(|perm| {
-                if perm != NormalizedTradingType::Other {
+                if perm != BinanceTradingType::Other {
                     Some(NormalizedInstrument {
                         exchange:           CexExchange::Binance,
                         trading_pair:       self
                             .symbol
                             .normalize_with(&self.base_asset, &self.quote_asset),
-                        trading_type:       perm,
+                        trading_type:       perm.into(),
                         base_asset_symbol:  self.base_asset.clone(),
                         quote_asset_symbol: self.quote_asset.clone(),
                         active:             (&self.status == "TRADING"),
@@ -143,7 +146,11 @@ impl PartialEq<NormalizedInstrument> for BinanceInstrument {
                 == self
                     .symbol
                     .normalize_with(&self.base_asset, &self.quote_asset)
-            && self.permissions.iter().any(|t| t == &other.trading_type)
+            && self
+                .permission_sets
+                .iter()
+                .flatten()
+                .any(|t| Into::<NormalizedTradingType>::into(*t) == other.trading_type)
             && other.base_asset_symbol == *self.base_asset
             && other.quote_asset_symbol == *self.quote_asset
             && other.active == (&self.status == "TRADING")

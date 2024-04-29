@@ -39,7 +39,6 @@ impl Bybit {
 
         let mut instruments = Vec::new();
         for cat in categories {
-            println!("STARTING: {cat}");
             let url = format!("{BASE_REST_API_URL}/v5/market/instruments-info?category={cat}");
             let cat_instruments: BybitAllIntruments = Self::simple_rest_api_request(web_client, url).await?;
             instruments.extend(cat_instruments.instruments);

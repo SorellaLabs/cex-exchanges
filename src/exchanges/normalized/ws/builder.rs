@@ -11,18 +11,10 @@ use crate::{
 
 #[derive(Debug, Default, Clone)]
 pub struct NormalizedExchangeBuilder {
-    pub(crate) ws_exchanges:          HashMap<CexExchange, HashMap<NormalizedWsChannelKinds, NormalizedWsChannels>>,
-    ///  the number of channels for each exchange
-    channels_per_stream_per_exchange: Option<usize>,
-    /// per exchange: splits a channel into multiple instances of the same
-    /// channel (when making the lower level builders)
-    ///
-    /// if 'split_channel_size' is not passed, each trading pair will have it's
-    /// own stream
-    split_channel_size_per_exchange:  Option<usize>,
+    pub(crate) ws_exchanges: HashMap<CexExchange, HashMap<NormalizedWsChannelKinds, NormalizedWsChannels>>,
     /// proxy exchange to get symbols for exchanges that don't have a direct api
     /// link
-    exch_currency_proxy:              Option<CexExchange>
+    exch_currency_proxy:     Option<CexExchange>
 }
 
 impl NormalizedExchangeBuilder {
@@ -55,26 +47,10 @@ impl NormalizedExchangeBuilder {
         self
     }
 
-    /// sets the number of channels for each exchange
-    pub fn channels_per_stream_per_exchange(mut self, channels_per_stream_per_exchange: usize) -> Self {
-        self.channels_per_stream_per_exchange = Some(channels_per_stream_per_exchange);
-        self
-    }
-
     /// sets the proxy exchange to get symbols for exchanges that don't have a
     /// direct api link
     pub fn exchange_currency_proxy(mut self, exch_currency_proxy: CexExchange) -> Self {
         self.exch_currency_proxy = Some(exch_currency_proxy);
-        self
-    }
-
-    /// per exchange: splits a channel into multiple instances of the same
-    /// channel (when making the lower level builders)
-    ///
-    /// if 'split_channel_size' is not passed, each trading pair will have it's
-    /// own stream
-    pub fn split_channel_size_per_exchange(mut self, split_channel_size_per_exchange: usize) -> Self {
-        self.split_channel_size_per_exchange = Some(split_channel_size_per_exchange);
         self
     }
 
@@ -123,8 +99,6 @@ impl NormalizedExchangeBuilder {
 
     /// builds the multistream ws client
     pub fn build_all(self) -> eyre::Result<Option<MutliWsStream>> {
-        let (channels_per_stream, split_channel_size) = (self.channels_per_stream_per_exchange, self.split_channel_size_per_exchange);
-
         let mut multistream_ws: Option<MutliWsStream> = None;
 
         self.ws_exchanges.into_iter().try_for_each(|(exch, map)| {
@@ -133,8 +107,7 @@ impl NormalizedExchangeBuilder {
                 .map(|(_, channel)| channel)
                 .collect::<Vec<_>>();
 
-            let new_stream =
-                exch.build_multistream_ws_from_normalized(channel_map, channels_per_stream, split_channel_size, self.exch_currency_proxy)?;
+            let new_stream = exch.build_multistream_ws_from_normalized(channel_map, self.exch_currency_proxy)?;
             if let Some(ws) = multistream_ws.take() {
                 multistream_ws = Some(ws.combine_other(new_stream))
             } else {

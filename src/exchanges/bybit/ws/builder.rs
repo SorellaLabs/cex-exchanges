@@ -22,37 +22,6 @@ impl BybitWsBuilder {
         self
     }
 
-    /// splits a [BybitWsChannel] (with values) into mutliple instance of the
-    /// same [BybitWsChannel], each with fewer trading pairs by
-    /// 'split_channel_size'
-    ///
-    /// if 'split_channel_size' is not passed, each trading pair will have it's
-    /// own stream
-    pub fn add_split_channel(mut self, channel: BybitWsChannel, split_channel_size: Option<usize>) -> Self {
-        match channel {
-            BybitWsChannel::Trade(vals) => {
-                let split_size = std::cmp::min(split_channel_size.unwrap_or(1), vals.len());
-                let chunks = vals.chunks(split_size).collect::<Vec<_>>();
-                let split_channels = chunks
-                    .into_iter()
-                    .map(|chk| BybitWsChannel::Trade(chk.to_vec()))
-                    .collect::<Vec<_>>();
-                self.channels.extend(split_channels)
-            }
-            BybitWsChannel::OrderbookL1(vals) => {
-                let split_size = std::cmp::min(split_channel_size.unwrap_or(1), vals.len());
-                let chunks = vals.chunks(split_size).collect::<Vec<_>>();
-                let split_channels = chunks
-                    .into_iter()
-                    .map(|chk| BybitWsChannel::OrderbookL1(chk.to_vec()))
-                    .collect::<Vec<_>>();
-                self.channels.extend(split_channels)
-            }
-        }
-
-        self
-    }
-
     /// builds a single ws instance of [Bybit], handling all channels on 1
     /// stream
     pub fn build_single(self) -> Bybit {
@@ -163,16 +132,12 @@ impl BybitWsBuilder {
     }
 
     /// makes the builder from the normalized builder's map
-    pub(crate) fn make_from_normalized_map(map: Vec<NormalizedWsChannels>, split_channel_size: Option<usize>) -> eyre::Result<Self> {
+    pub(crate) fn make_from_normalized_map(map: Vec<NormalizedWsChannels>) -> eyre::Result<Self> {
         let mut this = Self { channels: Vec::new() };
 
         map.into_iter().try_for_each(|channel| {
             let this_channel: BybitWsChannel = channel.try_into()?;
-            this = if let Some(spl) = split_channel_size {
-                this.clone().add_split_channel(this_channel, Some(spl))
-            } else {
-                this.clone().add_channel(this_channel)
-            };
+            this = this.clone().add_channel(this_channel);
             Ok(()) as eyre::Result<()>
         })?;
 

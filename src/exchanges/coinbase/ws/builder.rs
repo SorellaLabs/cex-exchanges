@@ -22,39 +22,6 @@ impl CoinbaseWsBuilder {
         self
     }
 
-    /// splits a [CoinbaseWsChannel] (with values) into mutliple instance of the
-    /// same [CoinbaseWsChannel], each with fewer trading pairs by
-    /// 'split_channel_size'
-    ///
-    /// if 'split_channel_size' is not passed, each trading pair will have it's
-    /// own stream
-    pub fn add_split_channel(mut self, channel: CoinbaseWsChannel, split_channel_size: Option<usize>) -> Self {
-        match channel {
-            CoinbaseWsChannel::Status => self.channels.push(channel),
-            CoinbaseWsChannel::Matches(vals) => {
-                let split_size = std::cmp::min(split_channel_size.unwrap_or(1), vals.len());
-                let chunks = vals.chunks(split_size).collect::<Vec<_>>();
-                let split_channels = chunks
-                    .into_iter()
-                    .map(|chk| CoinbaseWsChannel::Matches(chk.to_vec()))
-                    .collect::<Vec<_>>();
-                self.channels.extend(split_channels)
-            }
-
-            CoinbaseWsChannel::Ticker(vals) => {
-                let split_size = std::cmp::min(split_channel_size.unwrap_or(1), vals.len());
-                let chunks = vals.chunks(split_size).collect::<Vec<_>>();
-                let split_channels = chunks
-                    .into_iter()
-                    .map(|chk| CoinbaseWsChannel::Ticker(chk.to_vec()))
-                    .collect::<Vec<_>>();
-                self.channels.extend(split_channels)
-            }
-        }
-
-        self
-    }
-
     /// builds a single ws instance of [Coinbase], handling all channels on 1
     /// stream
     pub fn build_single(self) -> Coinbase {
@@ -163,16 +130,12 @@ impl CoinbaseWsBuilder {
     }
 
     /// makes the builder from the normalized builder's map
-    pub(crate) fn make_from_normalized_map(map: Vec<NormalizedWsChannels>, split_channel_size: Option<usize>) -> eyre::Result<Self> {
+    pub(crate) fn make_from_normalized_map(map: Vec<NormalizedWsChannels>) -> eyre::Result<Self> {
         let mut this = Self { channels: Vec::new() };
 
         map.into_iter().try_for_each(|channel| {
             let this_channel: CoinbaseWsChannel = channel.try_into()?;
-            this = if let Some(spl) = split_channel_size {
-                this.clone().add_split_channel(this_channel, Some(spl))
-            } else {
-                this.clone().add_channel(this_channel)
-            };
+            this = this.clone().add_channel(this_channel);
             Ok(()) as eyre::Result<()>
         })?;
 
@@ -214,7 +177,7 @@ mod tests {
             .map(|(_, vals)| vals.to_owned())
             .collect::<Vec<_>>();
 
-        let calculated_builder = CoinbaseWsBuilder::make_from_normalized_map(map, Some(1)).unwrap();
+        let calculated_builder = CoinbaseWsBuilder::make_from_normalized_map(map).unwrap();
 
         let expected_trade_channel = CoinbaseWsChannel::Matches(vec![
             CoinbaseTradingPair("WBTC-USD".to_string()),
