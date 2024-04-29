@@ -29,19 +29,19 @@ use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 use self::normalized::{
     rest_api::NormalizedRestApiRequest,
-    types::{NormalizedCurrency, NormalizedInstrument},
+    types::{NormalizedCurrency, NormalizedInstrument, NormalizedTradingPair},
     ws::{CombinedWsMessage, NormalizedWsChannels}
 };
 #[cfg(feature = "non-us")]
 use self::{
-    binance::{ws::BinanceWsBuilder, Binance},
-    bybit::{ws::BybitWsBuilder, Bybit},
-    kucoin::{ws::KucoinWsBuilder, Kucoin}
+    binance::{ws::BinanceWsBuilder, Binance, BinanceTradingPair},
+    bybit::{ws::BybitWsBuilder, Bybit, BybitTradingPair},
+    kucoin::{ws::KucoinWsBuilder, Kucoin, KucoinTradingPair}
 };
 #[cfg(feature = "us")]
 use self::{
-    coinbase::{ws::CoinbaseWsBuilder, Coinbase},
-    okex::{ws::OkexWsBuilder, Okex}
+    coinbase::{ws::CoinbaseWsBuilder, Coinbase, CoinbaseTradingPair},
+    okex::{ws::OkexWsBuilder, Okex, OkexTradingPair}
 };
 use crate::{
     clients::{
@@ -227,6 +227,38 @@ impl CexExchange {
                 .normalize()
                 .take_instruments()
                 .unwrap()
+        };
+
+        Ok(out)
+    }
+
+    pub async fn denormalize_raw_trading_pair(self, pair: NormalizedTradingPair) -> eyre::Result<String> {
+        let out = match self {
+            #[cfg(feature = "us")]
+            CexExchange::Coinbase => {
+                let denorm_pair: CoinbaseTradingPair = pair.try_into()?;
+                denorm_pair.0
+            }
+            #[cfg(feature = "non-us")]
+            CexExchange::Binance => {
+                let denorm_pair: BinanceTradingPair = pair.try_into()?;
+                denorm_pair.0
+            }
+            #[cfg(feature = "us")]
+            CexExchange::Okex => {
+                let denorm_pair: OkexTradingPair = pair.try_into()?;
+                denorm_pair.0
+            }
+            #[cfg(feature = "non-us")]
+            CexExchange::Kucoin => {
+                let denorm_pair: KucoinTradingPair = pair.try_into()?;
+                denorm_pair.0
+            }
+            #[cfg(feature = "non-us")]
+            CexExchange::Bybit => {
+                let denorm_pair: BybitTradingPair = pair.try_into()?;
+                denorm_pair.0
+            }
         };
 
         Ok(out)
