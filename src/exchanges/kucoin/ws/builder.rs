@@ -111,8 +111,8 @@ impl KucoinWsBuilder {
 
         let all_symbols = all_symbols_vec
             .into_iter()
-            .map(|val| val.symbol.try_into())
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|val| val.symbol)
+            .collect::<Vec<_>>();
 
         let chunks = all_symbols.chunks(MAX_KUCOIN_WS_CONNS_PER_STREAM);
 

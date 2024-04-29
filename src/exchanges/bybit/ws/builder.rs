@@ -111,8 +111,8 @@ impl BybitWsBuilder {
 
         let all_symbols = all_symbols_vec
             .into_iter()
-            .map(|val| val.inner.symbol.try_into())
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|val| val.inner.symbol)
+            .collect::<Vec<_>>();
 
         let chunks = all_symbols.chunks(MAX_BYBIT_WS_CONNS_PER_STREAM);
 

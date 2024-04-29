@@ -58,11 +58,7 @@ impl TryFrom<NormalizedTradingPair> for OkexTradingPair {
 
     fn try_from(value: NormalizedTradingPair) -> Result<Self, Self::Error> {
         if let Some((base, quote)) = value.base_quote() {
-            if value.pair().is_none() {
-                if let Ok(this) = Self::new_checked(&format!("{base}-{quote}")) {
-                    return Ok(this)
-                }
-            } else if format!("{base}-{quote}").len() == value.pair().as_ref().unwrap().len() {
+            if value.pair().is_none() || format!("{base}-{quote}").len() == value.pair().as_ref().unwrap().len() {
                 if let Ok(this) = Self::new_checked(&format!("{base}-{quote}")) {
                     return Ok(this)
                 }

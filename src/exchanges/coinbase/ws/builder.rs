@@ -109,8 +109,8 @@ impl CoinbaseWsBuilder {
 
         let all_symbols = all_symbols_vec
             .into_iter()
-            .map(|val| val.id.try_into())
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|val| val.id)
+            .collect::<Vec<_>>();
 
         let chunks = all_symbols.chunks(MAX_COINBASE_WS_CONNS_PER_STREAM);
 
