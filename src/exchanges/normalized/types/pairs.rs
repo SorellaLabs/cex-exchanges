@@ -57,6 +57,22 @@ impl NormalizedTradingPair {
         self.delimiter
     }
 
+    pub fn make_pair(&self) -> String {
+        if let Some(pair) = self.pair().clone() {
+            return pair
+        }
+
+        if let Some((base, quote)) = self.base_quote().clone() {
+            if let Some(del) = self.delimiter() {
+                return format!("{}{del}{}", base.to_uppercase(), quote.to_uppercase())
+            } else {
+                return format!("{}{}", base.to_uppercase(), quote.to_uppercase())
+            }
+        }
+
+        unreachable!()
+    }
+
     pub fn extra_data(&self) -> Option<String> {
         if let (Some(pair), Some((base, quote))) = (self.pair(), self.base_quote()) {
             let mut ed = pair.clone();
