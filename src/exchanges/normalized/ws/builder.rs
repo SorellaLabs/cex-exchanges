@@ -1,6 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, pin::Pin};
 
-use futures::stream::{select_all, SelectAll};
+use futures::{
+    stream::{select_all, SelectAll},
+    Stream
+};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use super::CombinedWsMessage;
@@ -130,7 +133,7 @@ impl NormalizedExchangeBuilder {
         self,
         handle: tokio::runtime::Handle,
         number_threads: usize
-    ) -> eyre::Result<Option<SelectAll<UnboundedReceiverStream<CombinedWsMessage>>>> {
+    ) -> eyre::Result<Option<Pin<Box<dyn Stream<Item = CombinedWsMessage>>>>> {
         let all_streams = self
             .ws_exchanges
             .into_iter()
@@ -146,7 +149,7 @@ impl NormalizedExchangeBuilder {
         if all_streams.is_empty() {
             Ok(None)
         } else {
-            Ok(Some(select_all(all_streams)))
+            Ok(Some(Box::pin(select_all(all_streams))))
         }
     }
 }
