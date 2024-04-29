@@ -10,7 +10,7 @@ use crate::{
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CoinbaseTicker {
-    pub sequence:      u64,
+    pub sequence:      Option<u64>,
     pub product_id:    CoinbaseTradingPair,
     #[serde_as(as = "DisplayFromStr")]
     pub price:         f64,
@@ -30,11 +30,12 @@ pub struct CoinbaseTicker {
     pub best_ask:      f64,
     #[serde_as(as = "DisplayFromStr")]
     pub best_ask_size: f64,
-    pub side:          String,
+    pub side:          Option<String>,
+    #[serde(default = "Utc::now")]
     pub time:          DateTime<Utc>,
-    pub trade_id:      u64,
-    #[serde_as(as = "DisplayFromStr")]
-    pub last_size:     f64
+    pub trade_id:      Option<u64>,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub last_size:     Option<f64>
 }
 
 impl CoinbaseTicker {
@@ -47,7 +48,7 @@ impl CoinbaseTicker {
             ask_price:  self.best_ask,
             bid_amount: self.best_bid_size,
             bid_price:  self.best_bid,
-            quote_id:   Some(self.trade_id.to_string())
+            quote_id:   self.trade_id.map(|t| t.to_string())
         }
     }
 }
@@ -61,7 +62,7 @@ impl PartialEq<NormalizedQuote> for CoinbaseTicker {
             && other.ask_price == self.best_ask
             && other.bid_amount == self.best_bid_size
             && other.bid_price == self.best_bid
-            && other.quote_id.as_ref().unwrap() == &self.trade_id.to_string();
+            && other.quote_id == self.trade_id.map(|t| t.to_string());
 
         if !equals {
             println!("SELF: {:?}", self);

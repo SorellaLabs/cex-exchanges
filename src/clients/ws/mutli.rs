@@ -28,9 +28,7 @@ impl Stream for MutliWsStream {
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
 
-        // println!("POLL");
         while let Poll::Ready(val) = this.combined_streams.poll_next_unpin(cx) {
-            //     println!("POLL RECV");
             if val.is_none() {
                 this.stream_count -= 1;
                 if this.stream_count == 0 {

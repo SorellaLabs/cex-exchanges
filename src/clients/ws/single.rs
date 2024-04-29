@@ -43,10 +43,9 @@ where
     }
 
     fn handle_incoming(message: Message) -> Result<MessageOrPing<T>, WsError> {
-        // println!("FULL MESSAGE: {:?}", message);
         match message {
             Message::Text(msg) => {
-                println!("MSG: {}", msg);
+                // println!("MSG: {}", msg);
 
                 Ok(MessageOrPing::new_message(serde_json::from_str(&msg)?))
             }

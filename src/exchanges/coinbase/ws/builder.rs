@@ -6,9 +6,9 @@ use crate::{
 };
 
 /// There is a limit of 300 connections per attempt every 5 minutes per IP.
-const MAX_COINBASE_STREAMS: usize = 300;
-/// A single connection can listen to a maximum of 1024 streams.
-const MAX_COINBASE_WS_CONNS_PER_STREAM: usize = 1024;
+const MAX_COINBASE_STREAMS: usize = 8;
+/// A single connection can listen to a maximum of 100 streams.
+const MAX_COINBASE_WS_CONNS_PER_STREAM: usize = 100;
 
 #[derive(Debug, Clone, Default)]
 pub struct CoinbaseWsBuilder {
@@ -104,7 +104,8 @@ impl CoinbaseWsBuilder {
             .await?
             .take_coinbase_instruments()
             .unwrap();
-        all_symbols_vec.retain(|sym| &sym.status == "online");
+
+        all_symbols_vec.retain(|sym| !sym.trading_disabled);
 
         let all_symbols = all_symbols_vec
             .into_iter()

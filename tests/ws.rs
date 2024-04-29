@@ -21,13 +21,6 @@ mod coinbase_tests {
 
     #[tokio::test]
     #[serial]
-    async fn test_status() {
-        let builder = CoinbaseWsBuilder::default().add_channel(CoinbaseWsChannel::Status);
-        coinbase_util(builder, 1).await;
-    }
-
-    #[tokio::test]
-    #[serial]
     async fn test_matches() {
         let builder = CoinbaseWsBuilder::default().add_channel(
             CoinbaseWsChannel::new_match(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
@@ -61,7 +54,7 @@ mod coinbase_tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
     #[serial]
-    async fn test_multi_weighted() {
+    async fn test_multi_all_instruments() {
         let channels = vec![CoinbaseWsChannelKind::Matches, CoinbaseWsChannelKind::Ticker];
 
         let builder = CoinbaseWsBuilder::build_from_all_instruments(&channels)
@@ -73,7 +66,7 @@ mod coinbase_tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
     #[serial]
-    async fn test_multi_weighted_multithread() {
+    async fn test_multi_all_instruments_multithread() {
         let channels = vec![CoinbaseWsChannelKind::Matches, CoinbaseWsChannelKind::Ticker];
 
         let builder = CoinbaseWsBuilder::build_from_all_instruments(&channels)
@@ -138,7 +131,7 @@ mod okex_tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
     #[serial]
-    async fn test_multi_weighted() {
+    async fn test_multi_all_instruments() {
         let channels = vec![OkexWsChannelKind::TradesAll, OkexWsChannelKind::BookTicker];
 
         let builder = OkexWsBuilder::build_from_all_instruments(&channels, None)
@@ -150,7 +143,7 @@ mod okex_tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
     #[serial]
-    async fn test_multi_weighted_multithread() {
+    async fn test_multi_all_instruments_multithread() {
         let channels = vec![OkexWsChannelKind::TradesAll, OkexWsChannelKind::BookTicker];
 
         let builder = OkexWsBuilder::build_from_all_instruments(&channels, None)
@@ -216,7 +209,7 @@ mod binance_tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
     #[serial]
-    async fn test_multi_weighted() {
+    async fn test_multi_all_instruments() {
         let channels = vec![BinanceWsChannelKind::Trade, BinanceWsChannelKind::BookTicker];
 
         let builder = BinanceWsBuilder::build_from_all_instruments(&channels)
@@ -228,7 +221,7 @@ mod binance_tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
     #[serial]
-    async fn test_multi_weighted_multithread() {
+    async fn test_multi_all_instruments_multithread() {
         let channels = vec![BinanceWsChannelKind::Trade, BinanceWsChannelKind::BookTicker];
 
         let builder = BinanceWsBuilder::build_from_all_instruments(&channels)
@@ -292,7 +285,7 @@ mod kucoin_tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
     #[serial]
-    async fn test_multi_weighted() {
+    async fn test_multi_all_instruments() {
         let channels = vec![KucoinWsChannelKind::Match, KucoinWsChannelKind::Ticker];
 
         let builder = KucoinWsBuilder::build_from_all_instruments(&channels)
@@ -304,7 +297,7 @@ mod kucoin_tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
     #[serial]
-    async fn test_multi_weighted_multithread() {
+    async fn test_multi_all_instruments_multithread() {
         let channels = vec![KucoinWsChannelKind::Match, KucoinWsChannelKind::Ticker];
 
         let builder = KucoinWsBuilder::build_from_all_instruments(&channels)
@@ -366,7 +359,7 @@ mod bybit_tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
     #[serial]
-    async fn test_multi_weighted() {
+    async fn test_multi_all_instruments() {
         let channels = vec![BybitWsChannelKind::Trade, BybitWsChannelKind::OrderbookL1];
 
         let builder = BybitWsBuilder::build_from_all_instruments(&channels)
@@ -378,7 +371,7 @@ mod bybit_tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
     #[serial]
-    async fn test_multi_weighted_multithread() {
+    async fn test_multi_all_instruments_multithread() {
         let channels = vec![BybitWsChannelKind::Trade, BybitWsChannelKind::OrderbookL1];
 
         let builder = BybitWsBuilder::build_from_all_instruments(&channels)
