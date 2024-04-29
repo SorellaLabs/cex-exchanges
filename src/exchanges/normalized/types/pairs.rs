@@ -56,6 +56,30 @@ impl NormalizedTradingPair {
     pub fn delimiter(&self) -> Option<char> {
         self.delimiter
     }
+
+    pub fn extra_data(&self) -> Option<String> {
+        if let (Some(pair), Some((base, quote))) = (self.pair(), self.base_quote()) {
+            let mut ed = pair.clone();
+            if let Some(del) = self.delimiter() {
+                ed = ed.replace(&format!("{base}{del}{quote}"), "");
+                if ed.is_empty() {
+                    return None
+                } else {
+                    ed = ed[1..].to_string();
+                    return Some(ed)
+                }
+            } else {
+                ed = ed.replace(&format!("{base}{quote}"), "");
+                if ed.is_empty() {
+                    return None
+                } else {
+                    return Some(ed)
+                }
+            }
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -101,5 +125,23 @@ impl RawTradingPair {
             }
             RawTradingPair::RawNoDelim { pair } => NormalizedTradingPair::new_no_base_quote(exchange, &pair)
         }
+    }
+}
+
+impl From<NormalizedTradingPair> for RawTradingPair {
+    fn from(value: NormalizedTradingPair) -> Self {
+        if let Some((base, quote)) = value.base_quote.clone() {
+            return Self::Split { base, quote, extra_data: value.extra_data() }
+        }
+
+        if let Some(pair) = value.pair().clone() {
+            if let Some(delimiter) = value.delimiter() {
+                return Self::RawDelim { pair, delimiter }
+            } else {
+                return Self::RawNoDelim { pair }
+            }
+        }
+
+        unreachable!("NormalizedTradingPair must be convertable")
     }
 }
