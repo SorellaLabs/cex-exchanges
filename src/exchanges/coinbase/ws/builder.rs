@@ -99,13 +99,11 @@ impl CoinbaseWsBuilder {
     async fn build_from_all_instruments_util(channels: &[CoinbaseWsChannelKind]) -> eyre::Result<Self> {
         let mut this = Self::default();
 
-        let mut all_symbols_vec = ExchangeApi::new()
+        let all_symbols_vec = ExchangeApi::new()
             .all_instruments::<Coinbase>()
             .await?
-            .take_coinbase_instruments()
+            .take_coinbase_instruments(true)
             .unwrap();
-
-        all_symbols_vec.retain(|sym| !sym.trading_disabled);
 
         let all_symbols = all_symbols_vec
             .into_iter()

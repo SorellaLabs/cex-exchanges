@@ -53,8 +53,21 @@ impl CombinedRestApiResponse {
     }
 
     #[cfg(feature = "us")]
-    pub fn take_coinbase_instruments(self) -> Option<Vec<CoinbaseProduct>> {
-        self.take_coinbase().and_then(|v| v.take_instruments())
+    pub fn take_coinbase_instruments(self, active_only: bool) -> Option<Vec<CoinbaseProduct>> {
+        let mut instruments = self.take_coinbase().and_then(|v| v.take_instruments());
+
+        if active_only {
+            instruments
+                .as_mut()
+                .map(|instr| {
+                    instr.retain(|sym| !sym.trading_disabled);
+
+                    instr
+                })
+                .cloned()
+        } else {
+            instruments
+        }
     }
 
     #[cfg(feature = "us")]
