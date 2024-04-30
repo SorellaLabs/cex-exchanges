@@ -1,5 +1,5 @@
 use super::{CoinbaseMatches, CoinbaseStatus, CoinbaseTicker};
-use crate::{exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
+use crate::{clients::ws::CriticalWsMessage, exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 
 #[serde_with::serde_as]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -10,7 +10,10 @@ pub enum CoinbaseWsMessage {
     Ticker(CoinbaseTicker),
     Status(CoinbaseStatus),
     Subscriptions(serde_json::Value),
-    Error(String)
+    Error {
+        error:   String,
+        raw_msg: String
+    }
 }
 
 impl CoinbaseWsMessage {
@@ -24,8 +27,8 @@ impl CoinbaseWsMessage {
             CoinbaseWsMessage::Subscriptions(v) => {
                 NormalizedWsDataTypes::Other { exchange: CexExchange::Coinbase, kind: "Subscriptions".to_string(), value: format!("{:?}", v) }
             }
-            CoinbaseWsMessage::Error(v) => {
-                NormalizedWsDataTypes::Other { exchange: CexExchange::Coinbase, kind: "Error".to_string(), value: format!("{:?}", v) }
+            CoinbaseWsMessage::Error { error, raw_msg } => {
+                NormalizedWsDataTypes::Other { exchange: CexExchange::Coinbase, kind: error, value: raw_msg }
             }
         }
     }
@@ -38,8 +41,17 @@ impl PartialEq<NormalizedWsDataTypes> for CoinbaseWsMessage {
             (CoinbaseWsMessage::Ticker(this), NormalizedWsDataTypes::Quote(that)) => this == that,
             (CoinbaseWsMessage::Status(_), NormalizedWsDataTypes::Other { .. }) => true,
             (CoinbaseWsMessage::Subscriptions(_), NormalizedWsDataTypes::Other { .. }) => true,
-            (CoinbaseWsMessage::Error(_), NormalizedWsDataTypes::Other { .. }) => true,
+            (CoinbaseWsMessage::Error { .. }, NormalizedWsDataTypes::Other { .. }) => true,
             _ => false
+        }
+    }
+}
+
+impl CriticalWsMessage for CoinbaseWsMessage {
+    fn make_critical(&mut self, msg: String) {
+        match self {
+            CoinbaseWsMessage::Error { error: _, raw_msg } => *raw_msg = msg,
+            _ => ()
         }
     }
 }

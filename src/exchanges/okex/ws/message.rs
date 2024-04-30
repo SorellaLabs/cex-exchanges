@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{tickers::OkexTicker, trades::OkexTrade};
-use crate::{exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
+use crate::{clients::ws::CriticalWsMessage, exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 
 #[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -11,7 +11,7 @@ pub enum OkexWsMessage {
     TradesAll(OkexTrade),
     Tickers(OkexTicker),
     Subscribe(serde_json::Value),
-    Error(String)
+    Error { error: String, raw_msg: String }
 }
 
 impl OkexWsMessage {
@@ -50,7 +50,7 @@ impl OkexWsMessage {
                     .as_str()
                     .ok_or(eyre::ErrReport::msg("Could not convert 'msg' (error message) field in Okex ws message to &str".to_string()))?;
 
-                Ok(Self::Error(msg.to_string()))
+                Ok(Self::Error { error: msg.to_string(), raw_msg: String::new() })
             } else {
                 Err(eyre::ErrReport::msg(format!("Event type '{event}' cannot be deserialized")))
             }
@@ -77,7 +77,9 @@ impl OkexWsMessage {
             OkexWsMessage::Subscribe(v) => {
                 NormalizedWsDataTypes::Other { exchange: CexExchange::Okex, kind: "Subscribe".to_string(), value: format!("{:?}", v) }
             }
-            OkexWsMessage::Error(e) => NormalizedWsDataTypes::Other { exchange: CexExchange::Okex, kind: "Error".to_string(), value: e }
+            OkexWsMessage::Error { error, raw_msg } => {
+                NormalizedWsDataTypes::Other { exchange: CexExchange::Okex, kind: error, value: raw_msg }
+            }
         }
     }
 }
@@ -88,8 +90,17 @@ impl PartialEq<NormalizedWsDataTypes> for OkexWsMessage {
             (OkexWsMessage::TradesAll(this), NormalizedWsDataTypes::Trade(that)) => this == that,
             (OkexWsMessage::Tickers(this), NormalizedWsDataTypes::Quote(that)) => this == that,
             (OkexWsMessage::Subscribe(_), NormalizedWsDataTypes::Other { .. }) => true,
-            (OkexWsMessage::Error(_), NormalizedWsDataTypes::Other { .. }) => true,
+            (OkexWsMessage::Error { .. }, NormalizedWsDataTypes::Other { .. }) => true,
             _ => false
+        }
+    }
+}
+
+impl CriticalWsMessage for OkexWsMessage {
+    fn make_critical(&mut self, msg: String) {
+        match self {
+            OkexWsMessage::Error { error: _, raw_msg } => *raw_msg = msg,
+            _ => ()
         }
     }
 }

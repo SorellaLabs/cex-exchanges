@@ -9,10 +9,10 @@ use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use super::WsError;
 use crate::{
+    clients::ws::critical::CriticalWsMessage,
     exchanges::normalized::ws::{CombinedWsMessage, MessageOrPing},
     Exchange
 };
-
 type ReconnectFuture = Option<Pin<Box<dyn Future<Output = Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError>>>>>;
 
 type StreamConn = Pin<Box<WebSocketStream<MaybeTlsStream<TcpStream>>>>;
@@ -47,7 +47,9 @@ where
             Message::Text(msg) => {
                 // println!("MSG: {}", msg);
 
-                Ok(MessageOrPing::new_message(serde_json::from_str(&msg)?))
+                let mut des_msg = serde_json::from_str::<T::WsMessage>(&msg)?;
+                des_msg.make_critical(msg);
+                Ok(MessageOrPing::new_message(des_msg))
             }
             Message::Ping(_) => Ok(MessageOrPing::new_ping()),
             _ => unimplemented!()

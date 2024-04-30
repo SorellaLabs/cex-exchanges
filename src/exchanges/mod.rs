@@ -46,7 +46,7 @@ use self::{
 use crate::{
     clients::{
         rest_api::{ExchangeApi, RestApiError},
-        ws::{MutliWsStream, WsError}
+        ws::{CriticalWsMessage, MutliWsStream, WsError}
     },
     exchanges::normalized::rest_api::CombinedRestApiResponse
 };
@@ -307,7 +307,7 @@ impl FromStr for CexExchange {
 #[async_trait::async_trait]
 pub trait Exchange: Clone + Default {
     const EXCHANGE: CexExchange;
-    type WsMessage: for<'de> Deserialize<'de> + Into<CombinedWsMessage> + Debug;
+    type WsMessage: CriticalWsMessage;
     type RestApiResult: for<'de> Deserialize<'de> + Into<CombinedRestApiResponse> + Debug;
 
     async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError>;

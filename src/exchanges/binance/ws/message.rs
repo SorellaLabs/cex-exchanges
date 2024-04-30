@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{book_ticker::BinanceBookTicker, trades::BinanceTrade};
-use crate::{exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
+use crate::{clients::ws::CriticalWsMessage, exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 
 #[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize)]
@@ -86,4 +86,7 @@ impl PartialEq<NormalizedWsDataTypes> for BinanceWsMessage {
             _ => false
         }
     }
+}
+impl CriticalWsMessage for BinanceWsMessage {
+    fn make_critical(&mut self, _msg: String) {}
 }

@@ -5,3 +5,6 @@ pub use mutli::*;
 
 mod single;
 pub use single::*;
+
+mod critical;
+pub use critical::*;

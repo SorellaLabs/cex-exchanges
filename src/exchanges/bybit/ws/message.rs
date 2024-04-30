@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{orderbook::BybitOrderbook, trades::BybitTrade};
-use crate::{exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
+use crate::{clients::ws::CriticalWsMessage, exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 
 #[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize)]
@@ -77,4 +77,8 @@ impl PartialEq<NormalizedWsDataTypes> for BybitWsMessage {
             _ => false
         }
     }
+}
+
+impl CriticalWsMessage for BybitWsMessage {
+    fn make_critical(&mut self, _msg: String) {}
 }
