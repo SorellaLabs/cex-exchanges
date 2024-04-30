@@ -18,8 +18,9 @@ pub enum CombinedWsMessage {
     #[cfg(feature = "non-us")]
     Bybit(BybitWsMessage),
     Disconnect {
-        exchange: CexExchange,
-        message:  String
+        exchange:    CexExchange,
+        message:     String,
+        raw_message: String
     }
 }
 
@@ -36,7 +37,7 @@ impl CombinedWsMessage {
             CombinedWsMessage::Kucoin(c) => c.normalize(),
             #[cfg(feature = "non-us")]
             CombinedWsMessage::Bybit(c) => c.normalize(),
-            CombinedWsMessage::Disconnect { exchange, message } => NormalizedWsDataTypes::Disconnect { exchange, message }
+            CombinedWsMessage::Disconnect { exchange, message, raw_message } => NormalizedWsDataTypes::Disconnect { exchange, message, raw_message }
         }
     }
 

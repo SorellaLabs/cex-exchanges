@@ -9,7 +9,7 @@ pub enum NormalizedWsDataTypes {
     Trades(Vec<NormalizedTrade>),
     Quote(NormalizedQuote),
     Quotes(Vec<NormalizedQuote>),
-    Disconnect { exchange: CexExchange, message: String },
+    Disconnect { exchange: CexExchange, message: String, raw_message: String },
     Other { exchange: CexExchange, kind: String, value: String }
 }
 

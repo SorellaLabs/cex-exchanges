@@ -42,12 +42,12 @@ where
         Ok(())
     }
 
-    fn handle_incoming(message: Message) -> Result<MessageOrPing<T>, WsError> {
+    fn handle_incoming(message: Message) -> Result<MessageOrPing<T>, (WsError, String)> {
         match message {
             Message::Text(msg) => {
                 // println!("MSG: {}", msg);
 
-                let mut des_msg = serde_json::from_str::<T::WsMessage>(&msg)?;
+                let mut des_msg = serde_json::from_str::<T::WsMessage>(&msg).map_err(|e| (e.into(), msg.clone()))?;
                 des_msg.make_critical(msg);
                 Ok(MessageOrPing::new_message(des_msg))
             }
@@ -84,26 +84,26 @@ where
                         Ok(MessageOrPing::Ping) => {
                             if let Err(e) = Self::flush_sink_queue(stream, cx) {
                                 this.stream = None;
-                                return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE)));
+                                return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE, None)));
                             } else if let Err(e) = stream.start_send_unpin(Message::Pong(vec![])) {
                                 this.stream = None;
-                                return Poll::Ready(Some(WsError::StreamTxError(e).normalized_with_exchange(T::EXCHANGE)));
+                                return Poll::Ready(Some(WsError::StreamTxError(e).normalized_with_exchange(T::EXCHANGE, None)));
                             }
 
                             return Poll::Pending;
                         }
-                        Err(e) => {
+                        Err((e, raw_msg)) => {
                             this.stream = None;
-                            e.normalized_with_exchange(T::EXCHANGE)
+                            e.normalized_with_exchange(T::EXCHANGE, Some(raw_msg))
                         }
                     },
                     Some(Err(e)) => {
                         this.stream = None;
-                        WsError::StreamRxError(e).normalized_with_exchange(T::EXCHANGE)
+                        WsError::StreamRxError(e).normalized_with_exchange(T::EXCHANGE, None)
                     }
                     None => {
                         this.stream = None;
-                        WsError::StreamTerminated.normalized_with_exchange(T::EXCHANGE)
+                        WsError::StreamTerminated.normalized_with_exchange(T::EXCHANGE, None)
                     }
                 };
 
@@ -119,7 +119,7 @@ where
                 }
                 Poll::Ready(Err(e)) => {
                     this.reconnect_fut = Some(Box::pin(this.exchange.clone().make_owned_ws_connection()));
-                    return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE)));
+                    return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE, None)));
                 }
                 Poll::Pending => ()
             }
