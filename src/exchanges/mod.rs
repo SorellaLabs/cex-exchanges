@@ -73,13 +73,14 @@ impl CexExchange {
     pub(crate) fn build_multistream_ws_from_normalized(
         self,
         map: Vec<NormalizedWsChannels>,
+        max_retries: u64,
         _exch_currency_proxy: Option<CexExchange>
     ) -> eyre::Result<MutliWsStream> {
         let res = match self {
             #[cfg(feature = "us")]
             CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
-                .build_multistream_unconnected(),
+                .build_multistream_unconnected(max_retries),
             #[cfg(feature = "us")]
             CexExchange::Okex => OkexWsBuilder::make_from_normalized_map(
                 map,
@@ -89,7 +90,7 @@ impl CexExchange {
                 _exch_currency_proxy.unwrap_or(CexExchange::Binance)
             )?
             .build_many_packed()?
-            .build_multistream_unconnected(),
+            .build_multistream_unconnected(max_retries),
             #[cfg(feature = "non-us")]
             CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
@@ -111,6 +112,7 @@ impl CexExchange {
         self,
         map: Vec<NormalizedWsChannels>,
         _exch_currency_proxy: Option<CexExchange>,
+        max_retries: u64,
         handle: tokio::runtime::Handle,
         number_threads: usize
     ) -> eyre::Result<UnboundedReceiver<CombinedWsMessage>> {
@@ -118,7 +120,7 @@ impl CexExchange {
             #[cfg(feature = "us")]
             CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
-                .spawn_multithreaded(number_threads, handle),
+                .spawn_multithreaded(number_threads, max_retries, handle),
             #[cfg(feature = "us")]
             CexExchange::Okex => OkexWsBuilder::make_from_normalized_map(
                 map,
@@ -128,7 +130,7 @@ impl CexExchange {
                 _exch_currency_proxy.unwrap_or(CexExchange::Binance)
             )?
             .build_many_packed()?
-            .spawn_multithreaded(number_threads, handle),
+            .spawn_multithreaded(number_threads, max_retries, handle),
             #[cfg(feature = "non-us")]
             CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?

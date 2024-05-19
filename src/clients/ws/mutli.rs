@@ -56,10 +56,10 @@ where
         Self { exchanges }
     }
 
-    pub async fn build_multistream(self) -> Result<MutliWsStream, WsError> {
+    pub async fn build_multistream(self, max_retries: u64) -> Result<MutliWsStream, WsError> {
         let mut ws_streams = futures::stream::iter(self.exchanges)
             .map(|exch| async move {
-                let mut stream = WsStream::new(exch);
+                let mut stream = WsStream::new(exch, max_retries);
                 stream.connect().await?;
                 Ok::<_, WsError>(stream)
             })
@@ -76,11 +76,11 @@ where
         Ok(MutliWsStream { combined_streams, stream_count })
     }
 
-    pub fn build_multistream_unconnected(self) -> MutliWsStream {
+    pub fn build_multistream_unconnected(self, max_retries: u64) -> MutliWsStream {
         let ws_streams = self
             .exchanges
             .into_iter()
-            .map(|exch| WsStream::new(exch))
+            .map(|exch| WsStream::new(exch, max_retries))
             .collect::<Vec<_>>();
 
         let stream_count = ws_streams.len();
@@ -89,7 +89,7 @@ where
         MutliWsStream { combined_streams, stream_count }
     }
 
-    pub fn spawn_multithreaded(self, num_threads: usize, handle: Handle) -> UnboundedReceiver<CombinedWsMessage> {
+    pub fn spawn_multithreaded(self, num_threads: usize, max_retries: u64, handle: Handle) -> UnboundedReceiver<CombinedWsMessage> {
         let chunk_size = if self.exchanges.len() < num_threads + 1 { 1 } else { self.exchanges.len() / num_threads + 1 };
         let exchange_chunks = self.exchanges.chunks(chunk_size);
 
@@ -101,7 +101,7 @@ where
             let tx = tx.clone();
             std::thread::spawn(move || {
                 let this_new = Self { exchanges };
-                let mut ms = this_new.build_multistream_unconnected();
+                let mut ms = this_new.build_multistream_unconnected(max_retries);
 
                 let fut = async move {
                     while let Some(val) = ms.next().await {
