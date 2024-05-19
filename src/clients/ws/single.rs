@@ -22,15 +22,16 @@ pub struct WsStream<T> {
     exchange:      T,
     stream:        Option<StreamConn>,
     reconnect_fut: ReconnectFuture,
-    msg_count:     u64
+    max_retries:   u64,
+    retry_count:   u64
 }
 
 impl<T> WsStream<T>
 where
     T: Exchange + Send
 {
-    pub fn new(exchange: T) -> Self {
-        Self { exchange, stream: None, reconnect_fut: None, msg_count: 0 }
+    pub fn new(exchange: T, max_retries: u64) -> Self {
+        Self { exchange, stream: None, reconnect_fut: None, max_retries, retry_count: 0 }
     }
 
     pub async fn connect(&mut self) -> Result<(), WsError> {
@@ -81,14 +82,16 @@ where
 
         if let Some(stream) = this.stream.as_mut() {
             if let Poll::Ready(val) = stream.poll_next_unpin(cx) {
-                let mut ret_val = match val {
+                let ret_val = match val {
                     Some(Ok(msg)) => match Self::handle_incoming(msg) {
                         Ok(MessageOrPing::Message(d)) => d.into(),
                         Ok(MessageOrPing::Ping) => {
                             if let Err(e) = Self::flush_sink_queue(stream, cx) {
+                                this.retry_count += 1;
                                 this.stream = None;
                                 return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE, None)));
                             } else if let Err(e) = stream.start_send_unpin(Message::Pong(vec![])) {
+                                this.retry_count += 1;
                                 this.stream = None;
                                 return Poll::Ready(Some(WsError::StreamTxError(e).normalized_with_exchange(T::EXCHANGE, None)));
                             }
@@ -96,26 +99,28 @@ where
                             return Poll::Pending;
                         }
                         Err((e, raw_msg)) => {
+                            this.retry_count += 1;
                             this.stream = None;
                             e.normalized_with_exchange(T::EXCHANGE, Some(raw_msg))
                         }
                     },
                     Some(Err(e)) => {
+                        this.retry_count += 1;
                         this.stream = None;
                         WsError::StreamRxError(e).normalized_with_exchange(T::EXCHANGE, None)
                     }
                     None => {
+                        this.retry_count += 1;
                         this.stream = None;
-
                         WsError::StreamTerminated.normalized_with_exchange(T::EXCHANGE, None)
                     }
                 };
 
                 if let Some(p) = ret_val.bad_pair() {
+                    this.retry_count -= 1;
                     this.exchange.remove_bad_pair(p.clone());
                 }
 
-                this.msg_count += 1;
                 return Poll::Ready(Some(ret_val));
             }
         } else if let Some(reconnect) = this.reconnect_fut.as_mut() {
@@ -127,6 +132,7 @@ where
                     return Poll::Pending;
                 }
                 Poll::Ready(Err(e)) => {
+                    this.retry_count += 1;
                     this.reconnect_fut = Some(Box::pin(this.exchange.clone().make_owned_ws_connection()));
                     return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE, None)));
                 }
@@ -137,6 +143,10 @@ where
 
             cx.waker().wake_by_ref();
             return Poll::Pending;
+        }
+
+        if this.retry_count > this.max_retries {
+            return Poll::Ready(None)
         }
 
         Poll::Pending
