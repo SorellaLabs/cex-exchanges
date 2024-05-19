@@ -305,10 +305,10 @@ impl FromStr for CexExchange {
 }
 
 #[async_trait::async_trait]
-pub trait Exchange: Clone + Default {
+pub trait Exchange: Clone + Default + Send {
     const EXCHANGE: CexExchange;
-    type WsMessage: CriticalWsMessage;
-    type RestApiResult: for<'de> Deserialize<'de> + Into<CombinedRestApiResponse> + Debug;
+    type WsMessage: CriticalWsMessage + Send;
+    type RestApiResult: for<'de> Deserialize<'de> + Into<CombinedRestApiResponse> + Debug + Send;
 
     async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError>;
 
