@@ -17,7 +17,7 @@ use self::{
 };
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
-    normalized::rest_api::NormalizedRestApiRequest,
+    normalized::{rest_api::NormalizedRestApiRequest, types::NormalizedTradingPair},
     CexExchange, Exchange
 };
 
@@ -59,6 +59,11 @@ impl Exchange for Coinbase {
     type WsMessage = CoinbaseWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Coinbase;
+
+    fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
+        let pair: CoinbaseTradingPair = bad_pair.try_into().unwrap();
+        self.subscription.remove_pair(&pair)
+    }
 
     async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError> {
         let (mut ws, _) = tokio_tungstenite::connect_async(WSS_URL).await?;

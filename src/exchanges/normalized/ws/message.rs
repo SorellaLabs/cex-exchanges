@@ -22,6 +22,11 @@ pub enum CombinedWsMessage {
         message:     String,
         raw_message: String,
         bad_pair:    Option<NormalizedTradingPair>
+    },
+    BadPair {
+        exchange:    CexExchange,
+        raw_message: String,
+        bad_pair:    NormalizedTradingPair
     }
 }
 
@@ -39,7 +44,14 @@ impl CombinedWsMessage {
             #[cfg(feature = "non-us")]
             CombinedWsMessage::Bybit(c) => c.normalize(),
             CombinedWsMessage::Disconnect { exchange, message, raw_message, bad_pair } => {
-                NormalizedWsDataTypes::Disconnect { exchange, message, raw_message, bad_pair }
+                if let Some(bp) = bad_pair {
+                    CombinedWsMessage::BadPair { exchange, raw_message, bad_pair: bp }.normalize()
+                } else {
+                    NormalizedWsDataTypes::Disconnect { exchange, message, raw_message, bad_pair }
+                }
+            }
+            CombinedWsMessage::BadPair { exchange, raw_message, bad_pair } => {
+                NormalizedWsDataTypes::Disconnect { exchange, message: "removed raw trading pair".to_string(), raw_message, bad_pair: Some(bad_pair) }
             }
         }
     }
@@ -100,7 +112,8 @@ impl PartialEq<NormalizedWsDataTypes> for CombinedWsMessage {
             CombinedWsMessage::Kucoin(vals) => vals == other,
             #[cfg(feature = "non-us")]
             CombinedWsMessage::Bybit(vals) => vals == other,
-            CombinedWsMessage::Disconnect { .. } => true
+            CombinedWsMessage::Disconnect { .. } => true,
+            CombinedWsMessage::BadPair { .. } => true
         }
     }
 }

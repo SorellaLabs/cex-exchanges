@@ -156,6 +156,15 @@ impl CoinbaseSubscription {
         CoinbaseSubscription { sub_name: "subscribe".to_string(), channels: Vec::new() }
     }
 
+    pub fn remove_pair(&mut self, pair: &CoinbaseTradingPair) -> bool {
+        self.channels
+            .iter_mut()
+            .map(|sub| sub.remove_pair(pair))
+            .collect::<Vec<_>>()
+            .into_iter()
+            .any(|p| p)
+    }
+
     pub fn new_single_channel(channel: CoinbaseWsChannel) -> Self {
         CoinbaseSubscription { sub_name: "subscribe".to_string(), channels: vec![channel.into()] }
     }
@@ -170,6 +179,15 @@ struct CoinbaseSubscriptionInner {
     name:        String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     product_ids: Vec<CoinbaseTradingPair>
+}
+
+impl CoinbaseSubscriptionInner {
+    fn remove_pair(&mut self, pair: &CoinbaseTradingPair) -> bool {
+        let pre = self.product_ids.len();
+        self.product_ids.retain(|p| p != pair);
+
+        self.product_ids.len() < pre
+    }
 }
 
 impl From<CoinbaseWsChannel> for CoinbaseSubscriptionInner {

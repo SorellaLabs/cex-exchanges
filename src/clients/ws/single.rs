@@ -81,7 +81,7 @@ where
 
         if let Some(stream) = this.stream.as_mut() {
             if let Poll::Ready(val) = stream.poll_next_unpin(cx) {
-                let ret_val = match val {
+                let mut ret_val = match val {
                     Some(Ok(msg)) => match Self::handle_incoming(msg) {
                         Ok(MessageOrPing::Message(d)) => d.into(),
                         Ok(MessageOrPing::Ping) => {
@@ -111,6 +111,12 @@ where
                     }
                 };
 
+                if let Some(p) = ret_val.bad_pair() {
+                    if this.exchange.remove_bad_pair(p.clone()) {
+                        ret_val.bad_pair_msg(p);
+                    }
+                }
+
                 this.msg_count += 1;
                 return Poll::Ready(Some(ret_val));
             }
@@ -123,21 +129,13 @@ where
                     return Poll::Pending;
                 }
                 Poll::Ready(Err(e)) => {
-                    this.reconnect_fut = Some(Box::pin(
-                        this.exchange
-                            .clone()
-                            .make_owned_ws_connection::<()>(Vec::new())
-                    ));
+                    this.reconnect_fut = Some(Box::pin(this.exchange.clone().make_owned_ws_connection()));
                     return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE, None)));
                 }
                 Poll::Pending => ()
             }
         } else {
-            this.reconnect_fut = Some(Box::pin(
-                this.exchange
-                    .clone()
-                    .make_owned_ws_connection::<()>(Vec::new())
-            ));
+            this.reconnect_fut = Some(Box::pin(this.exchange.clone().make_owned_ws_connection()));
 
             cx.waker().wake_by_ref();
             return Poll::Pending;
