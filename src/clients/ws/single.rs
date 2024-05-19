@@ -62,7 +62,7 @@ where
         loop {
             match stream.poll_ready_unpin(cx) {
                 Poll::Ready(Ok(_)) => return Ok(()),
-                Poll::Ready(Err(e)) => return Err(WsError::StreamTxError(e.to_string())),
+                Poll::Ready(Err(e)) => return Err(WsError::StreamTxError(e)),
                 Poll::Pending => ()
             }
         }
@@ -90,7 +90,7 @@ where
                                 return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE, None)));
                             } else if let Err(e) = stream.start_send_unpin(Message::Pong(vec![])) {
                                 this.stream = None;
-                                return Poll::Ready(Some(WsError::StreamTxError(e.to_string()).normalized_with_exchange(T::EXCHANGE, None)));
+                                return Poll::Ready(Some(WsError::StreamTxError(e).normalized_with_exchange(T::EXCHANGE, None)));
                             }
 
                             return Poll::Pending;
@@ -102,7 +102,7 @@ where
                     },
                     Some(Err(e)) => {
                         this.stream = None;
-                        WsError::StreamRxError(e.to_string()).normalized_with_exchange(T::EXCHANGE, None)
+                        WsError::StreamRxError(e).normalized_with_exchange(T::EXCHANGE, None)
                     }
                     None => {
                         this.stream = None;

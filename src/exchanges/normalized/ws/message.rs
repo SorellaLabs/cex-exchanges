@@ -1,9 +1,9 @@
 use super::NormalizedWsDataTypes;
-use crate::CexExchange;
 #[cfg(feature = "non-us")]
 use crate::{binance::ws::BinanceWsMessage, bybit::ws::BybitWsMessage, kucoin::ws::KucoinWsMessage};
 #[cfg(feature = "us")]
 use crate::{exchanges::coinbase::ws::CoinbaseWsMessage, exchanges::okex::ws::OkexWsMessage};
+use crate::{normalized::types::NormalizedTradingPair, CexExchange};
 
 #[derive(Debug, Clone)]
 pub enum CombinedWsMessage {
@@ -20,7 +20,8 @@ pub enum CombinedWsMessage {
     Disconnect {
         exchange:    CexExchange,
         message:     String,
-        raw_message: String
+        raw_message: String,
+        bad_pair:    Option<NormalizedTradingPair>
     }
 }
 
@@ -37,7 +38,9 @@ impl CombinedWsMessage {
             CombinedWsMessage::Kucoin(c) => c.normalize(),
             #[cfg(feature = "non-us")]
             CombinedWsMessage::Bybit(c) => c.normalize(),
-            CombinedWsMessage::Disconnect { exchange, message, raw_message } => NormalizedWsDataTypes::Disconnect { exchange, message, raw_message }
+            CombinedWsMessage::Disconnect { exchange, message, raw_message, bad_pair } => {
+                NormalizedWsDataTypes::Disconnect { exchange, message, raw_message, bad_pair }
+            }
         }
     }
 
@@ -47,6 +50,13 @@ impl CombinedWsMessage {
 
     pub fn is_err(&self) -> bool {
         matches!(self, CombinedWsMessage::Disconnect { .. })
+    }
+
+    pub fn bad_pair(&self) -> Option<NormalizedTradingPair> {
+        match self {
+            CombinedWsMessage::Disconnect { bad_pair, .. } => bad_pair.clone(),
+            _ => None
+        }
     }
 }
 
