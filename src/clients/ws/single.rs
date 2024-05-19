@@ -112,9 +112,7 @@ where
                 };
 
                 if let Some(p) = ret_val.bad_pair() {
-                    if this.exchange.remove_bad_pair(p.clone()) {
-                        ret_val.bad_pair_msg(p);
-                    }
+                    this.exchange.remove_bad_pair(p.clone())
                 }
 
                 this.msg_count += 1;
