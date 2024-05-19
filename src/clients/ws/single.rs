@@ -25,7 +25,7 @@ pub struct WsStream<T> {
 
 impl<T> WsStream<T>
 where
-    T: Exchange
+    T: Exchange + Send
 {
     pub fn new(exchange: T) -> Self {
         Self { exchange, stream: None, reconnect_fut: None }
@@ -69,7 +69,8 @@ where
 
 impl<T> Stream for WsStream<T>
 where
-    T: Exchange + Send + Unpin + 'static
+    T: Exchange + Send + Unpin + 'static,
+    Self: Send
 {
     type Item = CombinedWsMessage;
 
