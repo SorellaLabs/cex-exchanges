@@ -94,8 +94,14 @@ impl TryFrom<NormalizedWsChannels> for OkexWsChannel {
 
                 Ok(OkexWsChannel::TradesAll(norm_pairs))
             }
+            NormalizedWsChannels::Quotes(pairs) => {
+                let norm_pairs = pairs
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, Self::Error>>()?;
 
-            _ => unimplemented!()
+                Ok(OkexWsChannel::BookTicker(norm_pairs))
+            }
         }
     }
 }
