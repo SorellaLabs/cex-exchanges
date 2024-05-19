@@ -20,7 +20,8 @@ type StreamConn = Pin<Box<WebSocketStream<MaybeTlsStream<TcpStream>>>>;
 pub struct WsStream<T> {
     exchange:      T,
     stream:        Option<StreamConn>,
-    reconnect_fut: ReconnectFuture
+    reconnect_fut: ReconnectFuture,
+    msg_count:     u64
 }
 
 impl<T> WsStream<T>
@@ -28,7 +29,7 @@ where
     T: Exchange + Send
 {
     pub fn new(exchange: T) -> Self {
-        Self { exchange, stream: None, reconnect_fut: None }
+        Self { exchange, stream: None, reconnect_fut: None, msg_count: 0 }
     }
 
     pub async fn connect(&mut self) -> Result<(), WsError> {
@@ -84,6 +85,9 @@ where
                         Ok(MessageOrPing::Message(d)) => d.into(),
                         Ok(MessageOrPing::Ping) => {
                             if let Err(e) = Self::flush_sink_queue(stream, cx) {
+                                if this.msg_count <= 1 {
+                                    return Poll::Ready(None)
+                                }
                                 this.stream = None;
                                 return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE, None)));
                             } else if let Err(e) = stream.start_send_unpin(Message::Pong(vec![])) {
@@ -94,20 +98,31 @@ where
                             return Poll::Pending;
                         }
                         Err((e, raw_msg)) => {
+                            if this.msg_count <= 1 {
+                                return Poll::Ready(None)
+                            }
                             this.stream = None;
                             e.normalized_with_exchange(T::EXCHANGE, Some(raw_msg))
                         }
                     },
                     Some(Err(e)) => {
+                        if this.msg_count <= 1 {
+                            return Poll::Ready(None)
+                        }
                         this.stream = None;
                         WsError::StreamRxError(e.to_string()).normalized_with_exchange(T::EXCHANGE, None)
                     }
                     None => {
+                        if this.msg_count <= 1 {
+                            return Poll::Ready(None)
+                        }
                         this.stream = None;
+
                         WsError::StreamTerminated.normalized_with_exchange(T::EXCHANGE, None)
                     }
                 };
 
+                this.msg_count += 1;
                 return Poll::Ready(Some(ret_val));
             }
         } else if let Some(reconnect) = this.reconnect_fut.as_mut() {
