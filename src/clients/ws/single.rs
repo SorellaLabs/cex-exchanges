@@ -1,4 +1,5 @@
 use std::{
+    fmt::Debug,
     pin::Pin,
     task::{Context, Poll}
 };
@@ -70,7 +71,7 @@ where
 
 impl<T> Stream for WsStream<T>
 where
-    T: Exchange + Send + Unpin + 'static,
+    T: Exchange + Debug + Send + Unpin + 'static,
     Self: Send
 {
     type Item = CombinedWsMessage;
@@ -86,11 +87,16 @@ where
                         Ok(MessageOrPing::Ping) => {
                             if let Err(e) = Self::flush_sink_queue(stream, cx) {
                                 if this.msg_count <= 1 {
+                                    println!("KILLING exchange: {:?}", this.exchange);
                                     return Poll::Ready(None)
                                 }
                                 this.stream = None;
                                 return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE, None)));
                             } else if let Err(e) = stream.start_send_unpin(Message::Pong(vec![])) {
+                                if this.msg_count <= 1 {
+                                    println!("KILLING exchange: {:?}", this.exchange);
+                                    return Poll::Ready(None)
+                                }
                                 this.stream = None;
                                 return Poll::Ready(Some(WsError::StreamTxError(e.to_string()).normalized_with_exchange(T::EXCHANGE, None)));
                             }
@@ -99,6 +105,7 @@ where
                         }
                         Err((e, raw_msg)) => {
                             if this.msg_count <= 1 {
+                                println!("KILLING exchange: {:?}", this.exchange);
                                 return Poll::Ready(None)
                             }
                             this.stream = None;
@@ -107,6 +114,7 @@ where
                     },
                     Some(Err(e)) => {
                         if this.msg_count <= 1 {
+                            println!("KILLING exchange: {:?}", this.exchange);
                             return Poll::Ready(None)
                         }
                         this.stream = None;
@@ -114,6 +122,7 @@ where
                     }
                     None => {
                         if this.msg_count <= 1 {
+                            println!("KILLING exchange: {:?}", this.exchange);
                             return Poll::Ready(None)
                         }
                         this.stream = None;
@@ -134,6 +143,10 @@ where
                     return Poll::Pending;
                 }
                 Poll::Ready(Err(e)) => {
+                    if this.msg_count <= 1 {
+                        println!("KILLING exchange: {:?}", this.exchange);
+                        return Poll::Ready(None)
+                    }
                     this.reconnect_fut = Some(Box::pin(this.exchange.clone().make_owned_ws_connection()));
                     return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE, None)));
                 }

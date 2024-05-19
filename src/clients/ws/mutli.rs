@@ -1,4 +1,5 @@
 use std::{
+    fmt::Debug,
     pin::Pin,
     task::{Context, Poll}
 };
@@ -49,7 +50,7 @@ pub struct MutliWsStreamBuilder<T> {
 
 impl<T> MutliWsStreamBuilder<T>
 where
-    T: Exchange + Unpin + Send + 'static
+    T: Exchange + Unpin + Debug + Send + 'static
 {
     pub fn new(exchanges: Vec<T>) -> Self {
         Self { exchanges }
