@@ -130,7 +130,7 @@ impl NormalizedExchangeBuilder {
         self,
         handle: tokio::runtime::Handle,
         number_threads: usize
-    ) -> eyre::Result<Option<Pin<Box<dyn Stream<Item = CombinedWsMessage>>>>> {
+    ) -> eyre::Result<Option<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>>> {
         let all_streams = self
             .ws_exchanges
             .into_iter()

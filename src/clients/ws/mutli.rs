@@ -10,7 +10,7 @@ use super::{errors::WsError, WsStream};
 use crate::{exchanges::normalized::ws::CombinedWsMessage, Exchange};
 
 pub struct MutliWsStream {
-    combined_streams: Pin<Box<dyn Stream<Item = CombinedWsMessage>>>,
+    combined_streams: Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>,
     stream_count:     usize
 }
 
