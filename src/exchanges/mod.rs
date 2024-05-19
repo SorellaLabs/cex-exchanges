@@ -310,9 +310,14 @@ pub trait Exchange: Clone + Default + Send {
     type WsMessage: CriticalWsMessage + Send;
     type RestApiResult: for<'de> Deserialize<'de> + Into<CombinedRestApiResponse> + Debug + Send;
 
+    fn remove_bad_pairs<T>(&mut self, bad_pairs: Vec<T>) {}
+
     async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError>;
 
-    async fn make_owned_ws_connection(self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError> {
+    async fn make_owned_ws_connection<T>(self, bad_pairs: Vec<T>) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError>
+    where
+        T: Send
+    {
         self.make_ws_connection().await
     }
 

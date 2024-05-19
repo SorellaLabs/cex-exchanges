@@ -11,12 +11,19 @@ impl CoinbaseTradingPair {
     }
 
     pub fn is_valid(s: &str) -> bool {
-        s.contains('-') && !s.contains('_') && !s.contains('/')
+        s.contains('-') && !s.contains('_') && !s.contains('/') && s.len() > 4
     }
 
     pub fn normalize(&self) -> NormalizedTradingPair {
         let mut split = self.0.split('-');
         NormalizedTradingPair::new_base_quote(CexExchange::Coinbase, split.next().unwrap(), split.next().unwrap(), Some('-'), None)
+    }
+
+    pub fn parse_for_bad_pair(value: &str) -> Option<Self> {
+        let value = value.replace("'", " ").replace("\"", " ");
+        value
+            .split(" ")
+            .find_map(|v| CoinbaseTradingPair::try_from(v).ok())
     }
 }
 
@@ -91,5 +98,19 @@ impl TryFrom<&str> for CoinbaseTradingPair {
         } else {
             Err(eyre::ErrReport::msg(format!("INVALID Coinbase trading pair '{value}' contains either: 1) '_', and/or '/' - OR -  2) no '-'")))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_for_bad_pair() {
+        let test_str = r#"failed to deserialize the message: missing field `error` - {"type":"error","message":"Failed to subscribe","reason":"LOOM-USDC is delisted"}"#;
+
+        let calculated = CoinbaseTradingPair::parse_for_bad_pair(&test_str);
+
+        assert_eq!(calculated, Some(CoinbaseTradingPair("LOOM-USDC".to_string())))
     }
 }

@@ -82,6 +82,10 @@ impl Exchange for Okex {
 
     const EXCHANGE: CexExchange = CexExchange::Okex;
 
+    fn remove_bad_pairs<T>(&mut self, bad_pairs: Vec<T>) {
+        
+    }
+
     async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError> {
         let url = if self.subscription.needs_business_ws() { WSS_BUSINESS_URL } else { WSS_PUBLIC_URL };
 

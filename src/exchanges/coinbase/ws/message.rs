@@ -1,5 +1,5 @@
 use super::{CoinbaseMatches, CoinbaseStatus, CoinbaseTicker};
-use crate::{clients::ws::CriticalWsMessage, exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
+use crate::{clients::ws::CriticalWsMessage, coinbase::CoinbaseTradingPair, exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 
 #[serde_with::serde_as]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -10,10 +10,7 @@ pub enum CoinbaseWsMessage {
     Ticker(CoinbaseTicker),
     Status(CoinbaseStatus),
     Subscriptions(serde_json::Value),
-    Error {
-        error:   String,
-        raw_msg: String
-    }
+    Error(CoinbaseError)
 }
 
 impl CoinbaseWsMessage {
@@ -27,8 +24,8 @@ impl CoinbaseWsMessage {
             CoinbaseWsMessage::Subscriptions(v) => {
                 NormalizedWsDataTypes::Other { exchange: CexExchange::Coinbase, kind: "Subscriptions".to_string(), value: format!("{:?}", v) }
             }
-            CoinbaseWsMessage::Error { error, raw_msg } => {
-                NormalizedWsDataTypes::Other { exchange: CexExchange::Coinbase, kind: error, value: raw_msg }
+            CoinbaseWsMessage::Error(err) => {
+                NormalizedWsDataTypes::Other { exchange: CexExchange::Coinbase, kind: err.reason, value: err.message }
             }
         }
     }
@@ -50,8 +47,24 @@ impl PartialEq<NormalizedWsDataTypes> for CoinbaseWsMessage {
 impl CriticalWsMessage for CoinbaseWsMessage {
     fn make_critical(&mut self, msg: String) {
         match self {
-            CoinbaseWsMessage::Error { error: _, raw_msg } => *raw_msg = msg,
+            CoinbaseWsMessage::Error(err) => {
+                err.parse_for_bad_pair();
+                err.message = msg;
+            }
             _ => ()
         }
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct CoinbaseError {
+    pub message:  String,
+    pub reason:   String,
+    pub bad_pair: Option<CoinbaseTradingPair>
+}
+
+impl CoinbaseError {
+    pub fn parse_for_bad_pair(&mut self) {
+        self.bad_pair = CoinbaseTradingPair::parse_for_bad_pair(&self.reason);
     }
 }

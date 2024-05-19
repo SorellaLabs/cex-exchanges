@@ -86,17 +86,9 @@ where
                         Ok(MessageOrPing::Message(d)) => d.into(),
                         Ok(MessageOrPing::Ping) => {
                             if let Err(e) = Self::flush_sink_queue(stream, cx) {
-                                if this.msg_count <= 1 {
-                                    println!("KILLING exchange: {:?}", this.exchange);
-                                    return Poll::Ready(None)
-                                }
                                 this.stream = None;
                                 return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE, None)));
                             } else if let Err(e) = stream.start_send_unpin(Message::Pong(vec![])) {
-                                if this.msg_count <= 1 {
-                                    println!("KILLING exchange: {:?}", this.exchange);
-                                    return Poll::Ready(None)
-                                }
                                 this.stream = None;
                                 return Poll::Ready(Some(WsError::StreamTxError(e.to_string()).normalized_with_exchange(T::EXCHANGE, None)));
                             }
@@ -104,27 +96,15 @@ where
                             return Poll::Pending;
                         }
                         Err((e, raw_msg)) => {
-                            if this.msg_count <= 1 {
-                                println!("KILLING exchange: {:?}", this.exchange);
-                                return Poll::Ready(None)
-                            }
                             this.stream = None;
                             e.normalized_with_exchange(T::EXCHANGE, Some(raw_msg))
                         }
                     },
                     Some(Err(e)) => {
-                        if this.msg_count <= 1 {
-                            println!("KILLING exchange: {:?}", this.exchange);
-                            return Poll::Ready(None)
-                        }
                         this.stream = None;
                         WsError::StreamRxError(e.to_string()).normalized_with_exchange(T::EXCHANGE, None)
                     }
                     None => {
-                        if this.msg_count <= 1 {
-                            println!("KILLING exchange: {:?}", this.exchange);
-                            return Poll::Ready(None)
-                        }
                         this.stream = None;
 
                         WsError::StreamTerminated.normalized_with_exchange(T::EXCHANGE, None)
@@ -143,17 +123,21 @@ where
                     return Poll::Pending;
                 }
                 Poll::Ready(Err(e)) => {
-                    if this.msg_count <= 1 {
-                        println!("KILLING exchange: {:?}", this.exchange);
-                        return Poll::Ready(None)
-                    }
-                    this.reconnect_fut = Some(Box::pin(this.exchange.clone().make_owned_ws_connection()));
+                    this.reconnect_fut = Some(Box::pin(
+                        this.exchange
+                            .clone()
+                            .make_owned_ws_connection::<()>(Vec::new())
+                    ));
                     return Poll::Ready(Some(e.normalized_with_exchange(T::EXCHANGE, None)));
                 }
                 Poll::Pending => ()
             }
         } else {
-            this.reconnect_fut = Some(Box::pin(this.exchange.clone().make_owned_ws_connection()));
+            this.reconnect_fut = Some(Box::pin(
+                this.exchange
+                    .clone()
+                    .make_owned_ws_connection::<()>(Vec::new())
+            ));
 
             cx.waker().wake_by_ref();
             return Poll::Pending;
