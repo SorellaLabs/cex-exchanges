@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{tickers::OkexTicker, trades::OkexTrade};
-use crate::{clients::ws::CriticalWsMessage, exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
+use crate::{clients::ws::CriticalWsMessage, exchanges::normalized::ws::NormalizedWsDataTypes, okex::OkexTradingPair, CexExchange};
 
 #[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -11,7 +11,7 @@ pub enum OkexWsMessage {
     TradesAll(OkexTrade),
     Tickers(OkexTicker),
     Subscribe(serde_json::Value),
-    Error { error: String, raw_msg: String }
+    Error { error: String, bad_pair: Option<OkexTradingPair> }
 }
 
 impl OkexWsMessage {
@@ -50,7 +50,7 @@ impl OkexWsMessage {
                     .as_str()
                     .ok_or(eyre::ErrReport::msg("Could not convert 'msg' (error message) field in Okex ws message to &str".to_string()))?;
 
-                Ok(Self::Error { error: msg.to_string(), raw_msg: String::new() })
+                Ok(Self::Error { error: msg.to_string(), bad_pair: OkexTradingPair::parse_for_bad_pair(msg) })
             } else {
                 Err(eyre::ErrReport::msg(format!("Event type '{event}' cannot be deserialized")))
             }
