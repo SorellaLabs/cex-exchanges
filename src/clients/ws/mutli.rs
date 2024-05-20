@@ -81,6 +81,7 @@ where
     }
 
     pub fn build_multistream_unconnected(self, max_retries: Option<u64>) -> MutliWsStream {
+        println!("EXCHANGE COUNT: {}", self.exchanges.len());
         let ws_streams = self
             .exchanges
             .into_iter()
@@ -95,6 +96,7 @@ where
 
     pub fn spawn_multithreaded(self, num_threads: usize, max_retries: Option<u64>, handle: Handle) -> UnboundedReceiver<CombinedWsMessage> {
         let chunk_size = if self.exchanges.len() < num_threads + 1 { 1 } else { self.exchanges.len() / num_threads + 1 };
+        println!("EXCHANGE COUNT: {}", self.exchanges.len());
         let exchange_chunks = self.exchanges.chunks(chunk_size);
 
         let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
