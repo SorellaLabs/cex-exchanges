@@ -46,9 +46,7 @@ impl CombinedWsMessage {
             CombinedWsMessage::Disconnect { exchange, message, raw_message, .. } => {
                 NormalizedWsDataTypes::Disconnect { exchange, message, raw_message }
             }
-            CombinedWsMessage::BadPair { exchange, raw_message, bad_pair } => {
-                NormalizedWsDataTypes::RemovedPair { exchange, raw_message, bad_pair: Some(bad_pair) }
-            }
+            CombinedWsMessage::BadPair { exchange, raw_message, bad_pair } => NormalizedWsDataTypes::RemovedPair { exchange, raw_message, bad_pair }
         }
     }
 
