@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 use crate::CexExchange;
@@ -95,6 +97,14 @@ impl NormalizedTradingPair {
         } else {
             None
         }
+    }
+}
+
+impl Display for NormalizedTradingPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let pair = self.make_pair();
+
+        writeln!(f, "{}", pair)
     }
 }
 
