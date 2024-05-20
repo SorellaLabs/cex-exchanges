@@ -20,7 +20,7 @@ pub enum WsError {
 
 impl WsError {
     pub fn normalized_with_exchange(self, exchange: CexExchange, raw_message: Option<String>) -> CombinedWsMessage {
-        let mut bad_pair = CexExchange::bad_pair(exchange, self.to_string());
+        let bad_pair = CexExchange::bad_pair(exchange, self.to_string());
 
         CombinedWsMessage::Disconnect { exchange, message: self.to_string(), raw_message: raw_message.unwrap_or(String::new()), bad_pair }
     }
