@@ -73,7 +73,7 @@ impl CexExchange {
     pub(crate) fn build_multistream_ws_from_normalized(
         self,
         map: Vec<NormalizedWsChannels>,
-        max_retries: u64,
+        max_retries: Option<u64>,
         _exch_currency_proxy: Option<CexExchange>
     ) -> eyre::Result<MutliWsStream> {
         let res = match self {
@@ -112,7 +112,7 @@ impl CexExchange {
         self,
         map: Vec<NormalizedWsChannels>,
         _exch_currency_proxy: Option<CexExchange>,
-        max_retries: u64,
+        max_retries: Option<u64>,
         handle: tokio::runtime::Handle,
         number_threads: usize
     ) -> eyre::Result<UnboundedReceiver<CombinedWsMessage>> {

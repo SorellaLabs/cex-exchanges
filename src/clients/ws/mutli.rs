@@ -56,7 +56,7 @@ where
         Self { exchanges }
     }
 
-    pub async fn build_multistream(self, max_retries: u64) -> Result<MutliWsStream, WsError> {
+    pub async fn build_multistream(self, max_retries: Option<u64>) -> Result<MutliWsStream, WsError> {
         let mut ws_streams = futures::stream::iter(self.exchanges)
             .map(|exch| async move {
                 let mut stream = WsStream::new(exch, max_retries);
@@ -76,7 +76,7 @@ where
         Ok(MutliWsStream { combined_streams, stream_count })
     }
 
-    pub fn build_multistream_unconnected(self, max_retries: u64) -> MutliWsStream {
+    pub fn build_multistream_unconnected(self, max_retries: Option<u64>) -> MutliWsStream {
         let ws_streams = self
             .exchanges
             .into_iter()
@@ -89,7 +89,7 @@ where
         MutliWsStream { combined_streams, stream_count }
     }
 
-    pub fn spawn_multithreaded(self, num_threads: usize, max_retries: u64, handle: Handle) -> UnboundedReceiver<CombinedWsMessage> {
+    pub fn spawn_multithreaded(self, num_threads: usize, max_retries: Option<u64>, handle: Handle) -> UnboundedReceiver<CombinedWsMessage> {
         let chunk_size = if self.exchanges.len() < num_threads + 1 { 1 } else { self.exchanges.len() / num_threads + 1 };
         let exchange_chunks = self.exchanges.chunks(chunk_size);
 

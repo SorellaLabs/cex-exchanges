@@ -157,12 +157,10 @@ impl CoinbaseSubscription {
     }
 
     pub fn remove_pair(&mut self, pair: &CoinbaseTradingPair) -> bool {
-        self.channels
-            .iter_mut()
-            .map(|sub| sub.remove_pair(pair))
-            .collect::<Vec<_>>()
-            .into_iter()
-            .any(|p| p)
+        self.channels.iter_mut().for_each(|sub| {
+            sub.remove_pair(pair);
+        });
+        self.channels.is_empty()
     }
 
     pub fn new_single_channel(channel: CoinbaseWsChannel) -> Self {

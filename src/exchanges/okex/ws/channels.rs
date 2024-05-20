@@ -145,7 +145,7 @@ impl OkexSubscription {
         let pre = self.args.len();
         self.args.retain(|p| &p.trading_pair != pair);
 
-        self.args.len() < pre
+        self.args.is_empty()
     }
 }
 

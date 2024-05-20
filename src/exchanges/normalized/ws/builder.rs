@@ -106,7 +106,7 @@ impl NormalizedExchangeBuilder {
     }
 
     /// builds the multistream ws client
-    pub fn build_all_multistream(self, max_retries: u64) -> eyre::Result<Option<MutliWsStream>> {
+    pub fn build_all_multistream(self, max_retries: Option<u64>) -> eyre::Result<Option<MutliWsStream>> {
         let mut multistream_ws: Option<MutliWsStream> = None;
 
         self.ws_exchanges.into_iter().try_for_each(|(exch, map)| {
@@ -130,7 +130,7 @@ impl NormalizedExchangeBuilder {
         self,
         handle: tokio::runtime::Handle,
         number_threads: usize,
-        max_retries: u64
+        max_retries: Option<u64>
     ) -> eyre::Result<Option<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>>> {
         let all_streams = self
             .ws_exchanges

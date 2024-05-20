@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use cex_exchanges::{
     clients::ws::{MutliWsStreamBuilder, WsStream},
     exchanges::Exchange
@@ -5,8 +7,8 @@ use cex_exchanges::{
 use futures::StreamExt;
 use serde::Serialize;
 
-pub async fn stream_util<E: Exchange + Send + Unpin + 'static>(exchange: E, iterations: usize) {
-    let mut stream = WsStream::new(exchange);
+pub async fn stream_util<E: Exchange + Unpin + Debug + Send + 'static>(exchange: E, iterations: usize) {
+    let mut stream = WsStream::new(exchange, None);
     stream.connect().await.unwrap();
 
     let mut i = 0;
@@ -27,8 +29,8 @@ pub async fn stream_util<E: Exchange + Send + Unpin + 'static>(exchange: E, iter
     }
 }
 
-pub async fn mutlistream_util<E: Exchange + Send + Unpin + 'static>(builder: MutliWsStreamBuilder<E>, iterations: usize) {
-    let mut stream = builder.build_multistream_unconnected();
+pub async fn mutlistream_util<E: Exchange + Unpin + Debug + Send + 'static>(builder: MutliWsStreamBuilder<E>, iterations: usize) {
+    let mut stream = builder.build_multistream_unconnected(None);
     println!("CONNECTED STREAM");
 
     let mut i = 0;
@@ -51,8 +53,8 @@ pub async fn mutlistream_util<E: Exchange + Send + Unpin + 'static>(builder: Mut
     }
 }
 
-pub async fn mutlithreaded_util<E: Exchange + Send + Unpin + 'static>(builder: MutliWsStreamBuilder<E>, iterations: usize) {
-    let mut rx = builder.spawn_multithreaded(8, tokio::runtime::Handle::current());
+pub async fn mutlithreaded_util<E: Exchange + Unpin + Debug + Send + 'static>(builder: MutliWsStreamBuilder<E>, iterations: usize) {
+    let mut rx = builder.spawn_multithreaded(8, None, tokio::runtime::Handle::current());
     let mut i = 0;
     while let Some(val) = rx.recv().await {
         if val.is_err() {
