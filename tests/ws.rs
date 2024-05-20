@@ -59,7 +59,7 @@ mod coinbase_tests {
     async fn test_multi_all_instruments() {
         let channels = vec![CoinbaseWsChannelKind::Matches, CoinbaseWsChannelKind::Ticker];
 
-        let builder = CoinbaseWsBuilder::build_from_all_instruments(&channels)
+        let builder = CoinbaseWsBuilder::build_from_all_instruments(&channels, Some(10))
             .await
             .unwrap();
 
@@ -71,7 +71,7 @@ mod coinbase_tests {
     async fn test_multi_all_instruments_multithread() {
         let channels = vec![CoinbaseWsChannelKind::Matches, CoinbaseWsChannelKind::Ticker];
 
-        let builder = CoinbaseWsBuilder::build_from_all_instruments(&channels)
+        let builder = CoinbaseWsBuilder::build_from_all_instruments(&channels, Some(10))
             .await
             .unwrap();
         mutlithreaded_util(builder, 1000).await;
@@ -82,7 +82,10 @@ mod coinbase_tests {
     async fn test_multi_all_instruments_multithread_from_normalized() {
         let channels = vec![NormalizedWsChannelKinds::Trades, NormalizedWsChannelKinds::Quotes];
 
-        let normalized_symbols = CexExchange::Coinbase.get_all_instruments().await.unwrap();
+        let normalized_symbols = CexExchange::Coinbase
+            .get_all_instruments(true)
+            .await
+            .unwrap();
         let mut builder = NormalizedExchangeBuilder::new();
         builder.add_pairs_all_channels(
             CexExchange::Coinbase,
@@ -157,7 +160,7 @@ mod okex_tests {
     async fn test_multi_all_instruments() {
         let channels = vec![OkexWsChannelKind::TradesAll, OkexWsChannelKind::BookTicker];
 
-        let builder = OkexWsBuilder::build_from_all_instruments(&channels, None)
+        let builder = OkexWsBuilder::build_from_all_instruments(&channels, None, Some(10))
             .await
             .unwrap();
 
@@ -169,7 +172,7 @@ mod okex_tests {
     async fn test_multi_all_instruments_multithread() {
         let channels = vec![OkexWsChannelKind::TradesAll, OkexWsChannelKind::BookTicker];
 
-        let builder = OkexWsBuilder::build_from_all_instruments(&channels, None)
+        let builder = OkexWsBuilder::build_from_all_instruments(&channels, None, Some(10))
             .await
             .unwrap();
         mutlithreaded_util(builder, 1000).await;
@@ -180,7 +183,7 @@ mod okex_tests {
     async fn test_multi_all_instruments_multithread_from_normalized() {
         let channels = vec![NormalizedWsChannelKinds::Trades, NormalizedWsChannelKinds::Quotes];
 
-        let normalized_symbols = CexExchange::Okex.get_all_instruments().await.unwrap();
+        let normalized_symbols = CexExchange::Okex.get_all_instruments(true).await.unwrap();
         let mut builder = NormalizedExchangeBuilder::new();
         builder.add_pairs_all_channels(
             CexExchange::Okex,

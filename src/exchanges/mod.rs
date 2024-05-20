@@ -193,7 +193,7 @@ impl CexExchange {
         Ok(out)
     }
 
-    pub async fn get_all_instruments(self) -> Result<Vec<NormalizedInstrument>, RestApiError> {
+    pub async fn get_all_instruments(self, active_only: bool) -> Result<Vec<NormalizedInstrument>, RestApiError> {
         let exchange_api = ExchangeApi::new();
         let out = match self {
             #[cfg(feature = "us")]
@@ -201,35 +201,35 @@ impl CexExchange {
                 .all_instruments::<Coinbase>()
                 .await?
                 .normalize()
-                .take_instruments()
+                .take_instruments(active_only)
                 .unwrap(),
             #[cfg(feature = "non-us")]
             CexExchange::Binance => exchange_api
                 .all_instruments::<Binance>()
                 .await?
                 .normalize()
-                .take_instruments()
+                .take_instruments(active_only)
                 .unwrap(),
             #[cfg(feature = "us")]
             CexExchange::Okex => exchange_api
                 .all_instruments::<Okex>()
                 .await?
                 .normalize()
-                .take_instruments()
+                .take_instruments(active_only)
                 .unwrap(),
             #[cfg(feature = "non-us")]
             CexExchange::Kucoin => exchange_api
                 .all_instruments::<Kucoin>()
                 .await?
                 .normalize()
-                .take_instruments()
+                .take_instruments(active_only)
                 .unwrap(),
             #[cfg(feature = "non-us")]
             CexExchange::Bybit => exchange_api
                 .all_instruments::<Bybit>()
                 .await?
                 .normalize()
-                .take_instruments()
+                .take_instruments(active_only)
                 .unwrap()
         };
 

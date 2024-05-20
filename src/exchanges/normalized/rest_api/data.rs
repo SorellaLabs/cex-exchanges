@@ -16,9 +16,15 @@ impl NormalizedRestApiDataTypes {
         }
     }
 
-    pub fn take_instruments(self) -> Option<Vec<NormalizedInstrument>> {
+    pub fn take_instruments(self, active_only: bool) -> Option<Vec<NormalizedInstrument>> {
         match self {
-            NormalizedRestApiDataTypes::AllInstruments(vals) => Some(vals),
+            NormalizedRestApiDataTypes::AllInstruments(vals) => {
+                if active_only {
+                    Some(vals.into_iter().filter(|instr| instr.active).collect())
+                } else {
+                    Some(vals)
+                }
+            }
             _ => None
         }
     }

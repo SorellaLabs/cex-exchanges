@@ -83,8 +83,12 @@ impl OkexWsBuilder {
     }
 
     /// builds a mutlistream channel from all active instruments
-    pub async fn build_from_all_instruments(channels: &[OkexWsChannelKind], proxy: Option<CexExchange>) -> eyre::Result<MutliWsStreamBuilder<Okex>> {
-        let this = Self::build_from_all_instruments_util(channels, proxy).await?;
+    pub async fn build_from_all_instruments(
+        channels: &[OkexWsChannelKind],
+        proxy: Option<CexExchange>,
+        connections_per_stream: Option<usize>
+    ) -> eyre::Result<MutliWsStreamBuilder<Okex>> {
+        let this = Self::build_from_all_instruments_util(channels, proxy, connections_per_stream).await?;
 
         let all_streams = this
             .channels
@@ -100,18 +104,21 @@ impl OkexWsBuilder {
         Ok(MutliWsStreamBuilder::new(all_streams))
     }
 
-    async fn build_from_all_instruments_util(channels: &[OkexWsChannelKind], proxy: Option<CexExchange>) -> eyre::Result<Self> {
+    async fn build_from_all_instruments_util(
+        channels: &[OkexWsChannelKind],
+        proxy: Option<CexExchange>,
+        connections_per_stream: Option<usize>
+    ) -> eyre::Result<Self> {
         let mut this = Self::new(proxy);
 
-        let mut all_symbols = this.exch_currency_proxy.get_all_instruments().await?;
-        all_symbols.retain(|sym| sym.active);
+        let all_symbols = this.exch_currency_proxy.get_all_instruments(true).await?;
 
         let rest = all_symbols
             .into_iter()
             .map(|val| val.trading_pair.try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
-        let chunks = rest.chunks(MAX_OKEX_WS_CONNS_PER_STREAM);
+        let chunks = rest.chunks(connections_per_stream.unwrap_or(MAX_OKEX_WS_CONNS_PER_STREAM));
 
         chunks.into_iter().for_each(|chk| {
             let all_channels = channels

@@ -79,8 +79,11 @@ impl CoinbaseWsBuilder {
     }
 
     /// builds a mutlistream channel from all active instruments
-    pub async fn build_from_all_instruments(channels: &[CoinbaseWsChannelKind]) -> eyre::Result<MutliWsStreamBuilder<Coinbase>> {
-        let this = Self::build_from_all_instruments_util(channels).await?;
+    pub async fn build_from_all_instruments(
+        channels: &[CoinbaseWsChannelKind],
+        connections_per_stream: Option<usize>
+    ) -> eyre::Result<MutliWsStreamBuilder<Coinbase>> {
+        let this = Self::build_from_all_instruments_util(channels, connections_per_stream).await?;
 
         let all_streams = this
             .channels
@@ -96,7 +99,7 @@ impl CoinbaseWsBuilder {
         Ok(MutliWsStreamBuilder::new(all_streams))
     }
 
-    async fn build_from_all_instruments_util(channels: &[CoinbaseWsChannelKind]) -> eyre::Result<Self> {
+    async fn build_from_all_instruments_util(channels: &[CoinbaseWsChannelKind], connections_per_stream: Option<usize>) -> eyre::Result<Self> {
         let mut this = Self::default();
 
         let all_symbols_vec = ExchangeApi::new()
@@ -110,7 +113,7 @@ impl CoinbaseWsBuilder {
             .map(|val| val.id)
             .collect::<Vec<_>>();
 
-        let chunks = all_symbols.chunks(MAX_COINBASE_WS_CONNS_PER_STREAM);
+        let chunks = all_symbols.chunks(connections_per_stream.unwrap_or(MAX_COINBASE_WS_CONNS_PER_STREAM));
 
         chunks.into_iter().for_each(|chk| {
             let all_channels = channels

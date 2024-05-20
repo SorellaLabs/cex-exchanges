@@ -144,7 +144,7 @@ mod okex_tests {
             assert!(test_length > 10);
 
             let normalized = all_instruments.clone().normalize();
-            let test_length = normalized.clone().take_instruments().unwrap().len();
+            let test_length = normalized.clone().take_instruments(false).unwrap().len();
             assert!(test_length > 10);
         }
     }
