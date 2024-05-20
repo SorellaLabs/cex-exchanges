@@ -132,7 +132,10 @@ where
                             return this.handle_retry(e.normalized_with_exchange(T::EXCHANGE, Some(raw_msg)));
                         }
                     },
-                    Some(Err(e)) => return this.handle_retry(WsError::StreamRxError(e).normalized_with_exchange(T::EXCHANGE, None)),
+                    Some(Err(e)) => {
+                        this.stream = None;
+                        return this.handle_retry(WsError::StreamRxError(e).normalized_with_exchange(T::EXCHANGE, None))
+                    }
                     None => {
                         this.stream = None;
                         return this.handle_retry(WsError::StreamTerminated.normalized_with_exchange(T::EXCHANGE, None))
