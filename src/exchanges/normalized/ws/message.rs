@@ -43,15 +43,11 @@ impl CombinedWsMessage {
             CombinedWsMessage::Kucoin(c) => c.normalize(),
             #[cfg(feature = "non-us")]
             CombinedWsMessage::Bybit(c) => c.normalize(),
-            CombinedWsMessage::Disconnect { exchange, message, raw_message, bad_pair } => {
-                if let Some(bp) = bad_pair {
-                    CombinedWsMessage::BadPair { exchange, raw_message, bad_pair: bp }.normalize()
-                } else {
-                    NormalizedWsDataTypes::Disconnect { exchange, message, raw_message, bad_pair }
-                }
+            CombinedWsMessage::Disconnect { exchange, message, raw_message, .. } => {
+                NormalizedWsDataTypes::Disconnect { exchange, message, raw_message }
             }
             CombinedWsMessage::BadPair { exchange, raw_message, bad_pair } => {
-                NormalizedWsDataTypes::Disconnect { exchange, message: "removed raw trading pair".to_string(), raw_message, bad_pair: Some(bad_pair) }
+                NormalizedWsDataTypes::RemovedPair { exchange, raw_message, bad_pair: Some(bad_pair) }
             }
         }
     }
