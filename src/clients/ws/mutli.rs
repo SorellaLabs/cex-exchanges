@@ -21,6 +21,10 @@ impl MutliWsStream {
 
         Self { combined_streams, stream_count: self.stream_count + other.stream_count }
     }
+
+    pub fn stream_count(&self) -> usize {
+        self.stream_count
+    }
 }
 
 impl Stream for MutliWsStream {
