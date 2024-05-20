@@ -94,15 +94,15 @@ impl CexExchange {
             #[cfg(feature = "non-us")]
             CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
-                .build_multistream_unconnected(),
+                .build_multistream_unconnected(max_retries),
             #[cfg(feature = "non-us")]
             CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
-                .build_multistream_unconnected(),
+                .build_multistream_unconnected(max_retries),
             #[cfg(feature = "non-us")]
             CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
-                .build_multistream_unconnected()
+                .build_multistream_unconnected(max_retries)
         };
 
         Ok(res)
@@ -134,15 +134,15 @@ impl CexExchange {
             #[cfg(feature = "non-us")]
             CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
-                .spawn_multithreaded(number_threads, handle),
+                .spawn_multithreaded(number_threads, max_retries, handle),
             #[cfg(feature = "non-us")]
             CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
-                .spawn_multithreaded(number_threads, handle),
+                .spawn_multithreaded(number_threads, max_retries, handle),
             #[cfg(feature = "non-us")]
             CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map)?
                 .build_many_packed()?
-                .spawn_multithreaded(number_threads, handle)
+                .spawn_multithreaded(number_threads, max_retries, handle)
         };
 
         Ok(res)
