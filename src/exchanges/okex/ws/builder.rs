@@ -3,7 +3,8 @@ use crate::{clients::ws::MutliWsStreamBuilder, normalized::ws::NormalizedWsChann
 
 /// There is a limit of 300 connections per attempt every 5 minutes per IP.
 const MAX_OKEX_STREAMS: usize = 300;
-/// A single connection can listen to a maximum of 1024 streams.
+/// A single connection can listen to a maximum of 100 streams.
+/// Setting lower for io purposes
 const MAX_OKEX_WS_CONNS_PER_STREAM: usize = 1024;
 
 #[derive(Debug, Clone)]

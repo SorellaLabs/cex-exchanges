@@ -9,7 +9,9 @@ mod coinbase_tests {
         exchanges::{
             coinbase::ws::{CoinbaseWsBuilder, CoinbaseWsChannel},
             normalized::types::RawTradingPair
-        }
+        },
+        normalized::ws::{NormalizedExchangeBuilder, NormalizedWsChannelKinds},
+        CexExchange
     };
     use serial_test::serial;
 
@@ -73,6 +75,25 @@ mod coinbase_tests {
             .await
             .unwrap();
         mutlithreaded_util(builder, 1000).await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+    #[serial]
+    async fn test_multi_all_instruments_multithread_from_normalized() {
+        let channels = vec![NormalizedWsChannelKinds::Trades, NormalizedWsChannelKinds::Quotes];
+
+        let normalized_symbols = CexExchange::Coinbase.get_all_instruments().await.unwrap();
+        let mut builder = NormalizedExchangeBuilder::new();
+        builder.add_pairs_all_channels(
+            CexExchange::Coinbase,
+            &channels,
+            &normalized_symbols
+                .into_iter()
+                .map(|instr| instr.trading_pair.into())
+                .collect::<Vec<_>>()
+        );
+
+        normalized_mutlithreaded_util(builder, 10000).await;
     }
 }
 
