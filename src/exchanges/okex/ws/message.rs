@@ -11,7 +11,7 @@ pub enum OkexWsMessage {
     TradesAll(OkexTrade),
     Tickers(OkexTicker),
     Subscribe(serde_json::Value),
-    Error { error: String, bad_pair: Option<OkexTradingPair> }
+    Error { error: String, raw_msg: String, bad_pair: Option<OkexTradingPair> }
 }
 
 impl OkexWsMessage {
@@ -50,7 +50,7 @@ impl OkexWsMessage {
                     .as_str()
                     .ok_or(eyre::ErrReport::msg("Could not convert 'msg' (error message) field in Okex ws message to &str".to_string()))?;
 
-                Ok(Self::Error { error: msg.to_string(), bad_pair: OkexTradingPair::parse_for_bad_pair(msg) })
+                Ok(Self::Error { error: msg.to_string(), raw_msg: String::new(), bad_pair: OkexTradingPair::parse_for_bad_pair(msg) })
             } else {
                 Err(eyre::ErrReport::msg(format!("Event type '{event}' cannot be deserialized")))
             }
@@ -77,8 +77,16 @@ impl OkexWsMessage {
             OkexWsMessage::Subscribe(v) => {
                 NormalizedWsDataTypes::Other { exchange: CexExchange::Okex, kind: "Subscribe".to_string(), value: format!("{:?}", v) }
             }
-            OkexWsMessage::Error { error, raw_msg } => {
-                NormalizedWsDataTypes::Other { exchange: CexExchange::Okex, kind: error, value: raw_msg }
+            OkexWsMessage::Error { error, raw_msg, bad_pair } => {
+                if let Some(bp) = bad_pair {
+                    NormalizedWsDataTypes::RemovedPair {
+                        exchange:    CexExchange::Okex,
+                        bad_pair:    bp.normalize(),
+                        raw_message: format!("{error} - {raw_msg}")
+                    }
+                } else {
+                    NormalizedWsDataTypes::Other { exchange: CexExchange::Okex, kind: error, value: String::new() }
+                }
             }
         }
     }
@@ -99,7 +107,13 @@ impl PartialEq<NormalizedWsDataTypes> for OkexWsMessage {
 impl CriticalWsMessage for OkexWsMessage {
     fn make_critical(&mut self, msg: String) {
         match self {
-            OkexWsMessage::Error { error: _, raw_msg } => *raw_msg = msg,
+            OkexWsMessage::Error { raw_msg, bad_pair, .. } => {
+                if bad_pair.is_none() {
+                    *bad_pair = OkexTradingPair::parse_for_bad_pair(&msg);
+                }
+
+                *raw_msg = msg;
+            }
             _ => ()
         }
     }
