@@ -99,6 +99,7 @@ impl PartialEq<NormalizedWsDataTypes> for OkexWsMessage {
             (OkexWsMessage::Tickers(this), NormalizedWsDataTypes::Quote(that)) => this == that,
             (OkexWsMessage::Subscribe(_), NormalizedWsDataTypes::Other { .. }) => true,
             (OkexWsMessage::Error { .. }, NormalizedWsDataTypes::Other { .. }) => true,
+            (OkexWsMessage::Error { .. }, NormalizedWsDataTypes::RemovedPair { .. }) => true,
             _ => false
         }
     }

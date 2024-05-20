@@ -72,8 +72,8 @@ where
     fn handle_retry(&mut self, msg: CombinedWsMessage) -> Poll<Option<CombinedWsMessage>> {
         let is_bad_pair = match self.handle_bad_pair(&msg) {
             Some(true) => return Poll::Ready(None),
-            Some(false) => true,
-            None => false
+            Some(false) => false,
+            None => true
         };
         if let Some(retries) = self.max_retries {
             if !is_bad_pair {
