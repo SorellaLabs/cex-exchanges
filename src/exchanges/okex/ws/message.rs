@@ -45,7 +45,7 @@ impl OkexWsMessage {
                 Ok(Self::Subscribe(value))
             } else if event == "error" {
                 let msg = value
-                    .get("message")
+                    .get("msg")
                     .ok_or(eyre::ErrReport::msg("Could not find 'msg' (error message) field in Okex ws message".to_string()))?
                     .as_str()
                     .ok_or(eyre::ErrReport::msg("Could not convert 'msg' (error message) field in Okex ws message to &str".to_string()))?;
