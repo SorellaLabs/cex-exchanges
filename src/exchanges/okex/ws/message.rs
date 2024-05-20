@@ -16,15 +16,14 @@ pub enum OkexWsMessage {
 
 impl OkexWsMessage {
     fn try_deserialize(value: Value) -> eyre::Result<Self> {
-        let channel = value
-            .get("arg")
-            .ok_or(eyre::ErrReport::msg("Could not find 'arg' field in Okex ws message".to_string()))?
-            .get("channel")
-            .ok_or(eyre::ErrReport::msg("Could not find nest 'channel' field in Okex ws message".to_string()))?
-            .as_str()
-            .ok_or(eyre::ErrReport::msg("Could not convert 'channel' field in Okex ws message to &str".to_string()))?;
-
         if let Some(data) = value.get("data") {
+            let channel = value
+                .get("arg")
+                .ok_or(eyre::ErrReport::msg("Could not find 'arg' field in Okex ws message".to_string()))?
+                .get("channel")
+                .ok_or(eyre::ErrReport::msg("Could not find nest 'channel' field in Okex ws message".to_string()))?
+                .as_str()
+                .ok_or(eyre::ErrReport::msg("Could not convert 'channel' field in Okex ws message to &str".to_string()))?;
             if channel == "trades-all" {
                 let data: Vec<OkexTrade> = serde_json::from_value(data.clone())?;
                 Ok(Self::TradesAll(data.first().unwrap().clone()))
