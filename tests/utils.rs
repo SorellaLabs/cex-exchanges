@@ -78,7 +78,7 @@ pub async fn mutlithreaded_util<E: Exchange + Unpin + Debug + Send + 'static>(bu
     }
 }
 
-pub async fn normalized_mutlithreaded_util(builder: NormalizedExchangeBuilder, iterations: usize) {
+pub async fn normalized_mutlithreaded_util(builder: NormalizedExchangeBuilder, iterations: usize, not_equal_to_num_streams: usize) {
     let mut rx = builder
         .build_all_multithreaded(tokio::runtime::Handle::current(), 1, Some(10), Some(25))
         .unwrap()

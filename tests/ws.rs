@@ -96,7 +96,7 @@ mod coinbase_tests {
                 .collect::<Vec<_>>()
         );
 
-        normalized_mutlithreaded_util(builder, 10000).await;
+        normalized_mutlithreaded_util(builder, 10000, 1).await;
     }
 }
 

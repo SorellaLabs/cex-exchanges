@@ -110,7 +110,10 @@ impl NormalizedExchangeBuilder {
         let mut multistream_ws: Option<MutliWsStream> = None;
 
         self.ws_exchanges.into_iter().try_for_each(|(exch, map)| {
-            let channel_map = map.into_values().collect::<Vec<_>>();
+            let channel_map = map
+                .into_values()
+                .flat_map(|channel| channel.make_many_single())
+                .collect::<Vec<_>>();
 
             let new_stream = exch.build_multistream_ws_from_normalized(channel_map, max_retries, connections_per_stream, self.exch_currency_proxy)?;
             if let Some(ws) = multistream_ws.take() {
@@ -137,7 +140,10 @@ impl NormalizedExchangeBuilder {
             .ws_exchanges
             .into_iter()
             .map(|(exch, map)| {
-                let channel_map = map.into_values().collect::<Vec<_>>();
+                let channel_map = map
+                    .into_values()
+                    .flat_map(|channel| channel.make_many_single())
+                    .collect::<Vec<_>>();
 
                 let new_stream = exch.build_multithreaded_multistream_ws_from_normalized(
                     channel_map,

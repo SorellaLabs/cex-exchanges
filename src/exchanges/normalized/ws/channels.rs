@@ -27,6 +27,19 @@ impl NormalizedWsChannels {
         }
     }
 
+    pub(crate) fn make_many_single(self) -> Vec<Self> {
+        match self {
+            NormalizedWsChannels::Trades(vals) => vals
+                .into_iter()
+                .map(|v| NormalizedWsChannels::Trades(vec![v]))
+                .collect(),
+            NormalizedWsChannels::Quotes(vals) => vals
+                .into_iter()
+                .map(|v| NormalizedWsChannels::Quotes(vec![v]))
+                .collect()
+        }
+    }
+
     /// util
     fn new_with_pairs_util(exchange: CexExchange, kind: NormalizedWsChannelKinds, pairs: &[RawTradingPair]) -> NormalizedWsChannels {
         let split_pairs = pairs
