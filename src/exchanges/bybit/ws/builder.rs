@@ -61,10 +61,10 @@ impl BybitWsBuilder {
     /// builds many ws instances of the [Bybit] as the inner streams of
     /// [MutliWsStreamBuilder], splitting the channels into different streams,
     /// each of size 1024
-    pub fn build_many_packed(self) -> eyre::Result<MutliWsStreamBuilder<Bybit>> {
+    pub fn build_many_packed(self, connections_per_stream: Option<usize>) -> eyre::Result<MutliWsStreamBuilder<Bybit>> {
         let chunks = self
             .channels
-            .chunks(MAX_BYBIT_WS_CONNS_PER_STREAM)
+            .chunks(connections_per_stream.unwrap_or(MAX_BYBIT_WS_CONNS_PER_STREAM))
             .collect::<Vec<_>>();
 
         let split_exchange = chunks

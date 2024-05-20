@@ -61,10 +61,10 @@ impl KucoinWsBuilder {
     /// builds many ws instances of the [Kucoin] as the inner streams of
     /// [MutliWsStreamBuilder], splitting the channels into different streams,
     /// each of size 1024
-    pub fn build_many_packed(self) -> eyre::Result<MutliWsStreamBuilder<Kucoin>> {
+    pub fn build_many_packed(self, connections_per_stream: Option<usize>) -> eyre::Result<MutliWsStreamBuilder<Kucoin>> {
         let chunks = self
             .channels
-            .chunks(MAX_KUCOIN_WS_CONNS_PER_STREAM)
+            .chunks(connections_per_stream.unwrap_or(MAX_KUCOIN_WS_CONNS_PER_STREAM))
             .collect::<Vec<_>>();
 
         let split_exchange = chunks

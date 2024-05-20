@@ -106,13 +106,13 @@ impl NormalizedExchangeBuilder {
     }
 
     /// builds the multistream ws client
-    pub fn build_all_multistream(self, max_retries: Option<u64>) -> eyre::Result<Option<MutliWsStream>> {
+    pub fn build_all_multistream(self, max_retries: Option<u64>, connections_per_stream: Option<usize>) -> eyre::Result<Option<MutliWsStream>> {
         let mut multistream_ws: Option<MutliWsStream> = None;
 
         self.ws_exchanges.into_iter().try_for_each(|(exch, map)| {
             let channel_map = map.into_values().collect::<Vec<_>>();
 
-            let new_stream = exch.build_multistream_ws_from_normalized(channel_map, max_retries, self.exch_currency_proxy)?;
+            let new_stream = exch.build_multistream_ws_from_normalized(channel_map, max_retries, connections_per_stream, self.exch_currency_proxy)?;
             if let Some(ws) = multistream_ws.take() {
                 multistream_ws = Some(ws.combine_other(new_stream))
             } else {
@@ -130,7 +130,8 @@ impl NormalizedExchangeBuilder {
         self,
         handle: tokio::runtime::Handle,
         number_threads: usize,
-        max_retries: Option<u64>
+        max_retries: Option<u64>,
+        connections_per_stream: Option<usize>
     ) -> eyre::Result<Option<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>>> {
         let all_streams = self
             .ws_exchanges
@@ -142,6 +143,7 @@ impl NormalizedExchangeBuilder {
                     channel_map,
                     self.exch_currency_proxy,
                     max_retries,
+                    connections_per_stream,
                     handle.clone(),
                     number_threads
                 )?;
