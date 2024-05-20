@@ -140,6 +140,13 @@ impl OkexSubscription {
     pub(crate) fn needs_business_ws(&self) -> bool {
         self.args.iter().any(|arg| arg.channel == "trades-all")
     }
+
+    pub fn remove_pair(&mut self, pair: &OkexTradingPair) -> bool {
+        let pre = self.args.len();
+        self.args.retain(|p| &p.trading_pair != pair);
+
+        self.args.len() < pre
+    }
 }
 
 impl Default for OkexSubscription {

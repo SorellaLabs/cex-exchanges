@@ -21,9 +21,7 @@ impl CoinbaseTradingPair {
 
     pub fn parse_for_bad_pair(value: &str) -> Option<Self> {
         let value = value.replace("'", " ").replace("\"", " ");
-        value
-            .split(" ")
-            .find_map(|v| CoinbaseTradingPair::try_from(v).ok())
+        value.split(" ").find_map(|v| Self::try_from(v).ok())
     }
 }
 

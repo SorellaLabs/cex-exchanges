@@ -25,6 +25,15 @@ impl OkexTradingPair {
 
         NormalizedTradingPair::new_base_quote(CexExchange::Okex, base, quote, Some('-'), ed)
     }
+
+    pub fn parse_for_bad_pair(value: &str) -> Option<Self> {
+        let Some(st) = value.split("instId:").nth(1) else { return None };
+
+        st.split(" ")
+            .next()
+            .map(|s| Self::try_from(s).ok())
+            .flatten()
+    }
 }
 
 impl Display for OkexTradingPair {
@@ -162,5 +171,14 @@ mod tests {
         let calculated_okex_pair: OkexTradingPair = pair.try_into().unwrap();
         let okex_pair = OkexTradingPair("ETH-USDC-123-1234AS-FD".to_string());
         assert_eq!(okex_pair, calculated_okex_pair);
+    }
+
+    #[test]
+    fn test_parse_for_bad_pair() {
+        let test_str = r#"failed to deserialize the message: Could not find 'arg' field in Okex ws message - {"event":"error","msg":"Wrong URL or channel:tickers,instId:NMR-USDT doesn't exist. Please use the correct URL, channel and parameters referring to API document.","code":"60018","connId":"0d0c61a5"}"#;
+
+        let calculated = OkexTradingPair::parse_for_bad_pair(&test_str);
+
+        assert_eq!(calculated, Some(OkexTradingPair("NMR-USDT".to_string())))
     }
 }

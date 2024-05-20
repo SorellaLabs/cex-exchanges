@@ -16,7 +16,10 @@ use self::{
 };
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
-    normalized::{rest_api::NormalizedRestApiRequest, types::NormalizedTradingType},
+    normalized::{
+        rest_api::NormalizedRestApiRequest,
+        types::{NormalizedTradingPair, NormalizedTradingType}
+    },
     CexExchange, Exchange
 };
 
@@ -81,6 +84,11 @@ impl Exchange for Okex {
     type WsMessage = OkexWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Okex;
+
+    fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
+        let pair: OkexTradingPair = bad_pair.try_into().unwrap();
+        self.subscription.remove_pair(&pair)
+    }
 
     async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError> {
         let url = if self.subscription.needs_business_ws() { WSS_BUSINESS_URL } else { WSS_PUBLIC_URL };

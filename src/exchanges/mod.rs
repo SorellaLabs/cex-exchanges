@@ -269,6 +269,7 @@ impl CexExchange {
     pub fn bad_pair(self, msg: String) -> Option<NormalizedTradingPair> {
         match self {
             CexExchange::Coinbase => CoinbaseTradingPair::parse_for_bad_pair(&msg).map(|p| p.normalize()),
+            CexExchange::Okex => OkexTradingPair::parse_for_bad_pair(&msg).map(|p| p.normalize()),
             _ => None
         }
     }
