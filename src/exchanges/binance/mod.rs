@@ -36,21 +36,9 @@ impl Binance {
     }
 
     async fn get_all_symbols(web_client: &reqwest::Client, url: String) -> Result<BinanceAllSymbols, RestApiError> {
-        let mut query_start = 1;
-        let mut symbols = Vec::new();
-        //  loop {
-        let temp_url = format!("{url}?limit=5000&start={query_start}");
-        let inner_result: BinanceAllSymbols = Self::simple_rest_api_request(web_client, temp_url).await?;
+        let inner_result: BinanceAllSymbols = Self::simple_rest_api_request(web_client, url).await?;
 
-        // if inner_result.symbols.is_empty() {
-        //     break;
-        // }
-
-        symbols.extend(inner_result.symbols);
-
-        query_start += 5000;
-        //  }
-        Ok(BinanceAllSymbols { symbols })
+        Ok(BinanceAllSymbols { symbols: inner_result.symbols })
     }
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
