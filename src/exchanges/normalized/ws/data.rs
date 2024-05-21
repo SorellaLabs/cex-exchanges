@@ -16,7 +16,8 @@ pub enum NormalizedWsDataTypes {
 
 pub(crate) enum MessageOrPing<T: Exchange> {
     Message(T::WsMessage),
-    Ping
+    Ping,
+    Close
 }
 
 impl<T: Exchange> MessageOrPing<T> {
@@ -26,5 +27,9 @@ impl<T: Exchange> MessageOrPing<T> {
 
     pub(crate) fn new_ping() -> Self {
         MessageOrPing::Ping
+    }
+
+    pub(crate) fn new_close() -> Self {
+        MessageOrPing::Close
     }
 }

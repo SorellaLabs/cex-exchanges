@@ -55,7 +55,10 @@ where
                 Ok(MessageOrPing::new_message(des_msg))
             }
             Message::Ping(_) => Ok(MessageOrPing::new_ping()),
-            _ => unimplemented!()
+            Message::Binary(_) => unimplemented!("Exchange: {} - Message::Binary", T::EXCHANGE),
+            Message::Pong(_) => unimplemented!("Exchange: {} - Message::Pong", T::EXCHANGE),
+            Message::Close(_) => Ok(MessageOrPing::new_close()),
+            Message::Frame(_) => unimplemented!("Exchange: {} - Message::Frame", T::EXCHANGE)
         }
     }
 
@@ -123,6 +126,11 @@ where
                                 this.stream = None;
                                 return this.handle_retry(WsError::StreamTxError(e).normalized_with_exchange(T::EXCHANGE, None))
                             }
+
+                            return Poll::Pending;
+                        }
+                        Ok(MessageOrPing::Close) => {
+                            this.stream = None;
 
                             return Poll::Pending;
                         }
