@@ -55,10 +55,10 @@ where
                 Ok(MessageOrPing::new_message(des_msg))
             }
             Message::Ping(_) => Ok(MessageOrPing::new_ping()),
-            Message::Binary(_) => unimplemented!("Exchange: {} - Message::Binary", T::EXCHANGE),
-            Message::Pong(_) => unimplemented!("Exchange: {} - Message::Pong", T::EXCHANGE),
+            Message::Binary(_) => panic!("Exchange: {} - Message::Binary", T::EXCHANGE),
+            Message::Pong(_) => panic!("Exchange: {} - Message::Pong", T::EXCHANGE),
             Message::Close(_) => Ok(MessageOrPing::new_close()),
-            Message::Frame(_) => unimplemented!("Exchange: {} - Message::Frame", T::EXCHANGE)
+            Message::Frame(_) => panic!("Exchange: {} - Message::Frame", T::EXCHANGE)
         }
     }
 
