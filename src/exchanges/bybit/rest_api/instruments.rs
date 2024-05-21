@@ -190,7 +190,9 @@ impl BybitIntrumentInner {
         };
         NormalizedInstrument {
             exchange: CexExchange::Bybit,
-            trading_pair: self.symbol.normalize(),
+            trading_pair: self
+                .symbol
+                .normalize_with(&self.base_currency, &self.quote_currency),
             trading_type,
             base_asset_symbol: self.base_currency.clone(),
             quote_asset_symbol: self.quote_currency.clone(),
