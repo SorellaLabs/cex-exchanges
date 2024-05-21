@@ -1,5 +1,7 @@
 mod pairs;
 
+use std::collections::HashSet;
+
 use chrono::Utc;
 use futures::SinkExt;
 pub use pairs::*;
@@ -67,11 +69,23 @@ impl Bybit {
     // }
 
     pub async fn get_all_coins(web_client: &reqwest::Client) -> Result<BybitAllCoins, RestApiError> {
-        let binance_coins = Binance::default()
+        let mut binance_coins = Binance::default()
             .rest_api_call(web_client, NormalizedRestApiRequest::AllCurrencies)
             .await?
             .take_symbols()
             .unwrap();
+
+        let bybit_instrument_symbols = Self::get_all_instruments(web_client)
+            .await?
+            .instruments
+            .into_iter()
+            .flat_map(|s| {
+                let norm = s.normalize();
+                vec![norm.base_asset_symbol, norm.quote_asset_symbol]
+            })
+            .collect::<HashSet<_>>();
+
+        binance_coins.retain(|c| bybit_instrument_symbols.contains(&c.symbol));
 
         Ok(BybitAllCoins { coins: binance_coins.into_iter().map(Into::into).collect() })
     }

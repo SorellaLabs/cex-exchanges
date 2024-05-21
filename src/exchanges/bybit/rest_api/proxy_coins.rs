@@ -54,7 +54,7 @@ impl BybitCoin {
             symbol:       self.symbol,
             name:         self.name,
             display_name: None,
-            status:       format!("Binance Proxy"),
+            status:       format!("binance proxy"),
             blockchains:  self
                 .platform
                 .map(|v| vec![v.parse_blockchain_address()])
@@ -91,11 +91,11 @@ impl From<BinanceSymbolPlatform> for BybitProxyCoinPlatform {
 
 impl PartialEq<NormalizedCurrency> for BybitCoin {
     fn eq(&self, other: &NormalizedCurrency) -> bool {
-        let equals = other.exchange == CexExchange::Binance
+        let equals = other.exchange == CexExchange::Bybit
             && other.symbol == self.symbol
             && other.name == self.name
             && other.display_name.is_none()
-            && other.status == format!("Binance Proxy")
+            && other.status == format!("binance proxy")
             && other.blockchains
                 == self
                     .platform
