@@ -1,5 +1,7 @@
 mod pairs;
 
+use std::collections::HashSet;
+
 use futures::SinkExt;
 pub use pairs::*;
 
@@ -11,7 +13,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
-    rest_api::{BinanceAllSymbols, BinanceRestApiResponse},
+    rest_api::{BinanceAllInstruments, BinanceAllSymbols, BinanceRestApiResponse},
     ws::{BinanceSubscription, BinanceWsMessage}
 };
 use crate::{
@@ -36,9 +38,20 @@ impl Binance {
     }
 
     async fn get_all_symbols(web_client: &reqwest::Client, url: String) -> Result<BinanceAllSymbols, RestApiError> {
-        let inner_result: BinanceAllSymbols = Self::simple_rest_api_request(web_client, url).await?;
+        let mut symbols_pre: BinanceAllSymbols = Self::simple_rest_api_request(web_client, url).await?;
+        let instruments: BinanceAllInstruments = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?;
 
-        Ok(BinanceAllSymbols { symbols: inner_result.symbols })
+        let pos_symbols = instruments
+            .instruments
+            .into_iter()
+            .flat_map(|instr| vec![instr.base_asset, instr.quote_asset])
+            .collect::<HashSet<_>>();
+
+        symbols_pre
+            .symbols
+            .retain(|s| pos_symbols.contains(&s.symbol));
+
+        Ok(BinanceAllSymbols { symbols: symbols_pre.symbols })
     }
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
