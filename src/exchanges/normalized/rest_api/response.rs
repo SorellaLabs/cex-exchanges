@@ -1,11 +1,10 @@
 use serde::Serialize;
 
 use super::NormalizedRestApiDataTypes;
-use crate::bybit::rest_api::BybitCoin;
 #[cfg(feature = "non-us")]
 use crate::{
     binance::rest_api::{BinanceInstrument, BinanceRestApiResponse, BinanceSymbol},
-    bybit::rest_api::{BybitIntrument, BybitRestApiResponse},
+    bybit::rest_api::{BybitCoin, BybitIntrument, BybitRestApiResponse},
     kucoin::rest_api::{KucoinCurrency, KucoinRestApiResponse, KucoinSymbol}
 };
 #[cfg(feature = "us")]
@@ -132,7 +131,7 @@ impl CombinedRestApiResponse {
         self.take_bybit().and_then(|v| v.take_instruments())
     }
 
-    // need to fix this
+    #[cfg(feature = "non-us")]
     pub fn take_bybit_currencies(self) -> Option<Vec<BybitCoin>> {
         self.take_bybit().map(|v| v.take_coins()).flatten()
     }
