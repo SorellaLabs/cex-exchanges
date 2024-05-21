@@ -117,7 +117,6 @@ impl Exchange for Bybit {
 
     async fn rest_api_call(&self, web_client: &reqwest::Client, api_channel: NormalizedRestApiRequest) -> Result<BybitRestApiResponse, RestApiError> {
         let api_response = match api_channel {
-            //     NormalizedRestApiRequest::AllCurrencies => unimplemented!("BybitAllCoins"),
             NormalizedRestApiRequest::AllCurrencies => BybitRestApiResponse::Coins(Self::get_all_coins(web_client).await?),
             NormalizedRestApiRequest::AllInstruments => BybitRestApiResponse::Instruments(Self::get_all_instruments(web_client).await?)
         };

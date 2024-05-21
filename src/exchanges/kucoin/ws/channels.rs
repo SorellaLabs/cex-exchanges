@@ -99,8 +99,14 @@ impl TryFrom<NormalizedWsChannels> for KucoinWsChannel {
 
                 Ok(KucoinWsChannel::Match(norm_pairs))
             }
+            NormalizedWsChannels::Quotes(pairs) => {
+                let norm_pairs = pairs
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, Self::Error>>()?;
 
-            _ => unimplemented!()
+                Ok(KucoinWsChannel::Ticker(norm_pairs))
+            }
         }
     }
 }

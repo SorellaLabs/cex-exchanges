@@ -100,7 +100,14 @@ impl TryFrom<NormalizedWsChannels> for BybitWsChannel {
                 Ok(BybitWsChannel::Trade(norm_pairs))
             }
 
-            _ => unimplemented!()
+            NormalizedWsChannels::Quotes(pairs) => {
+                let norm_pairs = pairs
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, Self::Error>>()?;
+
+                Ok(BybitWsChannel::OrderbookL1(norm_pairs))
+            }
         }
     }
 }
