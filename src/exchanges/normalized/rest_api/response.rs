@@ -1,6 +1,7 @@
 use serde::Serialize;
 
 use super::NormalizedRestApiDataTypes;
+use crate::bybit::rest_api::BybitCoin;
 #[cfg(feature = "non-us")]
 use crate::{
     binance::rest_api::{BinanceInstrument, BinanceRestApiResponse, BinanceSymbol},
@@ -132,9 +133,9 @@ impl CombinedRestApiResponse {
     }
 
     // need to fix this
-    // pub fn take_bybit_currencies(self) -> Option<Vec<BybitCoin>> {
-    //     self.take_bybit().map(|v| v.take_coins()).flatten()
-    // }
+    pub fn take_bybit_currencies(self) -> Option<Vec<BybitCoin>> {
+        self.take_bybit().map(|v| v.take_coins()).flatten()
+    }
 }
 
 macro_rules! combined_rest {

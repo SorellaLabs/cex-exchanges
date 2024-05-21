@@ -1,5 +1,6 @@
 mod pairs;
 
+use chrono::Utc;
 use futures::SinkExt;
 pub use pairs::*;
 
@@ -11,10 +12,11 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
-    rest_api::{BybitAllIntruments, BybitRestApiResponse},
+    rest_api::{BybitAllCoins, BybitAllIntruments, BybitRestApiResponse},
     ws::{BybitSubscription, BybitWsMessage}
 };
 use crate::{
+    binance::Binance,
     clients::{rest_api::RestApiError, ws::WsError},
     exchanges::Exchange,
     normalized::rest_api::NormalizedRestApiRequest,
@@ -47,18 +49,15 @@ impl Bybit {
         Ok(BybitAllIntruments { instruments })
     }
 
-    // TODO: fix
     // pub async fn get_all_coins(web_client: &reqwest::Client) ->
-    // Result<BybitAllCoins, RestApiError> {
-
-    //     let url = format!("https://api.bybit.com/v5/asset/coin/query-info");
+    // Result<BybitAllCoins, RestApiError> {     let url = format!("https://api.bybit.com/v5/asset/coin/query-info");
     //     let val = web_client
     //         .get(url)
     //         .header("X-BAPI-API-KEY", "CFEJUGQEQPPHGOHGHM")
     //         .header("X-BAPI-TIMESTAMP", (Utc::now().timestamp_millis() -
     // 100).to_string())         .header("X-BAPI-RECV-WINDOW", "20000")
     //         .header("X-BAPI-SIGN",
-    // "baca4a6a799d7cfed763880bbb13a4a90f41fa3f125db2168ede203747ce5c95")
+    // "ade795201a7920cf821ff3dba38d9ba44a475cbd2cc1e8f24662d8865e5bff65")
     //         .send()
     //         .await?
     //         .json()
@@ -66,6 +65,16 @@ impl Bybit {
 
     //     Ok(val)
     // }
+
+    pub async fn get_all_coins(web_client: &reqwest::Client) -> Result<BybitAllCoins, RestApiError> {
+        let binance_coins = Binance::default()
+            .rest_api_call(web_client, NormalizedRestApiRequest::AllCurrencies)
+            .await?
+            .take_symbols()
+            .unwrap();
+
+        Ok(BybitAllCoins { coins: binance_coins.into_iter().map(Into::into).collect() })
+    }
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
     where
@@ -94,7 +103,8 @@ impl Exchange for Bybit {
 
     async fn rest_api_call(&self, web_client: &reqwest::Client, api_channel: NormalizedRestApiRequest) -> Result<BybitRestApiResponse, RestApiError> {
         let api_response = match api_channel {
-            NormalizedRestApiRequest::AllCurrencies => unimplemented!("BybitAllCoins"), /* BybitRestApiResponse::Coins(Self::get_all_coins(web_client).await?), */
+            //     NormalizedRestApiRequest::AllCurrencies => unimplemented!("BybitAllCoins"),
+            NormalizedRestApiRequest::AllCurrencies => BybitRestApiResponse::Coins(Self::get_all_coins(web_client).await?),
             NormalizedRestApiRequest::AllInstruments => BybitRestApiResponse::Instruments(Self::get_all_instruments(web_client).await?)
         };
 

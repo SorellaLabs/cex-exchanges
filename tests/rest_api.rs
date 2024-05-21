@@ -92,7 +92,7 @@ mod binance_tests {
             let normalized = all_instruments.clone().normalize();
             println!("{:?}", normalized);
 
-            let test_length = normalized.clone().take_instruments().unwrap().len();
+            let test_length = normalized.clone().take_instruments(true).unwrap().len();
             assert!(test_length > 10);
 
             assert_eq!(all_instruments, normalized);
@@ -195,7 +195,7 @@ mod kucoin_tests {
             assert!(test_length > 10);
 
             let normalized = all_symbols.clone().normalize();
-            let test_length = normalized.clone().take_instruments().unwrap().len();
+            let test_length = normalized.clone().take_instruments(true).unwrap().len();
             assert!(test_length > 10);
         }
     }
@@ -207,28 +207,26 @@ mod bybit_tests {
     use cex_exchanges::{bybit::Bybit, clients::rest_api::ExchangeApi};
     use serial_test::serial;
 
-    // #[tokio::test]
-    // #[serial]
-    // async fn test_all_coins() {
-    //     let exchange_api = ExchangeApi::new();
-    //     let all_coins = exchange_api.all_currencies::<Bybit>().await;
-    //     all_coins.as_ref().unwrap();
-    //     assert!(all_coins.is_ok());
+    #[tokio::test]
+    #[serial]
+    async fn test_all_coins() {
+        let exchange_api = ExchangeApi::new();
+        let all_coins = exchange_api.all_currencies::<Bybit>().await;
+        all_coins.as_ref().unwrap();
+        assert!(all_coins.is_ok());
 
-    //     {
-    //         let all_coins = all_coins.unwrap();
-    //         let test_length =
-    // all_coins.clone().take_bybit_currencies().unwrap().len();         assert!
-    // (test_length > 10);
+        {
+            let all_coins = all_coins.unwrap();
+            let test_length = all_coins.clone().take_bybit_currencies().unwrap().len();
+            assert!(test_length > 10);
 
-    //         let normalized = all_coins.clone().normalize();
-    //         let test_length =
-    // normalized.clone().take_currencies().unwrap().len();         assert!
-    // (test_length > 10);
+            let normalized = all_coins.clone().normalize();
+            let test_length = normalized.clone().take_currencies().unwrap().len();
+            assert!(test_length > 10);
 
-    //         assert_eq!(all_coins, normalized);
-    //     }
-    // }
+            assert_eq!(all_coins, normalized);
+        }
+    }
 
     #[tokio::test]
     #[serial]
@@ -248,7 +246,7 @@ mod bybit_tests {
             assert!(test_length > 10);
 
             let normalized = all_instruments.clone().normalize();
-            let test_length = normalized.clone().take_instruments().unwrap().len();
+            let test_length = normalized.clone().take_instruments(true).unwrap().len();
             assert!(test_length > 10);
         }
     }
