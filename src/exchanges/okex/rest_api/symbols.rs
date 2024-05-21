@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 use super::OkexInstrument;
-use crate::{exchanges::normalized::types::NormalizedCurrency, normalized::rest_api::NormalizedRestApiDataTypes};
+use crate::{exchanges::normalized::types::NormalizedCurrency, normalized::rest_api::NormalizedRestApiDataTypes, CexExchange};
 
 #[serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
@@ -12,7 +12,7 @@ pub struct OkexAllSymbols {
 
 impl OkexAllSymbols {
     pub(crate) fn new(mut currencies: Vec<NormalizedCurrency>, instruments: Vec<OkexInstrument>) -> Self {
-        currencies.retain(|curr| {
+        currencies.retain_mut(|curr| {
             instruments.iter().any(|instr| {
                 let base = if let Some(s) = &instr.base_currency { s.to_uppercase() == curr.symbol.to_uppercase() } else { false };
 
@@ -21,6 +21,8 @@ impl OkexAllSymbols {
                 let contract = if let Some(s) = &instr.contract_currency { s.to_uppercase() == curr.symbol.to_uppercase() } else { false };
 
                 let settlement = if let Some(s) = &instr.settlement_currency { s.to_uppercase() == curr.symbol.to_uppercase() } else { false };
+
+                curr.exchange = CexExchange::Okex;
 
                 base || quote || contract || settlement
             })
