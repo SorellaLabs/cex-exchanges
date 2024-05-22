@@ -4,7 +4,7 @@ use serde_with::{serde_as, DefaultOnNull, DisplayFromStr, NoneAsEmptyString};
 use crate::{
     normalized::{
         rest_api::NormalizedRestApiDataTypes,
-        types::{Blockchain, NormalizedCurrency}
+        types::{BlockchainCurrency, NormalizedCurrency}
     },
     CexExchange
 };
@@ -63,6 +63,8 @@ pub struct KucoinCurrency {
 
 impl KucoinCurrency {
     pub fn normalize(self) -> NormalizedCurrency {
+        let is_wrapped =
+            if self.full_name.to_lowercase().contains("wrapped") && self.currency.to_lowercase().starts_with("w") { true } else { false };
         NormalizedCurrency {
             exchange:     CexExchange::Kucoin,
             symbol:       self.currency,
@@ -72,7 +74,11 @@ impl KucoinCurrency {
             blockchains:  self
                 .chains
                 .into_iter()
-                .map(|c| c.parse_blockchain_address())
+                .map(|c| {
+                    let mut bc: BlockchainCurrency = c.into();
+                    bc.wrapped(is_wrapped);
+                    bc
+                })
                 .collect()
         }
     }
@@ -109,9 +115,14 @@ pub struct KucoinCurrencyChain {
     pub confirms:            Option<u64>
 }
 
-impl KucoinCurrencyChain {
-    pub fn parse_blockchain_address(self) -> (Blockchain, Option<String>) {
-        (self.chain_name.parse().unwrap(), self.contract_address)
+impl Into<BlockchainCurrency> for KucoinCurrencyChain {
+    fn into(self) -> BlockchainCurrency {
+        BlockchainCurrency {
+            blockchain:       self.chain_name.parse().unwrap(),
+            address:          self.contract_address,
+            is_wrapped:       false,
+            wrapped_currency: None
+        }
     }
 }
 
@@ -122,11 +133,10 @@ impl PartialEq<NormalizedCurrency> for KucoinCurrency {
             && other.name == self.full_name
             && other.display_name.is_none()
             && other.status == *""
-            && self.chains.iter().all(|c| {
-                other
-                    .blockchains
-                    .contains(&c.clone().parse_blockchain_address())
-            });
+            && self
+                .chains
+                .iter()
+                .all(|c| other.blockchains.contains(&c.clone().into()));
 
         if !equals {
             println!("\n\nSELF: {:?}\n", self);

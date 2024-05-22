@@ -6,7 +6,7 @@ use serde_with::serde_as;
 use crate::{
     normalized::{
         rest_api::NormalizedRestApiDataTypes,
-        types::{Blockchain, NormalizedCurrency}
+        types::{Blockchain, BlockchainCurrency, NormalizedCurrency, WrappedCurrency}
     },
     CexExchange
 };
@@ -105,10 +105,7 @@ impl BinanceSymbol {
             name:         self.name,
             display_name: None,
             status:       format!("last updated: {:?}", self.last_updated),
-            blockchains:  self
-                .platform
-                .map(|v| vec![v.parse_blockchain_address()])
-                .unwrap_or_default()
+            blockchains:  self.platform.map(|p| vec![p.into()]).unwrap_or_default()
         }
     }
 }
@@ -147,9 +144,11 @@ pub struct BinanceSymbolPlatform {
     pub slug:          String
 }
 
-impl BinanceSymbolPlatform {
-    pub fn parse_blockchain_address(self) -> (Blockchain, Option<String>) {
-        (self.name.parse().unwrap(), Some(self.token_address))
+impl Into<BlockchainCurrency> for BinanceSymbolPlatform {
+    fn into(self) -> BlockchainCurrency {
+        let is_wrapped = if self.name.to_lowercase().contains("wrapped") && self.symbol.to_lowercase().starts_with("w") { true } else { false };
+
+        BlockchainCurrency { blockchain: self.name.parse().unwrap(), address: Some(self.token_address), is_wrapped, wrapped_currency: None }
     }
 }
 
@@ -164,7 +163,7 @@ impl PartialEq<NormalizedCurrency> for BinanceSymbol {
                 == self
                     .platform
                     .as_ref()
-                    .map(|v| vec![v.clone().parse_blockchain_address()])
+                    .map(|p| vec![p.clone().into()])
                     .unwrap_or_default();
 
         if !equals {

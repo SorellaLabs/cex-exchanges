@@ -4,7 +4,7 @@ use serde_with::{serde_as, DisplayFromStr};
 use crate::{
     normalized::{
         rest_api::NormalizedRestApiDataTypes,
-        types::{Blockchain, NormalizedCurrency}
+        types::{Blockchain, BlockchainCurrency, NormalizedCurrency}
     },
     CexExchange
 };
@@ -81,7 +81,7 @@ impl CoinbaseCurrency {
             blockchains:  self
                 .supported_networks
                 .into_iter()
-                .map(|n| n.parse_blockchain_address())
+                .map(|n| n.into())
                 .collect()
         }
     }
@@ -102,12 +102,14 @@ pub struct CoinbaseCurrencySupportedNetwork {
     pub processing_time_seconds: Option<f64>
 }
 
-impl CoinbaseCurrencySupportedNetwork {
-    pub fn parse_blockchain_address(self) -> (Blockchain, Option<String>) {
+impl Into<BlockchainCurrency> for CoinbaseCurrencySupportedNetwork {
+    fn into(self) -> BlockchainCurrency {
+        let is_wrapped = if self.name.to_lowercase().contains("wrapped") && self.id.to_lowercase().starts_with("w") { true } else { false };
+
         if self.contract_address == Some("".to_string()) {
-            (self.name.parse().unwrap(), None)
+            BlockchainCurrency { blockchain: self.name.parse().unwrap(), address: None, is_wrapped, wrapped_currency: None }
         } else {
-            (self.name.parse().unwrap(), self.contract_address)
+            BlockchainCurrency { blockchain: self.name.parse().unwrap(), address: self.contract_address, is_wrapped, wrapped_currency: None }
         }
     }
 }
@@ -141,7 +143,7 @@ impl PartialEq<NormalizedCurrency> for CoinbaseCurrency {
                 == self
                     .supported_networks
                     .iter()
-                    .map(|n| n.clone().parse_blockchain_address())
+                    .map(|n| n.clone().into())
                     .collect::<Vec<_>>();
 
         if !equals {
