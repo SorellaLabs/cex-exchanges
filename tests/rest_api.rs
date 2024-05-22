@@ -62,7 +62,7 @@ mod binance_tests {
         {
             let all_symbols = all_symbols.unwrap();
             for s in all_symbols.clone().take_binance_currencies().unwrap() {
-                println!("{:?}", s);
+                println!("{:?}", s.symbol);
             }
             let test_length = all_symbols.clone().take_binance_currencies().unwrap().len();
             assert!(test_length > 10);
