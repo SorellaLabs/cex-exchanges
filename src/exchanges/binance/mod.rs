@@ -13,7 +13,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
-    rest_api::{BinanceAllInstruments, BinanceAllSymbols, BinanceRestApiResponse},
+    rest_api::{BinanceAllInstruments, BinanceAllSymbols, BinanceRestApiResponse, BinanceSymbol},
     ws::{BinanceSubscription, BinanceWsMessage}
 };
 use crate::{
@@ -37,21 +37,39 @@ impl Binance {
         Self { subscription }
     }
 
-    async fn get_all_symbols(web_client: &reqwest::Client, url: String) -> Result<BinanceAllSymbols, RestApiError> {
-        let mut symbols_pre: BinanceAllSymbols = Self::simple_rest_api_request(web_client, url).await?;
-        let instruments: BinanceAllInstruments = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?;
+    async fn symbols_iteration(web_client: &reqwest::Client, query_start: u64) -> Result<Vec<BinanceSymbol>, RestApiError> {
+        let url = format!("{ALL_SYMBOLS_URL}?limit=5000&start={query_start}");
+        let iter_symbols: BinanceAllSymbols = Self::simple_rest_api_request(web_client, url).await?;
+        Ok(iter_symbols.symbols)
+    }
 
+    async fn get_all_symbols(web_client: &reqwest::Client) -> Result<BinanceAllSymbols, RestApiError> {
+        let instruments: BinanceAllInstruments = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?;
         let pos_symbols = instruments
             .instruments
             .into_iter()
             .flat_map(|instr| vec![instr.base_asset, instr.quote_asset])
             .collect::<HashSet<_>>();
 
-        symbols_pre
-            .symbols
-            .retain(|s| pos_symbols.contains(&s.symbol));
+        let mut query_start = 1;
+        let mut symbols = Vec::new();
+        loop {
+            let symbols_iteration = Self::symbols_iteration(web_client, query_start).await?;
 
-        Ok(BinanceAllSymbols { symbols: symbols_pre.symbols })
+            if symbols_iteration.is_empty() {
+                break
+            }
+
+            symbols.extend(
+                symbols_iteration
+                    .into_iter()
+                    .filter(|sym| pos_symbols.contains(&sym.symbol))
+            );
+
+            query_start += 5000;
+        }
+
+        Ok(BinanceAllSymbols { symbols })
     }
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
@@ -85,9 +103,7 @@ impl Exchange for Binance {
         api_channel: NormalizedRestApiRequest
     ) -> Result<BinanceRestApiResponse, RestApiError> {
         let api_response = match api_channel {
-            NormalizedRestApiRequest::AllCurrencies => {
-                BinanceRestApiResponse::Symbols(Self::get_all_symbols(web_client, ALL_SYMBOLS_URL.to_string()).await?)
-            }
+            NormalizedRestApiRequest::AllCurrencies => BinanceRestApiResponse::Symbols(Self::get_all_symbols(web_client).await?),
             NormalizedRestApiRequest::AllInstruments => {
                 BinanceRestApiResponse::Instruments(Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?)
             }
