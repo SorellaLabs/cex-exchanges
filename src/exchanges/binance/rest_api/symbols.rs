@@ -47,6 +47,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllSymbols {
                     curr.blockchains.retain(|blk| {
                         let is_retain = blk.wrapped_currency.is_none();
                         if !is_retain {
+                            println!("CURR: {:?}", curr);
                             normalized_out += 1;
                         }
 
