@@ -25,28 +25,7 @@ impl BinanceAllSymbols {
             .map(BinanceSymbol::normalize)
             .collect::<Vec<_>>();
 
-        let unwrapped = normalized
-            .iter()
-            .cloned()
-            .filter(|curr| !curr.blockchains.iter().any(|b| b.is_wrapped))
-            .collect::<Vec<_>>();
-
-        for u in unwrapped.iter() {
-            println!("{:?}\n", u);
-        }
-
-        println!("\n\n\n\n\n\n\n");
-
-        let wrapped = normalized
-            .into_iter()
-            .filter_map(|curr| if curr.blockchains.iter().any(|b| b.is_wrapped) { Some(curr.combine_wrapped_assets(&unwrapped)) } else { None })
-            .collect::<Vec<_>>();
-
-        for u in wrapped.iter() {
-            println!("{:?}\n", u);
-        }
-
-        wrapped
+        NormalizedCurrency::handle_unwrapped(normalized)
     }
 }
 
