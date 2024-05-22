@@ -41,7 +41,7 @@ rand = "0.8"
 
 
 [features]
-default = ["us"]
+default = ["us", "non-us"]
 
 all = ["non-us", "us"]
 non-us = []
