@@ -124,6 +124,7 @@ pub struct BinanceSymbol {
 impl BinanceSymbol {
     fn parse_blockchain(&self) -> Option<BlockchainCurrency> {
         if let Some(pl) = self.platform.as_ref() {
+            println!("NAME: {} -- SYMBOL: {}", self.name, self.symbol);
             let is_wrapped = if self.name.to_lowercase().contains("wrapped") && self.symbol.to_lowercase().starts_with("w") { true } else { false };
             Some(BlockchainCurrency {
                 blockchain: pl.name.parse().unwrap(),
