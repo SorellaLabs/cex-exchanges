@@ -122,14 +122,29 @@ pub struct BinanceSymbol {
 }
 
 impl BinanceSymbol {
+    fn parse_blockchain(&self) -> Option<BlockchainCurrency> {
+        if let Some(pl) = self.platform.as_ref() {
+            let is_wrapped = if self.name.to_lowercase().contains("wrapped") && self.symbol.to_lowercase().starts_with("w") { true } else { false };
+            Some(BlockchainCurrency {
+                blockchain: pl.name.parse().unwrap(),
+                address: Some(pl.token_address.clone()),
+                is_wrapped,
+                wrapped_currency: None
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn normalize(self) -> NormalizedCurrency {
+        let blockchains = self.parse_blockchain().map(|p| vec![p]).unwrap_or_default();
         NormalizedCurrency {
-            exchange:     CexExchange::Binance,
-            symbol:       self.symbol,
-            name:         self.name,
+            exchange: CexExchange::Binance,
+            symbol: self.symbol,
+            name: self.name,
             display_name: None,
-            status:       format!("last updated: {:?}", self.last_updated),
-            blockchains:  self.platform.map(|p| vec![p.into()]).unwrap_or_default()
+            status: format!("last updated: {:?}", self.last_updated),
+            blockchains
         }
     }
 }
@@ -168,27 +183,15 @@ pub struct BinanceSymbolPlatform {
     pub slug:          String
 }
 
-impl Into<BlockchainCurrency> for BinanceSymbolPlatform {
-    fn into(self) -> BlockchainCurrency {
-        let is_wrapped = if self.name.to_lowercase().contains("wrapped") && self.symbol.to_lowercase().starts_with("w") { true } else { false };
-
-        BlockchainCurrency { blockchain: self.name.parse().unwrap(), address: Some(self.token_address), is_wrapped, wrapped_currency: None }
-    }
-}
-
 impl PartialEq<NormalizedCurrency> for BinanceSymbol {
     fn eq(&self, other: &NormalizedCurrency) -> bool {
+        let blockchains = self.parse_blockchain().map(|p| vec![p]).unwrap_or_default();
         let equals = other.exchange == CexExchange::Binance
             && other.symbol == self.symbol
             && other.name == self.name
             && other.display_name.is_none()
             && other.status == format!("last updated: {:?}", self.last_updated)
-            && other.blockchains
-                == self
-                    .platform
-                    .as_ref()
-                    .map(|p| vec![p.clone().into()])
-                    .unwrap_or_default();
+            && other.blockchains == blockchains;
 
         if !equals {
             println!("\n\nSELF: {:?}\n", self);
