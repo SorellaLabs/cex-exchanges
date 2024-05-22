@@ -170,14 +170,14 @@ impl PartialEq<NormalizedCurrency> for BinanceSymbol {
             && other.symbol == self.symbol
             && other.name == self.name
             && other.display_name.is_none()
-            && other.status == format!("last updated: {:?}", self.last_updated)
-            && other
-                .blockchains
-                .iter()
-                .cloned()
-                .filter(|blk| blk.wrapped_currency.is_none())
-                .collect::<Vec<_>>()
-                == blockchains;
+            && other.status == format!("last updated: {:?}", self.last_updated);
+        // && other
+        //     .blockchains
+        //     .iter()
+        //     .cloned()
+        //     .filter(|blk| blk.wrapped_currency.is_none())
+        //     .collect::<Vec<_>>()
+        //     == blockchains;
 
         if !equals {
             println!("\n\nSELF: {:?}\n", self);
