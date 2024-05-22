@@ -54,11 +54,20 @@ impl Binance {
         let mut query_start = 1;
         let mut symbols = Vec::new();
         loop {
-            let symbols_iteration = Self::symbols_iteration(web_client, query_start).await?;
-
-            if symbols_iteration.is_empty() {
-                break
-            }
+            let symbols_iteration = match Self::symbols_iteration(web_client, query_start).await {
+                Ok(vals) => {
+                    if vals.is_empty() {
+                        break
+                    }
+                    vals
+                }
+                Err(e) => {
+                    if symbols.is_empty() {
+                        return Err(e)
+                    }
+                    break
+                }
+            };
 
             symbols.extend(
                 symbols_iteration
