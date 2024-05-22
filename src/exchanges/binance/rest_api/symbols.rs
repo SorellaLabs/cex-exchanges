@@ -27,6 +27,7 @@ impl BinanceAllSymbols {
 
         let unwrapped = normalized
             .iter()
+            .cloned()
             .filter(|curr| !curr.blockchains.iter().any(|b| b.is_wrapped))
             .collect::<Vec<_>>();
 
@@ -37,7 +38,7 @@ impl BinanceAllSymbols {
         println!("\n\n\n\n\n\n\n");
 
         let wrapped = normalized
-            .iter()
+            .into_iter()
             .filter_map(|curr| if curr.blockchains.iter().any(|b| b.is_wrapped) { Some(curr.combine_wrapped_assets(&unwrapped)) } else { None })
             .collect::<Vec<_>>();
 

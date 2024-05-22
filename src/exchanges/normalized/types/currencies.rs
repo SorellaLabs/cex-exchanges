@@ -19,7 +19,7 @@ impl NormalizedCurrency {
     ///     - an unwrapped currency with the `blockchains.wrapped_currency`
     ///       field updated
     ///     - itself if no associated unwrapped currencies were found
-    pub(crate) fn combine_wrapped_assets(&self, unwrapped_currencies: &[&NormalizedCurrency]) -> Self {
+    pub(crate) fn combine_wrapped_assets(&self, unwrapped_currencies: &[NormalizedCurrency]) -> Self {
         let un = self.name.to_lowercase().replace("wrapped", "");
         let unwrapped_name = un.trim();
         let unwrapped_symbol = self.symbol[1..].to_string();
@@ -27,7 +27,6 @@ impl NormalizedCurrency {
         unwrapped_currencies
             .iter()
             .find(|curr| curr.name.to_lowercase() == unwrapped_name && curr.symbol == unwrapped_symbol)
-            .cloned()
             .cloned()
             .map(|mut curr| {
                 let mut blockchains = self.blockchains.clone();
@@ -95,7 +94,7 @@ mod tests {
             blockchains:  Vec::new()
         };
 
-        let combined = wrapped.combine_wrapped_assets(&vec![&unwrapped]);
+        let combined = wrapped.combine_wrapped_assets(&vec![unwrapped]);
 
         let expected = NormalizedCurrency {
             exchange:     CexExchange::Binance,
@@ -144,7 +143,7 @@ mod tests {
             }]
         };
 
-        let combined = wrapped.combine_wrapped_assets(&vec![&unwrapped]);
+        let combined = wrapped.combine_wrapped_assets(&vec![unwrapped]);
 
         let expected = NormalizedCurrency {
             exchange:     CexExchange::Binance,
