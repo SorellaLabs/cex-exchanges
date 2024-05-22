@@ -21,7 +21,7 @@ impl KucoinAllCurrencies {
         self.currencies
             .into_iter()
             .map(KucoinCurrency::normalize)
-            .collect()
+            .collect::<Vec<_>>()
     }
 }
 

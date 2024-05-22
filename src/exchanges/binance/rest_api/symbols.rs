@@ -19,10 +19,33 @@ pub struct BinanceAllSymbols {
 
 impl BinanceAllSymbols {
     pub fn normalize(self) -> Vec<NormalizedCurrency> {
-        self.symbols
+        let normalized = self
+            .symbols
             .into_iter()
             .map(BinanceSymbol::normalize)
-            .collect()
+            .collect::<Vec<_>>();
+
+        let unwrapped = normalized
+            .iter()
+            .filter(|curr| !curr.blockchains.iter().any(|b| b.is_wrapped))
+            .collect::<Vec<_>>();
+
+        for u in unwrapped.iter() {
+            println!("{:?}\n", u);
+        }
+
+        println!("\n\n\n\n\n\n\n");
+
+        let wrapped = normalized
+            .iter()
+            .filter_map(|curr| if curr.blockchains.iter().any(|b| b.is_wrapped) { Some(curr.combine_wrapped_assets(&unwrapped)) } else { None })
+            .collect::<Vec<_>>();
+
+        for u in wrapped.iter() {
+            println!("{:?}\n", u);
+        }
+
+        wrapped
     }
 }
 
