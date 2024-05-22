@@ -13,10 +13,10 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
-pub struct BybitAllIntruments {
-    pub instruments: Vec<BybitIntrument>
+pub struct BybitAllInstruments {
+    pub instruments: Vec<BybitInstrument>
 }
-impl BybitAllIntruments {
+impl BybitAllInstruments {
     pub fn normalize(self) -> Vec<NormalizedInstrument> {
         self.instruments
             .into_iter()
@@ -25,7 +25,7 @@ impl BybitAllIntruments {
     }
 }
 
-impl<'de> Deserialize<'de> for BybitAllIntruments {
+impl<'de> Deserialize<'de> for BybitAllInstruments {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>
@@ -34,16 +34,16 @@ impl<'de> Deserialize<'de> for BybitAllIntruments {
 
         let result = val
             .get("result")
-            .ok_or(eyre::ErrReport::msg(format!("could not get field 'result' for BybitAllIntruments in {:?}", val)))
+            .ok_or(eyre::ErrReport::msg(format!("could not get field 'result' for BybitAllInstruments in {:?}", val)))
             .map_err(serde::de::Error::custom)?;
 
-        let util: BybitAllIntrumentsUtil = serde_json::from_value(result.clone()).map_err(serde::de::Error::custom)?;
+        let util: BybitAllInstrumentsUtil = serde_json::from_value(result.clone()).map_err(serde::de::Error::custom)?;
 
         Ok(util.into())
     }
 }
 
-impl PartialEq<NormalizedRestApiDataTypes> for BybitAllIntruments {
+impl PartialEq<NormalizedRestApiDataTypes> for BybitAllInstruments {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match other {
             NormalizedRestApiDataTypes::AllInstruments(other_instrs) => {
@@ -67,42 +67,42 @@ impl PartialEq<NormalizedRestApiDataTypes> for BybitAllIntruments {
     }
 }
 
-impl From<BybitAllIntrumentsUtil> for BybitAllIntruments {
-    fn from(value: BybitAllIntrumentsUtil) -> Self {
+impl From<BybitAllInstrumentsUtil> for BybitAllInstruments {
+    fn from(value: BybitAllInstrumentsUtil) -> Self {
         let instruments = value
             .list
             .into_iter()
-            .map(|instr| BybitIntrument::from_inner_with_tt(instr, value.category))
+            .map(|instr| BybitInstrument::from_inner_with_tt(instr, value.category))
             .collect();
 
-        BybitAllIntruments { instruments }
+        BybitAllInstruments { instruments }
     }
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct BybitAllIntrumentsUtil {
+struct BybitAllInstrumentsUtil {
     category: BybitTradingType,
-    list:     Vec<BybitIntrumentInner>
+    list:     Vec<BybitInstrumentInner>
 }
 
 #[serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
-pub struct BybitIntrument {
+pub struct BybitInstrument {
     pub trading_type: BybitTradingType,
-    pub inner:        BybitIntrumentInner
+    pub inner:        BybitInstrumentInner
 }
 
-impl BybitIntrument {
+impl BybitInstrument {
     pub fn normalize(self) -> NormalizedInstrument {
         self.inner.normalize(self.trading_type.into())
     }
 
-    fn from_inner_with_tt(inner: BybitIntrumentInner, tt: BybitTradingType) -> Self {
+    fn from_inner_with_tt(inner: BybitInstrumentInner, tt: BybitTradingType) -> Self {
         Self { trading_type: tt, inner }
     }
 }
 
-impl PartialEq<NormalizedInstrument> for BybitIntrument {
+impl PartialEq<NormalizedInstrument> for BybitInstrument {
     fn eq(&self, other: &NormalizedInstrument) -> bool {
         &self.inner == other
     }
@@ -110,7 +110,7 @@ impl PartialEq<NormalizedInstrument> for BybitIntrument {
 
 #[serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
-pub struct BybitIntrumentInner {
+pub struct BybitInstrumentInner {
     pub symbol:               BybitTradingPair,
     #[serde(rename = "baseCoin")]
     pub base_currency:        String,
@@ -159,7 +159,7 @@ pub struct BybitIntrumentInner {
     pub risk_parameters:      Option<BybitInstrumentRiskParameters>
 }
 
-impl BybitIntrumentInner {
+impl BybitInstrumentInner {
     pub fn normalize(self, trading_type: NormalizedTradingType) -> NormalizedInstrument {
         let futures_expiry = if matches!(trading_type, NormalizedTradingType::Option) {
             let ds = self.symbol.0.clone();
@@ -202,7 +202,7 @@ impl BybitIntrumentInner {
     }
 }
 
-impl PartialEq<NormalizedInstrument> for BybitIntrumentInner {
+impl PartialEq<NormalizedInstrument> for BybitInstrumentInner {
     fn eq(&self, other: &NormalizedInstrument) -> bool {
         let equals = other.exchange == CexExchange::Bybit
             && other.trading_pair == self.symbol.normalize()

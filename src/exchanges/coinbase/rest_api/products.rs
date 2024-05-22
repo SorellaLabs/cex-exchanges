@@ -13,12 +13,12 @@ use crate::{
 #[serde_as]
 #[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
 pub struct CoinbaseAllProducts {
-    pub instruments: Vec<CoinbaseProduct>
+    pub products: Vec<CoinbaseProduct>
 }
 
 impl CoinbaseAllProducts {
     pub fn normalize(self) -> Vec<NormalizedInstrument> {
-        self.instruments
+        self.products
             .into_iter()
             .flat_map(CoinbaseProduct::normalize)
             .collect()
@@ -30,9 +30,9 @@ impl<'de> Deserialize<'de> for CoinbaseAllProducts {
     where
         D: serde::Deserializer<'de>
     {
-        let instruments = Vec::<CoinbaseProduct>::deserialize(deserializer)?;
+        let products = Vec::<CoinbaseProduct>::deserialize(deserializer)?;
 
-        Ok(CoinbaseAllProducts { instruments })
+        Ok(CoinbaseAllProducts { products })
     }
 }
 
@@ -41,7 +41,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllProducts {
         match other {
             NormalizedRestApiDataTypes::AllInstruments(other_instrs) => {
                 let this_instruments = self
-                    .instruments
+                    .products
                     .iter()
                     .map(|instr| (instr.base_currency.clone(), instr.quote_currency.clone(), instr.id.normalize()))
                     .collect::<HashSet<_>>();

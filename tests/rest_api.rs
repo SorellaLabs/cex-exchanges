@@ -90,7 +90,7 @@ mod binance_tests {
             let all_instruments = all_instruments.unwrap();
             let test_length = all_instruments
                 .clone()
-                .take_binance_instruments()
+                .take_binance_instruments(true)
                 .unwrap()
                 .len();
             assert!(test_length > 10);
@@ -144,7 +144,7 @@ mod okex_tests {
             let all_instruments = all_instruments.unwrap();
             let test_length = all_instruments
                 .clone()
-                .take_okex_instruments()
+                .take_okex_instruments(true)
                 .unwrap()
                 .len();
             assert!(test_length > 10);
@@ -197,7 +197,11 @@ mod kucoin_tests {
 
         {
             let all_symbols = all_symbols.unwrap();
-            let test_length = all_symbols.clone().take_kucoin_instruments().unwrap().len();
+            let test_length = all_symbols
+                .clone()
+                .take_kucoin_instruments(true)
+                .unwrap()
+                .len();
             assert!(test_length > 10);
 
             let normalized = all_symbols.clone().normalize();
@@ -246,7 +250,7 @@ mod bybit_tests {
             let all_instruments = all_instruments.unwrap();
             let test_length = all_instruments
                 .clone()
-                .take_bybit_instruments()
+                .take_bybit_instruments(true)
                 .unwrap()
                 .len();
             assert!(test_length > 10);

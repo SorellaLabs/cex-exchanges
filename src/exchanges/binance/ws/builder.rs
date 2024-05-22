@@ -106,7 +106,7 @@ impl BinanceWsBuilder {
         let mut all_symbols_vec = ExchangeApi::new()
             .all_instruments::<Binance>()
             .await?
-            .take_binance_instruments()
+            .take_binance_instruments(true)
             .unwrap();
         all_symbols_vec.retain(|sym| &sym.status == "TRADING");
 

@@ -14,7 +14,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
-    rest_api::{BybitAllCoins, BybitAllIntruments, BybitRestApiResponse},
+    rest_api::{BybitAllCoins, BybitAllInstruments, BybitRestApiResponse},
     ws::{BybitSubscription, BybitWsMessage}
 };
 use crate::{
@@ -38,17 +38,17 @@ impl Bybit {
         Self { subscription }
     }
 
-    pub async fn get_all_instruments(web_client: &reqwest::Client) -> Result<BybitAllIntruments, RestApiError> {
+    pub async fn get_all_instruments(web_client: &reqwest::Client) -> Result<BybitAllInstruments, RestApiError> {
         let categories = ["linear", "inverse", "option", "spot"];
 
         let mut instruments = Vec::new();
         for cat in categories {
             let url = format!("{BASE_REST_API_URL}/v5/market/instruments-info?category={cat}");
-            let cat_instruments: BybitAllIntruments = Self::simple_rest_api_request(web_client, url).await?;
+            let cat_instruments: BybitAllInstruments = Self::simple_rest_api_request(web_client, url).await?;
             instruments.extend(cat_instruments.instruments);
         }
 
-        Ok(BybitAllIntruments { instruments })
+        Ok(BybitAllInstruments { instruments })
     }
 
     // pub async fn get_all_coins(web_client: &reqwest::Client) ->

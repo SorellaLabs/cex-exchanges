@@ -26,10 +26,21 @@ impl KucoinRestApiResponse {
         }
     }
 
-    pub fn take_symbols(self) -> Option<Vec<KucoinSymbol>> {
-        match self {
-            KucoinRestApiResponse::Symbols(val) => Some(val.symbols),
-            _ => None
+    pub fn take_symbols(self, active_only: bool) -> Option<Vec<KucoinSymbol>> {
+        let symbols = match self {
+            KucoinRestApiResponse::Symbols(val) => val.symbols,
+            _ => return None
+        };
+
+        if active_only {
+            Some(
+                symbols
+                    .into_iter()
+                    .filter(|instr| instr.enable_trading)
+                    .collect::<Vec<_>>()
+            )
+        } else {
+            Some(symbols)
         }
     }
 }

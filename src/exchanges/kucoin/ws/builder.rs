@@ -105,7 +105,7 @@ impl KucoinWsBuilder {
         let mut all_symbols_vec = ExchangeApi::new()
             .all_instruments::<Kucoin>()
             .await?
-            .take_kucoin_instruments()
+            .take_kucoin_instruments(true)
             .unwrap();
         all_symbols_vec.retain(|sym| sym.enable_trading);
 

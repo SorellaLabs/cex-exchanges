@@ -4,14 +4,13 @@ use super::NormalizedRestApiDataTypes;
 #[cfg(feature = "non-us")]
 use crate::{
     binance::rest_api::{BinanceInstrument, BinanceRestApiResponse, BinanceSymbol},
-    bybit::rest_api::{BybitCoin, BybitIntrument, BybitRestApiResponse},
+    bybit::rest_api::{BybitCoin, BybitInstrument, BybitRestApiResponse},
     kucoin::rest_api::{KucoinCurrency, KucoinRestApiResponse, KucoinSymbol}
 };
 #[cfg(feature = "us")]
 use crate::{
     coinbase::rest_api::{CoinbaseCurrency, CoinbaseProduct, CoinbaseRestApiResponse},
-    normalized::types::NormalizedCurrency,
-    okex::rest_api::{OkexInstrument, OkexRestApiResponse}
+    okex::rest_api::{OkexCurrency, OkexInstrument, OkexRestApiResponse}
 };
 
 #[derive(Debug, Clone, Serialize)]
@@ -43,126 +42,7 @@ impl CombinedRestApiResponse {
             CombinedRestApiResponse::Bybit(c) => c.normalize()
         }
     }
-
-    #[cfg(feature = "us")]
-    pub fn take_coinbase(self) -> Option<CoinbaseRestApiResponse> {
-        match self {
-            CombinedRestApiResponse::Coinbase(vals) => Some(vals),
-            _ => None
-        }
-    }
-
-    #[cfg(feature = "us")]
-    pub fn take_coinbase_instruments(self, active_only: bool) -> Option<Vec<CoinbaseProduct>> {
-        self.take_coinbase()
-            .and_then(|v| v.take_instruments(active_only))
-    }
-
-    #[cfg(feature = "us")]
-    pub fn take_coinbase_currencies(self) -> Option<Vec<CoinbaseCurrency>> {
-        self.take_coinbase().and_then(|v| v.take_currencies())
-    }
-
-    #[cfg(feature = "non-us")]
-    pub fn take_binance(self) -> Option<BinanceRestApiResponse> {
-        match self {
-            CombinedRestApiResponse::Binance(vals) => Some(vals),
-            _ => None
-        }
-    }
-
-    #[cfg(feature = "non-us")]
-    pub fn take_binance_currencies(self) -> Option<Vec<BinanceSymbol>> {
-        self.take_binance().and_then(|v| v.take_symbols())
-    }
-
-    #[cfg(feature = "non-us")]
-    pub fn take_binance_instruments(self) -> Option<Vec<BinanceInstrument>> {
-        self.take_binance().and_then(|v| v.take_instruments())
-    }
-
-    #[cfg(feature = "us")]
-    pub fn take_okex(self) -> Option<OkexRestApiResponse> {
-        match self {
-            CombinedRestApiResponse::Okex(vals) => Some(vals),
-            _ => None
-        }
-    }
-
-    #[cfg(feature = "us")]
-    pub fn take_okex_instruments(self) -> Option<Vec<OkexInstrument>> {
-        self.take_okex()
-            .and_then(|v| v.take_instruments().map(|instr| instr.instruments))
-    }
-
-    #[cfg(feature = "us")]
-    pub fn take_okex_currencies(self) -> Option<Vec<NormalizedCurrency>> {
-        self.take_okex().and_then(|v| v.take_currencies())
-    }
-
-    #[cfg(feature = "non-us")]
-    pub fn take_kucoin(self) -> Option<KucoinRestApiResponse> {
-        match self {
-            CombinedRestApiResponse::Kucoin(vals) => Some(vals),
-            _ => None
-        }
-    }
-
-    #[cfg(feature = "non-us")]
-    pub fn take_kucoin_instruments(self) -> Option<Vec<KucoinSymbol>> {
-        self.take_kucoin().and_then(|v| v.take_symbols())
-    }
-
-    #[cfg(feature = "non-us")]
-    pub fn take_kucoin_currencies(self) -> Option<Vec<KucoinCurrency>> {
-        self.take_kucoin().and_then(|v| v.take_currencies())
-    }
-
-    #[cfg(feature = "non-us")]
-    pub fn take_bybit(self) -> Option<BybitRestApiResponse> {
-        match self {
-            CombinedRestApiResponse::Bybit(vals) => Some(vals),
-            _ => None
-        }
-    }
-
-    #[cfg(feature = "non-us")]
-    pub fn take_bybit_instruments(self) -> Option<Vec<BybitIntrument>> {
-        self.take_bybit().and_then(|v| v.take_instruments())
-    }
-
-    #[cfg(feature = "non-us")]
-    pub fn take_bybit_currencies(self) -> Option<Vec<BybitCoin>> {
-        self.take_bybit().map(|v| v.take_coins()).flatten()
-    }
 }
-
-macro_rules! combined_rest {
-    ($exchange:ident) => {
-        paste::paste! {
-            impl From<[<$exchange RestApiResponse>]> for CombinedRestApiResponse {
-                fn from(value: [<$exchange RestApiResponse>]) -> Self {
-                    Self::$exchange(value)
-                }
-            }
-        }
-    };
-}
-
-#[cfg(feature = "us")]
-combined_rest!(Coinbase);
-
-#[cfg(feature = "us")]
-combined_rest!(Okex);
-
-#[cfg(feature = "non-us")]
-combined_rest!(Binance);
-
-#[cfg(feature = "non-us")]
-combined_rest!(Kucoin);
-
-#[cfg(feature = "non-us")]
-combined_rest!(Bybit);
 
 impl PartialEq<NormalizedRestApiDataTypes> for CombinedRestApiResponse {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
@@ -180,3 +60,74 @@ impl PartialEq<NormalizedRestApiDataTypes> for CombinedRestApiResponse {
         }
     }
 }
+
+macro_rules! combined_exchange {
+    ($exchange:ident, $currency:ident, $instrument:ident) => {
+        paste::paste! {
+            impl From<[<$exchange RestApiResponse>]> for CombinedRestApiResponse {
+                fn from(value: [<$exchange RestApiResponse>]) -> Self {
+                    Self::$exchange(value)
+                }
+            }
+
+            impl CombinedRestApiResponse {
+                pub fn [<take_ $exchange:lower _currencies>](self) -> Option<Vec<[<$exchange $currency>]>> {
+                    self.[<take_ $exchange:lower>]().and_then(|v| v.[<take_ $currency:lower s>]())
+                }
+
+                pub fn [<take_ $exchange:lower _instruments>](self, active_only: bool) -> Option<Vec<[<$exchange $instrument>]>> {
+                    self.[<take_ $exchange:lower>]().and_then(|v| v.[<take_ $instrument:lower s>](active_only))
+                }
+
+                pub fn[<take_ $exchange:lower>](self) -> Option<[<$exchange RestApiResponse>]> {
+                    match self {
+                        CombinedRestApiResponse::$exchange(val) => Some(val),
+                        _ => None
+                    }
+                }
+            }
+        }
+    };
+
+    ($exchange:ident, (CURRENCY), $instrument:ident) => {
+        paste::paste! {
+            impl From<[<$exchange RestApiResponse>]> for CombinedRestApiResponse {
+                fn from(value: [<$exchange RestApiResponse>]) -> Self {
+                    Self::$exchange(value)
+                }
+            }
+
+            impl CombinedRestApiResponse {
+                pub fn [<take_ $exchange:lower _currencies>](self) -> Option<Vec<[<$exchange Currency>]>> {
+                    self.[<take_ $exchange:lower>]().and_then(|v| v.take_currencies())
+                }
+
+                pub fn [<take_ $exchange:lower _instruments>](self, active_only: bool) -> Option<Vec<[<$exchange $instrument>]>> {
+                    self.[<take_ $exchange:lower>]().and_then(|v| v.[<take_ $instrument:lower s>](active_only))
+                }
+
+                pub fn[<take_ $exchange:lower>](self) -> Option<[<$exchange RestApiResponse>]> {
+                    match self {
+                        CombinedRestApiResponse::$exchange(val) => Some(val),
+                        _ => None
+                    }
+                }
+            }
+        }
+    };
+}
+
+#[cfg(feature = "us")]
+combined_exchange!(Coinbase, (CURRENCY), Product);
+
+#[cfg(feature = "us")]
+combined_exchange!(Okex, (CURRENCY), Instrument);
+
+#[cfg(feature = "non-us")]
+combined_exchange!(Kucoin, (CURRENCY), Symbol);
+
+#[cfg(feature = "non-us")]
+combined_exchange!(Binance, Symbol, Instrument);
+
+#[cfg(feature = "non-us")]
+combined_exchange!(Bybit, Coin, Instrument);

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{BybitAllCoins, BybitAllIntruments, BybitCoin, BybitIntrument};
+use super::{BybitAllCoins, BybitAllInstruments, BybitCoin, BybitInstrument};
 use crate::exchanges::normalized::rest_api::NormalizedRestApiDataTypes;
 
 #[serde_with::serde_as]
@@ -8,7 +8,7 @@ use crate::exchanges::normalized::rest_api::NormalizedRestApiDataTypes;
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum BybitRestApiResponse {
     Coins(BybitAllCoins),
-    Instruments(BybitAllIntruments)
+    Instruments(BybitAllInstruments)
 }
 
 impl BybitRestApiResponse {
@@ -26,10 +26,21 @@ impl BybitRestApiResponse {
         }
     }
 
-    pub fn take_instruments(self) -> Option<Vec<BybitIntrument>> {
-        match self {
-            BybitRestApiResponse::Instruments(val) => Some(val.instruments),
-            _ => None
+    pub fn take_instruments(self, active_only: bool) -> Option<Vec<BybitInstrument>> {
+        let instruments = match self {
+            BybitRestApiResponse::Instruments(val) => val.instruments,
+            _ => return None
+        };
+
+        if active_only {
+            Some(
+                instruments
+                    .into_iter()
+                    .filter(|instr| instr.inner.status == "Trading")
+                    .collect::<Vec<_>>()
+            )
+        } else {
+            Some(instruments)
         }
     }
 }

@@ -105,7 +105,7 @@ impl BybitWsBuilder {
         let mut all_symbols_vec = ExchangeApi::new()
             .all_instruments::<Bybit>()
             .await?
-            .take_bybit_instruments()
+            .take_bybit_instruments(true)
             .unwrap();
         all_symbols_vec.retain(|sym| &sym.inner.status == "Trading" && matches!(sym.trading_type, BybitTradingType::Spot));
 

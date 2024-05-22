@@ -2,12 +2,16 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 use super::OkexInstrument;
-use crate::{exchanges::normalized::types::NormalizedCurrency, normalized::rest_api::NormalizedRestApiDataTypes, CexExchange};
+use crate::{
+    exchanges::normalized::types::NormalizedCurrency,
+    normalized::{rest_api::NormalizedRestApiDataTypes, types::BlockchainCurrency},
+    CexExchange
+};
 
 #[serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
 pub struct OkexAllSymbols {
-    pub currencies: Vec<NormalizedCurrency>
+    pub currencies: Vec<OkexCurrency>
 }
 
 impl OkexAllSymbols {
@@ -28,19 +32,86 @@ impl OkexAllSymbols {
             })
         });
 
-        Self { currencies }
+        Self { currencies: currencies.into_iter().map(|c| c.into()).collect() }
     }
 
     pub fn normalize(self) -> Vec<NormalizedCurrency> {
         self.currencies
+            .into_iter()
+            .map(OkexCurrency::normalize)
+            .collect()
     }
 }
 
 impl PartialEq<NormalizedRestApiDataTypes> for OkexAllSymbols {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match other {
-            NormalizedRestApiDataTypes::AllCurrencies(other_currs) => *other_currs == self.currencies,
+            NormalizedRestApiDataTypes::AllCurrencies(other_currs) => {
+                let mut this_currencies = self.currencies.clone();
+                this_currencies.sort_by(|a, b| a.symbol.partial_cmp(&b.symbol).unwrap());
+
+                let mut others_currencies = other_currs.clone();
+                others_currencies.sort_by(|a, b| a.symbol.partial_cmp(&b.symbol).unwrap());
+
+                this_currencies == others_currencies
+            }
             _ => false
         }
+    }
+}
+
+/// akin to normalized currencies since we have to use proxies for non-apikey
+/// users
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+pub struct OkexCurrency {
+    pub exchange:     CexExchange,
+    pub symbol:       String,
+    pub name:         String,
+    pub display_name: Option<String>,
+    pub status:       String,
+    pub blockchains:  Vec<BlockchainCurrency>
+}
+
+impl OkexCurrency {
+    pub fn normalize(self) -> NormalizedCurrency {
+        NormalizedCurrency {
+            exchange:     self.exchange,
+            symbol:       self.symbol,
+            name:         self.name,
+            display_name: self.display_name,
+            status:       self.status,
+            blockchains:  self.blockchains
+        }
+    }
+}
+
+impl From<NormalizedCurrency> for OkexCurrency {
+    fn from(value: NormalizedCurrency) -> Self {
+        Self {
+            exchange:     value.exchange,
+            symbol:       value.symbol,
+            name:         value.name,
+            display_name: value.display_name,
+            status:       value.status,
+            blockchains:  value.blockchains
+        }
+    }
+}
+
+impl PartialEq<NormalizedCurrency> for OkexCurrency {
+    fn eq(&self, other: &NormalizedCurrency) -> bool {
+        let equals = other.exchange == CexExchange::Okex
+            && other.symbol == self.symbol
+            && other.name == self.name
+            && other.display_name == self.display_name
+            && other.status == self.status
+            && other.blockchains == self.blockchains;
+
+        if !equals {
+            println!("SELF: {:?}", self);
+            println!("NORMALIZED: {:?}", other);
+        }
+
+        equals
     }
 }

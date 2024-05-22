@@ -1,5 +1,5 @@
-use super::{OkexAllInstruments, OkexAllSymbols};
-use crate::normalized::{rest_api::NormalizedRestApiDataTypes, types::NormalizedCurrency};
+use super::{OkexAllInstruments, OkexAllSymbols, OkexCurrency, OkexInstrument};
+use crate::normalized::rest_api::NormalizedRestApiDataTypes;
 
 #[serde_with::serde_as]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -17,17 +17,28 @@ impl OkexRestApiResponse {
         }
     }
 
-    pub fn take_currencies(self) -> Option<Vec<NormalizedCurrency>> {
+    pub fn take_currencies(self) -> Option<Vec<OkexCurrency>> {
         match self {
             OkexRestApiResponse::Symbols(val) => Some(val.currencies),
             _ => None
         }
     }
 
-    pub fn take_instruments(self) -> Option<OkexAllInstruments> {
-        match self {
-            OkexRestApiResponse::Instruments(val) => Some(val),
-            _ => None
+    pub fn take_instruments(self, active_only: bool) -> Option<Vec<OkexInstrument>> {
+        let instruments = match self {
+            OkexRestApiResponse::Instruments(val) => val.instruments,
+            _ => return None
+        };
+
+        if active_only {
+            Some(
+                instruments
+                    .into_iter()
+                    .filter(|instr| &instr.state.to_lowercase() == "live")
+                    .collect()
+            )
+        } else {
+            None
         }
     }
 }

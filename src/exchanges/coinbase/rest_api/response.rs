@@ -26,17 +26,21 @@ impl CoinbaseRestApiResponse {
         }
     }
 
-    pub fn take_instruments(self, active_only: bool) -> Option<Vec<CoinbaseProduct>> {
-        match self {
-            CoinbaseRestApiResponse::Products(val) => {
-                let mut instruments = val.instruments;
-                if active_only {
-                    instruments.retain(|instr| !instr.trading_disabled);
-                }
+    pub fn take_products(self, active_only: bool) -> Option<Vec<CoinbaseProduct>> {
+        let instruments = match self {
+            CoinbaseRestApiResponse::Products(val) => val.products,
+            _ => return None
+        };
 
-                Some(instruments)
-            }
-            _ => None
+        if active_only {
+            Some(
+                instruments
+                    .into_iter()
+                    .filter(|instr| !instr.trading_disabled)
+                    .collect::<Vec<_>>()
+            )
+        } else {
+            Some(instruments)
         }
     }
 }

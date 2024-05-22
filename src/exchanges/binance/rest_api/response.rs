@@ -26,10 +26,21 @@ impl BinanceRestApiResponse {
         }
     }
 
-    pub fn take_instruments(self) -> Option<Vec<BinanceInstrument>> {
-        match self {
-            BinanceRestApiResponse::Instruments(val) => Some(val.instruments),
-            _ => None
+    pub fn take_instruments(self, active_only: bool) -> Option<Vec<BinanceInstrument>> {
+        let instruments = match self {
+            BinanceRestApiResponse::Instruments(val) => val.instruments,
+            _ => return None
+        };
+
+        if active_only {
+            Some(
+                instruments
+                    .into_iter()
+                    .filter(|instr| instr.status.to_uppercase() == "TRADING")
+                    .collect::<Vec<_>>()
+            )
+        } else {
+            Some(instruments)
         }
     }
 }
