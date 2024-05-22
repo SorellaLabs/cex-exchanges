@@ -41,19 +41,15 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllSymbols {
                     .map(|sym| (&sym.name, &sym.symbol))
                     .collect::<HashSet<_>>();
 
-                let mut normalized_out = 0;
                 let mut others_currencies = other_currs.clone();
-                others_currencies.iter_mut().for_each(|curr| {
-                    let t = curr.clone();
-                    curr.blockchains.retain(|blk| {
-                        let is_retain = blk.wrapped_currency.is_none();
-                        if !is_retain {
-                            println!("CURR: {:?}", t);
-                            normalized_out += 1;
-                        }
-
-                        is_retain
-                    });
+                let normalized_out = other_currs.len();
+                others_currencies.retain_mut(|curr| {
+                    // let t = curr.clone();
+                    !(curr
+                        .blockchains
+                        .iter()
+                        .any(|blk| blk.wrapped_currency.is_some())
+                        && curr.blockchains.len() == 1)
                 });
 
                 let currencies_len = self.symbols.len();
