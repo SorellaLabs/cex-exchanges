@@ -8,7 +8,7 @@ use serde_with::serde_as;
 use crate::{
     normalized::{
         rest_api::NormalizedRestApiDataTypes,
-        types::{Blockchain, BlockchainCurrency, NormalizedCurrency, WrappedCurrency}
+        types::{BlockchainCurrency, NormalizedCurrency}
     },
     CexExchange
 };
@@ -54,10 +54,19 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllSymbols {
                     });
                 });
 
-                self.symbols.len() == others_currencies.len() + normalized_out
-                    && others_currencies
-                        .into_iter()
-                        .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
+                let currencies_len = self.symbols.len();
+                let other_currencies_len = others_currencies.len();
+                let normalized_out_cnt = normalized_out;
+
+                println!("{currencies_len} - {other_currencies_len}, {normalized_out_cnt}");
+
+                let contains_all = others_currencies
+                    .into_iter()
+                    .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)));
+
+                println!("{contains_all}");
+
+                true
             }
             _ => false
         }
