@@ -17,19 +17,11 @@ impl NormalizedCurrency {
     /// takes a vector of [NormalizedCurrency] and deduplicates itself by
     /// combining wrapped and unwrapped assets
     pub(crate) fn handle_unwrapped(mut normalized: Vec<Self>) -> Vec<Self> {
-        println!("0 - {}", normalized.len());
-
         let unwrapped = normalized
-            .iter().filter(|&curr| !curr.blockchains.iter().any(|b| b.is_wrapped)).cloned()
+            .iter()
+            .filter(|&curr| !curr.blockchains.iter().any(|b| b.is_wrapped))
+            .cloned()
             .collect::<Vec<_>>();
-
-        println!("1 - {}", unwrapped.len());
-
-        // for u in unwrapped.iter() {
-        //     println!("{:?}\n", u);
-        // }
-
-        // println!("\n\n\n\n\n\n\n\n\n\n\n");
 
         let mut to_remove = Vec::new();
 
@@ -38,14 +30,11 @@ impl NormalizedCurrency {
             .filter_map(|curr| {
                 if curr.blockchains.iter().any(|b| b.is_wrapped) {
                     let (new, removed) = curr.combine_wrapped_assets(&unwrapped);
-                    if removed.is_none() {
-                        println!("EASILY: {:?}", new);
-                    }
 
                     removed.map(|r| {
                         to_remove.push(r);
                         to_remove.push(curr.clone());
-                        println!("{:?}", new);
+
                         new
                     })
                 } else {
@@ -54,23 +43,8 @@ impl NormalizedCurrency {
             })
             .collect::<Vec<_>>();
 
-        println!("2 - {}", wrapped.len());
-        println!("3 - {}", to_remove.len());
-
-        // for u in wrapped.iter() {
-        //     println!("{:?}\n", u);
-        // }
-
-        // println!("\n\n\n\n\n\n\n\n\n\n\n");
-
         normalized.retain(|val| !to_remove.contains(val));
         normalized.extend(wrapped);
-
-        // for u in normalized.iter() {
-        //     println!("{:?}\n", u);
-        // }
-
-        println!("4 - {}", normalized.len());
 
         normalized
     }
