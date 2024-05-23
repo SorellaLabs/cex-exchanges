@@ -53,7 +53,7 @@ mod binance_tests {
 
     #[tokio::test]
     #[serial]
-    async fn test_all_symbols() {
+    async fn test_all_currencies() {
         let exchange_api = ExchangeApi::new();
         let all_symbols = exchange_api.all_currencies::<Binance>().await;
         all_symbols.as_ref().unwrap();
@@ -108,7 +108,7 @@ mod okex_tests {
 
     #[tokio::test]
     #[serial]
-    async fn test_all_symbols() {
+    async fn test_all_currencies() {
         let exchange_api = ExchangeApi::new();
         let all_symbols = exchange_api.all_currencies::<Okex>().await;
         assert!(all_symbols.is_ok());
@@ -183,7 +183,7 @@ mod kucoin_tests {
 
     #[tokio::test]
     #[serial]
-    async fn test_all_symbols() {
+    async fn test_all_instruments() {
         let exchange_api = ExchangeApi::new();
         let all_symbols = exchange_api.all_instruments::<Kucoin>().await;
         all_symbols.as_ref().unwrap();
