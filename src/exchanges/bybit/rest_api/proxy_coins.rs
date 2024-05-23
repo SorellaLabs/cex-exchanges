@@ -35,25 +35,24 @@ impl PartialEq<NormalizedRestApiDataTypes> for BybitAllCoins {
                     .collect::<HashSet<_>>();
 
                 let mut others_currencies = other_currs.clone();
-                let mut normalized_out = 0;
+                // let mut normalized_out = 0;
 
-                others_currencies.retain(|curr| {
-                    let vvv = !(curr.blockchains.iter().any(|blk| {
-                        let is_some = blk.wrapped_currency.is_some() && blk.is_wrapped;
+                let normalized_out = others_currencies
+                    .iter()
+                    .filter(|curr| {
+                        let vvv = !(curr
+                            .blockchains
+                            .iter()
+                            .any(|blk| blk.wrapped_currency.is_some() && blk.is_wrapped)
+                            && curr.blockchains.len() == 1);
 
-                        if is_some {
-                            normalized_out += 1;
+                        if !vvv {
+                            println!("vvv: {:?}", curr);
                         }
 
-                        is_some
-                    }) && curr.blockchains.len() == 1);
-
-                    if !vvv {
-                        println!("vvv: {:?}", curr);
-                    }
-
-                    vvv
-                });
+                        vvv
+                    })
+                    .count();
 
                 let a0 = self.coins.len();
                 let a1 = others_currencies.len();
