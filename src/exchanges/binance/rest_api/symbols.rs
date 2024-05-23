@@ -57,7 +57,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllSymbols {
                     }) && curr.blockchains.len() == 1)
                 });
 
-                normalized_out -= others_currencies.len();
+                //    normalized_out -= others_currencies.len();
 
                 let currencies_len = self.symbols.len();
                 let other_currencies_len = others_currencies.len();
