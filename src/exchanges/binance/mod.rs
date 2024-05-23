@@ -79,7 +79,7 @@ impl Binance {
                 .filter(|sym| pos_symbols.contains(&sym.symbol))
                 .for_each(|sym| {
                     symbols
-                        .entry((sym.name.clone(), sym.symbol.clone()))
+                        .entry(sym.symbol.clone())
                         .and_modify(|curr_sym: &mut BinanceSymbol| {
                             if sym.cmc_rank < curr_sym.cmc_rank {
                                 *curr_sym = sym.clone();
