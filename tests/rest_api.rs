@@ -213,7 +213,7 @@ mod bybit_tests {
 
     #[tokio::test]
     #[serial]
-    async fn test_all_coins() {
+    async fn test_all_currencies() {
         let exchange_api = ExchangeApi::new();
         let all_coins = exchange_api.all_currencies::<Bybit>().await;
         all_coins.as_ref().unwrap();
