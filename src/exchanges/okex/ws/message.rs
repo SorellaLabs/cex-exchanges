@@ -107,15 +107,12 @@ impl PartialEq<NormalizedWsDataTypes> for OkexWsMessage {
 
 impl CriticalWsMessage for OkexWsMessage {
     fn make_critical(&mut self, msg: String) {
-        match self {
-            OkexWsMessage::Error { raw_msg, bad_pair, .. } => {
-                if bad_pair.is_none() {
-                    *bad_pair = OkexTradingPair::parse_for_bad_pair(&msg);
-                }
-
-                *raw_msg = msg;
+        if let OkexWsMessage::Error { raw_msg, bad_pair, .. } = self {
+            if bad_pair.is_none() {
+                *bad_pair = OkexTradingPair::parse_for_bad_pair(&msg);
             }
-            _ => ()
+
+            *raw_msg = msg;
         }
     }
 }

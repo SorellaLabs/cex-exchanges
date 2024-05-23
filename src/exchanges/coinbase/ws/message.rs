@@ -46,12 +46,9 @@ impl PartialEq<NormalizedWsDataTypes> for CoinbaseWsMessage {
 
 impl CriticalWsMessage for CoinbaseWsMessage {
     fn make_critical(&mut self, msg: String) {
-        match self {
-            CoinbaseWsMessage::Error(err) => {
-                err.parse_for_bad_pair();
-                err.message = msg;
-            }
-            _ => ()
+        if let CoinbaseWsMessage::Error(err) = self {
+            err.parse_for_bad_pair();
+            err.message = msg;
         }
     }
 }
