@@ -51,10 +51,6 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllSymbols {
                         } else {
                             false
                         }
-                        // if blk.wrapped_currency.is_some() && blk.is_wrapped
-                        // && !contains_name {
-                        //     normalized_out += 1;
-                        // }
                     }) {
                         normalized_out += 1;
                     }
