@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -39,13 +41,27 @@ impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllCurrencies {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match other {
             NormalizedRestApiDataTypes::AllCurrencies(other_currs) => {
-                let mut this_currencies = self.currencies.clone();
-                this_currencies.sort_by(|a, b| a.id.partial_cmp(&b.id).unwrap());
+                let this_currencies = self
+                    .currencies
+                    .iter()
+                    .map(|sym| (&sym.name, &sym.id))
+                    .collect::<HashSet<_>>();
 
-                let mut others_currencies = other_currs.clone();
-                others_currencies.sort_by(|a, b| a.symbol.partial_cmp(&b.symbol).unwrap());
+                let others_currencies = other_currs.clone();
+                let mut normalized_out = 0;
 
-                this_currencies == others_currencies
+                others_currencies.iter().for_each(|curr| {
+                    curr.blockchains.iter().for_each(|blk| {
+                        if blk.wrapped_currency.is_some() && blk.is_wrapped && curr.blockchains.len() == 1 {
+                            normalized_out += 1;
+                        }
+                    })
+                });
+
+                self.currencies.len() == others_currencies.len() + normalized_out
+                    && others_currencies
+                        .iter()
+                        .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
             }
             _ => false
         }
@@ -71,18 +87,35 @@ pub struct CoinbaseCurrency {
 }
 
 impl CoinbaseCurrency {
+    fn parse_blockchains(&self) -> Vec<BlockchainCurrency> {
+        let is_wrapped = if self.name.to_lowercase().contains("wrapped") && self.id.to_lowercase().starts_with("w") { true } else { false };
+
+        self.supported_networks
+            .iter()
+            .map(|net| {
+                if net.contract_address == Some("".to_string()) {
+                    BlockchainCurrency { blockchain: net.name.parse().unwrap(), address: None, is_wrapped, wrapped_currency: None }
+                } else {
+                    BlockchainCurrency {
+                        blockchain: net.name.parse().unwrap(),
+                        address: net.contract_address.clone(),
+                        is_wrapped,
+                        wrapped_currency: None
+                    }
+                }
+            })
+            .collect()
+    }
+
     pub fn normalize(self) -> NormalizedCurrency {
+        let blockchains = self.parse_blockchains();
         NormalizedCurrency {
-            exchange:     CexExchange::Coinbase,
-            symbol:       self.id,
-            name:         self.name,
+            exchange: CexExchange::Coinbase,
+            symbol: self.id,
+            name: self.name,
             display_name: self.display_name,
-            status:       self.status,
-            blockchains:  self
-                .supported_networks
-                .into_iter()
-                .map(|n| n.into())
-                .collect()
+            status: self.status,
+            blockchains
         }
     }
 }
@@ -100,18 +133,6 @@ pub struct CoinbaseCurrencySupportedNetwork {
     pub max_withdrawal_amount: Option<f64>,
     pub network_confirmations: Option<u64>,
     pub processing_time_seconds: Option<f64>
-}
-
-impl Into<BlockchainCurrency> for CoinbaseCurrencySupportedNetwork {
-    fn into(self) -> BlockchainCurrency {
-        let is_wrapped = if self.name.to_lowercase().contains("wrapped") && self.id.to_lowercase().starts_with("w") { true } else { false };
-
-        if self.contract_address == Some("".to_string()) {
-            BlockchainCurrency { blockchain: self.name.parse().unwrap(), address: None, is_wrapped, wrapped_currency: None }
-        } else {
-            BlockchainCurrency { blockchain: self.name.parse().unwrap(), address: self.contract_address, is_wrapped, wrapped_currency: None }
-        }
-    }
 }
 
 #[serde_as]
@@ -134,17 +155,19 @@ pub struct CoinbaseCurrencyDetails {
 
 impl PartialEq<NormalizedCurrency> for CoinbaseCurrency {
     fn eq(&self, other: &NormalizedCurrency) -> bool {
+        let blockchains = self.parse_blockchains();
         let equals = other.exchange == CexExchange::Coinbase
             && other.symbol == self.id
             && other.name == self.name
             && other.display_name == self.display_name
             && other.status == self.status
-            && other.blockchains
-                == self
-                    .supported_networks
-                    .iter()
-                    .map(|n| n.clone().into())
-                    .collect::<Vec<_>>();
+            && other
+                .blockchains
+                .iter()
+                .cloned()
+                .filter(|blk| blk.wrapped_currency.is_none())
+                .collect::<Vec<_>>()
+                == blockchains;
 
         if !equals {
             println!("SELF: {:?}", self);
