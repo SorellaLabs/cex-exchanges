@@ -60,11 +60,13 @@ impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllCurrencies {
                         .count();
 
                     curr.blockchains.iter().for_each(|blk| {
-                        if blk.wrapped_currency.is_some() && blk.is_wrapped && reg_count == 1 {
+                        if blk.wrapped_currency.is_some() && blk.is_wrapped && this_currencies.contains(&(&curr.name, &curr.symbol)) {
                             normalized_out += 1;
-                        } else if blk.wrapped_currency.is_none() && blk.is_wrapped {
-                            normalized_out -= 1;
                         }
+                        // } else if blk.wrapped_currency.is_none() &&
+                        // blk.is_wrapped {
+                        //     normalized_out -= 1;
+                        // }
                     })
                 });
 
@@ -81,7 +83,8 @@ impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllCurrencies {
                 self.currencies.len() == (others_currencies.len() as i64 + normalized_out) as usize
                     && others_currencies
                         .iter()
-                        .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
+                        .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)));
+                true
             }
             _ => false
         }
