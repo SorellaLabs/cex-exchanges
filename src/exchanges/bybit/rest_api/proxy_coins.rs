@@ -35,7 +35,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for BybitAllCoins {
                     .collect::<HashSet<_>>();
 
                 let mut others_currencies = other_currs.clone();
-                // let mut normalized_out = 0;
+                let mut normalized_out = 0;
 
                 let normalized_out = others_currencies
                     .iter()
@@ -47,6 +47,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for BybitAllCoins {
                             && curr.blockchains.len() == 1);
 
                         if !vvv {
+                            normalized_out += 1;
                             println!("vvv: {:?}", curr);
                         }
 
@@ -54,20 +55,23 @@ impl PartialEq<NormalizedRestApiDataTypes> for BybitAllCoins {
                     })
                     .count();
 
-                let a0 = self.coins.len();
-                let a1 = others_currencies.len();
-                let a2 = normalized_out;
-                println!("{}", a0);
-                println!("{}", a1);
-                println!("{}", a2);
+                // let a0 = ;
+                // let a1 = ;
+                // let a2 = normalized_out;
+                // println!("{}", a0);
+                // println!("{}", a1);
+                // println!("{}", a2);
 
-                let b = others_currencies
-                    .into_iter()
-                    .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)));
-                println!("{}", b);
+                // let b = others_currencies
+                //     .iter()
+                //     .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)));
+                // println!("{}", b);
 
-                // a && b
-                true
+                self.coins.len() == others_currencies.len() + normalized_out
+                    && others_currencies
+                        .iter()
+                        .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
+                // true
             }
             _ => false
         }
