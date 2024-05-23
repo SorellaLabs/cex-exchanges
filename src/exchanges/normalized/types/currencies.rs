@@ -44,6 +44,7 @@ impl NormalizedCurrency {
                         to_remove.push(r);
                         to_remove.push(curr.clone());
                     }
+                    println!("{:?}", new);
                     Some(new)
                 } else {
                     None

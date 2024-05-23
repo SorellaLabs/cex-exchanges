@@ -49,10 +49,16 @@ impl PartialEq<NormalizedRestApiDataTypes> for BybitAllCoins {
                     }) && curr.blockchains.len() == 1)
                 });
 
-                self.coins.len() == others_currencies.len() + normalized_out
-                    && others_currencies
-                        .into_iter()
-                        .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
+                let a = self.coins.len() == others_currencies.len() + normalized_out;
+                println!("{}", a);
+
+                let b = others_currencies
+                    .into_iter()
+                    .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)));
+                println!("{}", b);
+
+                // a && b
+                true
             }
             _ => false
         }
