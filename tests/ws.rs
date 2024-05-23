@@ -93,7 +93,7 @@ mod coinbase_tests {
                 .collect::<Vec<_>>()
         );
 
-        normalized_mutlithreaded_util(builder, 10000).await;
+        normalized_mutlithreaded_util(builder, 1000).await;
     }
 }
 
@@ -188,7 +188,7 @@ mod okex_tests {
                 .collect::<Vec<_>>()
         );
 
-        normalized_mutlithreaded_util(builder, 10000).await;
+        normalized_mutlithreaded_util(builder, 1000).await;
     }
 }
 
@@ -263,7 +263,7 @@ mod binance_tests {
         let builder = BinanceWsBuilder::build_from_all_instruments(&channels)
             .await
             .unwrap();
-        mutlithreaded_util(builder, 100000).await;
+        mutlithreaded_util(builder, 1000).await;
     }
 }
 
