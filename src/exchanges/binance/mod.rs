@@ -66,6 +66,7 @@ impl Binance {
                 Err(e) => {
                     err_count -= 1;
                     println!("error getting symbols - retries remaining: {err_count}");
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                     if err_count == 0 {
                         return Err(e)
                     }
