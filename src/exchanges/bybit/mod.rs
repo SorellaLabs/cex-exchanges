@@ -2,7 +2,6 @@ mod pairs;
 
 use std::collections::HashSet;
 
-use chrono::Utc;
 use futures::SinkExt;
 pub use pairs::*;
 

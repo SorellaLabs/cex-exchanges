@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -5,7 +7,7 @@ use crate::{
     binance::rest_api::{BinanceSymbol, BinanceSymbolPlatform},
     normalized::{
         rest_api::NormalizedRestApiDataTypes,
-        types::{Blockchain, BlockchainCurrency, NormalizedCurrency}
+        types::{BlockchainCurrency, NormalizedCurrency}
     },
     CexExchange
 };
@@ -18,7 +20,7 @@ pub struct BybitAllCoins {
 
 impl BybitAllCoins {
     pub fn normalize(self) -> Vec<NormalizedCurrency> {
-        self.coins.into_iter().map(BybitCoin::normalize).collect()
+        NormalizedCurrency::handle_unwrapped(self.coins.into_iter().map(BybitCoin::normalize).collect())
     }
 }
 
@@ -26,13 +28,31 @@ impl PartialEq<NormalizedRestApiDataTypes> for BybitAllCoins {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match other {
             NormalizedRestApiDataTypes::AllCurrencies(other_currs) => {
-                let mut this_currencies = self.coins.clone();
-                this_currencies.sort_by(|a, b| a.symbol.partial_cmp(&b.symbol).unwrap());
+                let this_currencies = self
+                    .coins
+                    .iter()
+                    .map(|sym| (&sym.name, &sym.symbol))
+                    .collect::<HashSet<_>>();
 
                 let mut others_currencies = other_currs.clone();
-                others_currencies.sort_by(|a, b| a.symbol.partial_cmp(&b.symbol).unwrap());
+                let mut normalized_out = 0;
 
-                this_currencies == others_currencies
+                others_currencies.retain_mut(|curr| {
+                    !(curr.blockchains.iter().any(|blk| {
+                        let is_some = blk.wrapped_currency.is_some() && blk.is_wrapped;
+
+                        if is_some {
+                            normalized_out += 1;
+                        }
+
+                        is_some
+                    }) && curr.blockchains.len() == 1)
+                });
+
+                self.coins.len() == others_currencies.len() + normalized_out
+                    && others_currencies
+                        .into_iter()
+                        .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
             }
             _ => false
         }
@@ -48,14 +68,22 @@ pub struct BybitCoin {
 }
 
 impl BybitCoin {
+    fn parse_blockchain(&self) -> Option<BlockchainCurrency> {
+        self.platform.as_ref().map(|pl| {
+            let is_wrapped = if self.name.to_lowercase().contains("wrapped") && self.symbol.to_lowercase().starts_with("w") { true } else { false };
+            BlockchainCurrency { blockchain: pl.name.parse().unwrap(), address: Some(pl.token_address.clone()), is_wrapped, wrapped_currency: None }
+        })
+    }
+
     pub fn normalize(self) -> NormalizedCurrency {
+        let blockchains = self.parse_blockchain().map(|b| vec![b]).unwrap_or_default();
         NormalizedCurrency {
-            exchange:     CexExchange::Bybit,
-            symbol:       self.symbol,
-            name:         self.name,
+            exchange: CexExchange::Bybit,
+            symbol: self.symbol,
+            name: self.name,
             display_name: None,
-            status:       format!("binance proxy"),
-            blockchains:  self.platform.map(|p| vec![p.into()]).unwrap_or_default()
+            status: format!("binance proxy"),
+            blockchains
         }
     }
 }
@@ -74,13 +102,6 @@ pub struct BybitProxyCoinPlatform {
     pub token_address: String
 }
 
-impl Into<BlockchainCurrency> for BybitProxyCoinPlatform {
-    fn into(self) -> BlockchainCurrency {
-        let is_wrapped = if self.name.to_lowercase().contains("wrapped") && self.symbol.to_lowercase().starts_with("w") { true } else { false };
-        BlockchainCurrency { blockchain: self.name.parse().unwrap(), address: Some(self.token_address), is_wrapped, wrapped_currency: None }
-    }
-}
-
 impl From<BinanceSymbolPlatform> for BybitProxyCoinPlatform {
     fn from(value: BinanceSymbolPlatform) -> Self {
         Self { symbol: value.symbol, name: value.name, token_address: value.token_address }
@@ -89,17 +110,19 @@ impl From<BinanceSymbolPlatform> for BybitProxyCoinPlatform {
 
 impl PartialEq<NormalizedCurrency> for BybitCoin {
     fn eq(&self, other: &NormalizedCurrency) -> bool {
+        let blockchains = self.parse_blockchain().map(|p| vec![p]).unwrap_or_default();
         let equals = other.exchange == CexExchange::Bybit
             && other.symbol == self.symbol
             && other.name == self.name
             && other.display_name.is_none()
             && other.status == format!("binance proxy")
-            && other.blockchains
-                == self
-                    .platform
-                    .as_ref()
-                    .map(|p| vec![p.clone().into()])
-                    .unwrap_or_default();
+            && other
+                .blockchains
+                .iter()
+                .cloned()
+                .filter(|blk| blk.wrapped_currency.is_none())
+                .collect::<Vec<_>>()
+                == blockchains;
 
         if !equals {
             println!("\n\nSELF: {:?}\n", self);
