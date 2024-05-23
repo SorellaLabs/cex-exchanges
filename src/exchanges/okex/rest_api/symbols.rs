@@ -38,10 +38,12 @@ impl OkexAllSymbols {
     }
 
     pub fn normalize(self) -> Vec<NormalizedCurrency> {
-        self.currencies
-            .into_iter()
-            .map(OkexCurrency::normalize)
-            .collect()
+        NormalizedCurrency::handle_unwrapped(
+            self.currencies
+                .into_iter()
+                .map(OkexCurrency::normalize)
+                .collect()
+        )
     }
 }
 
