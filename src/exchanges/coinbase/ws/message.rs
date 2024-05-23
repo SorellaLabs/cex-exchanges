@@ -1,4 +1,4 @@
-use super::{CoinbaseMatches, CoinbaseStatus, CoinbaseTicker};
+use super::channels::{CoinbaseMatches, CoinbaseStatus, CoinbaseTicker};
 use crate::{clients::ws::CriticalWsMessage, coinbase::CoinbaseTradingPair, exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 
 #[serde_with::serde_as]

@@ -17,7 +17,7 @@ use self::{
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
     exchanges::Exchange,
-    normalized::rest_api::NormalizedRestApiRequest,
+    normalized::{rest_api::NormalizedRestApiRequest, types::NormalizedTradingPair},
     CexExchange
 };
 
@@ -61,6 +61,13 @@ impl Exchange for Kucoin {
     type WsMessage = KucoinWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Kucoin;
+
+    fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
+        let pair = bad_pair.try_into().unwrap();
+        self.subscriptions.retain_mut(|sub| !sub.remove_pair(&pair));
+
+        self.subscriptions.is_empty()
+    }
 
     async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError> {
         let dyn_url = Self::get_websocket_endpoint().await?;

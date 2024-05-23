@@ -1,4 +1,7 @@
-use super::{OkexSubscription, OkexWsChannel, OkexWsChannelKind};
+use super::{
+    channels::{OkexWsChannel, OkexWsChannelKind},
+    OkexSubscription
+};
 use crate::{clients::ws::MutliWsStreamBuilder, normalized::ws::NormalizedWsChannels, okex::Okex, CexExchange};
 
 /// There is a limit of 300 connections per attempt every 5 minutes per IP.

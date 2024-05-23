@@ -1,8 +1,14 @@
 use std::fmt::Display;
 
+mod matches;
+pub use matches::*;
+
+mod ticker;
+pub use ticker::*;
+
 use crate::{
     exchanges::{
-        binance::pairs::BinanceTradingPair,
+        kucoin::pairs::KucoinTradingPair,
         normalized::{
             types::{NormalizedTradingPair, RawTradingPair},
             ws::NormalizedWsChannels
@@ -12,43 +18,43 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum BinanceWsChannel {
-    Trade(Vec<BinanceTradingPair>),
-    BookTicker(Vec<BinanceTradingPair>)
+pub enum KucoinWsChannel {
+    Match(Vec<KucoinTradingPair>),
+    Ticker(Vec<KucoinTradingPair>)
 }
 
-impl BinanceWsChannel {
+impl KucoinWsChannel {
     /// builds trade channel from a vec of raw trading pairs
     /// return an error if the symbol is incorrectly formatted
-    pub fn new_trade(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+    pub fn new_match(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
-            .map(|pair| pair.get_normalized_pair(CexExchange::Binance))
+            .map(|pair| pair.get_normalized_pair(CexExchange::Kucoin))
             .collect();
 
-        Self::new_from_normalized(normalized, BinanceWsChannel::Trade(Vec::new()))
+        Self::new_from_normalized(normalized, KucoinWsChannel::Match(Vec::new()))
     }
 
     /// builds the book ticker channel from a vec of raw trading
     /// pairs return an error if the symbol is incorrectly formatted
-    pub fn new_book_ticker(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+    pub fn new_ticker(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
-            .map(|pair| pair.get_normalized_pair(CexExchange::Binance))
+            .map(|pair| pair.get_normalized_pair(CexExchange::Kucoin))
             .collect();
 
-        Self::new_from_normalized(normalized, BinanceWsChannel::BookTicker(Vec::new()))
+        Self::new_from_normalized(normalized, KucoinWsChannel::Ticker(Vec::new()))
     }
 
-    pub(crate) fn new_from_normalized(pairs: Vec<NormalizedTradingPair>, kind: BinanceWsChannel) -> eyre::Result<Self> {
+    pub(crate) fn new_from_normalized(pairs: Vec<NormalizedTradingPair>, kind: KucoinWsChannel) -> eyre::Result<Self> {
         match kind {
-            BinanceWsChannel::Trade(_) => Ok(BinanceWsChannel::Trade(
+            KucoinWsChannel::Match(_) => Ok(KucoinWsChannel::Match(
                 pairs
                     .into_iter()
                     .map(TryInto::try_into)
                     .collect::<Result<_, _>>()?
             )),
-            BinanceWsChannel::BookTicker(_) => Ok(BinanceWsChannel::BookTicker(
+            KucoinWsChannel::Ticker(_) => Ok(KucoinWsChannel::Ticker(
                 pairs
                     .into_iter()
                     .map(TryInto::try_into)
@@ -59,34 +65,34 @@ impl BinanceWsChannel {
 
     pub fn count_entries(&self) -> usize {
         match self {
-            BinanceWsChannel::Trade(vals) => vals.len(),
-            BinanceWsChannel::BookTicker(vals) => vals.len()
+            KucoinWsChannel::Match(vals) => vals.len(),
+            KucoinWsChannel::Ticker(vals) => vals.len()
         }
     }
 }
 
-impl Display for BinanceWsChannel {
+impl Display for KucoinWsChannel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BinanceWsChannel::Trade(_) => write!(f, "trade"),
-            BinanceWsChannel::BookTicker(_) => write!(f, "bookTicker")
+            KucoinWsChannel::Match(_) => write!(f, "match"),
+            KucoinWsChannel::Ticker(_) => write!(f, "ticker")
         }
     }
 }
 
-impl TryFrom<String> for BinanceWsChannel {
+impl TryFrom<String> for KucoinWsChannel {
     type Error = eyre::Report;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
-            "trade" => Ok(Self::Trade(Vec::new())),
-            "bookticker" => Ok(Self::BookTicker(Vec::new())),
+            "match" => Ok(Self::Match(Vec::new())),
+            "ticker" => Ok(Self::Ticker(Vec::new())),
             _ => Err(eyre::ErrReport::msg(format!("channel is not valid: {value}")))
         }
     }
 }
 
-impl TryFrom<NormalizedWsChannels> for BinanceWsChannel {
+impl TryFrom<NormalizedWsChannels> for KucoinWsChannel {
     type Error = eyre::ErrReport;
 
     fn try_from(value: NormalizedWsChannels) -> Result<Self, Self::Error> {
@@ -97,7 +103,7 @@ impl TryFrom<NormalizedWsChannels> for BinanceWsChannel {
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<_>, Self::Error>>()?;
 
-                Ok(BinanceWsChannel::Trade(norm_pairs))
+                Ok(KucoinWsChannel::Match(norm_pairs))
             }
             NormalizedWsChannels::Quotes(pairs) => {
                 let norm_pairs = pairs
@@ -105,32 +111,32 @@ impl TryFrom<NormalizedWsChannels> for BinanceWsChannel {
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<_>, Self::Error>>()?;
 
-                Ok(BinanceWsChannel::BookTicker(norm_pairs))
+                Ok(KucoinWsChannel::Ticker(norm_pairs))
             }
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub enum BinanceWsChannelKind {
-    Trade,
-    BookTicker
+pub enum KucoinWsChannelKind {
+    Match,
+    Ticker
 }
 
-impl Display for BinanceWsChannelKind {
+impl Display for KucoinWsChannelKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BinanceWsChannelKind::Trade => write!(f, "trade"),
-            BinanceWsChannelKind::BookTicker => write!(f, "bookTicker")
+            KucoinWsChannelKind::Match => write!(f, "match"),
+            KucoinWsChannelKind::Ticker => write!(f, "ticker")
         }
     }
 }
 
-impl From<&BinanceWsChannel> for BinanceWsChannelKind {
-    fn from(value: &BinanceWsChannel) -> Self {
+impl From<&KucoinWsChannel> for KucoinWsChannelKind {
+    fn from(value: &KucoinWsChannel) -> Self {
         match value {
-            BinanceWsChannel::Trade(_) => BinanceWsChannelKind::Trade,
-            BinanceWsChannel::BookTicker(_) => BinanceWsChannelKind::BookTicker
+            KucoinWsChannel::Match(_) => KucoinWsChannelKind::Match,
+            KucoinWsChannel::Ticker(_) => KucoinWsChannelKind::Ticker
         }
     }
 }

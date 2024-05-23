@@ -5,11 +5,8 @@ use utils::*;
 #[cfg(test)]
 mod coinbase_tests {
     use cex_exchanges::{
-        coinbase::ws::CoinbaseWsChannelKind,
-        exchanges::{
-            coinbase::ws::{CoinbaseWsBuilder, CoinbaseWsChannel},
-            normalized::types::RawTradingPair
-        },
+        coinbase::ws::channels::{CoinbaseWsChannel, CoinbaseWsChannelKind},
+        exchanges::{coinbase::ws::CoinbaseWsBuilder, normalized::types::RawTradingPair},
         normalized::ws::{NormalizedExchangeBuilder, NormalizedWsChannelKinds},
         CexExchange
     };
@@ -96,7 +93,7 @@ mod coinbase_tests {
                 .collect::<Vec<_>>()
         );
 
-        normalized_mutlithreaded_util(builder, 10000, 1).await;
+        normalized_mutlithreaded_util(builder, 10000).await;
     }
 }
 
@@ -104,12 +101,9 @@ mod coinbase_tests {
 #[cfg(test)]
 mod okex_tests {
     use cex_exchanges::{
-        exchanges::{
-            normalized::types::RawTradingPair,
-            okex::ws::{OkexWsBuilder, OkexWsChannel}
-        },
+        exchanges::{normalized::types::RawTradingPair, okex::ws::OkexWsBuilder},
         normalized::ws::{NormalizedExchangeBuilder, NormalizedWsChannelKinds},
-        okex::ws::OkexWsChannelKind,
+        okex::ws::channels::{OkexWsChannel, OkexWsChannelKind},
         CexExchange
     };
     use serial_test::serial;
@@ -194,7 +188,7 @@ mod okex_tests {
                 .collect::<Vec<_>>()
         );
 
-        normalized_mutlithreaded_util(builder, 10000, 1).await;
+        normalized_mutlithreaded_util(builder, 10000).await;
     }
 }
 
@@ -202,11 +196,8 @@ mod okex_tests {
 #[cfg(test)]
 mod binance_tests {
     use cex_exchanges::{
-        binance::ws::BinanceWsChannelKind,
-        exchanges::{
-            binance::ws::{BinanceWsBuilder, BinanceWsChannel},
-            normalized::types::RawTradingPair
-        }
+        binance::ws::channels::{BinanceWsChannel, BinanceWsChannelKind},
+        exchanges::{binance::ws::BinanceWsBuilder, normalized::types::RawTradingPair}
     };
     use serial_test::serial;
 
@@ -280,11 +271,8 @@ mod binance_tests {
 #[cfg(test)]
 mod kucoin_tests {
     use cex_exchanges::{
-        exchanges::{
-            kucoin::ws::{KucoinWsBuilder, KucoinWsChannel},
-            normalized::types::RawTradingPair
-        },
-        kucoin::ws::KucoinWsChannelKind
+        exchanges::{kucoin::ws::KucoinWsBuilder, normalized::types::RawTradingPair},
+        kucoin::ws::channels::{KucoinWsChannel, KucoinWsChannelKind}
     };
     use serial_test::serial;
 
@@ -356,11 +344,8 @@ mod kucoin_tests {
 #[cfg(test)]
 mod bybit_tests {
     use cex_exchanges::{
-        bybit::ws::BybitWsChannelKind,
-        exchanges::{
-            bybit::ws::{BybitWsBuilder, BybitWsChannel},
-            normalized::types::RawTradingPair
-        }
+        bybit::ws::channels::{BybitWsChannel, BybitWsChannelKind},
+        exchanges::{bybit::ws::BybitWsBuilder, normalized::types::RawTradingPair}
     };
     use serial_test::serial;
 

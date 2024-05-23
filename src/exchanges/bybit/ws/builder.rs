@@ -1,4 +1,7 @@
-use super::{BybitSubscription, BybitWsChannel, BybitWsChannelKind};
+use super::{
+    channels::{BybitWsChannel, BybitWsChannelKind},
+    BybitSubscription
+};
 use crate::{
     bybit::{Bybit, BybitTradingType},
     clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},

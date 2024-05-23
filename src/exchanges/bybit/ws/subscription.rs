@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use serde::Serialize;
 
-use super::{BybitWsChannel, BybitWsChannelKind};
+use super::channels::{BybitWsChannel, BybitWsChannelKind};
 use crate::bybit::BybitTradingPair;
 
 #[derive(Debug, Default, Clone, Serialize)]
@@ -19,6 +19,12 @@ impl BybitSubscription {
     pub fn add_channel(&mut self, channel: BybitWsChannel) {
         let new: Vec<BybitSubscriptionInner> = channel.into();
         self.args.extend(new);
+    }
+
+    pub fn remove_pair(&mut self, pair: &BybitTradingPair) -> bool {
+        self.args.retain(|p| &p.trading_pair != pair);
+
+        self.args.is_empty()
     }
 }
 

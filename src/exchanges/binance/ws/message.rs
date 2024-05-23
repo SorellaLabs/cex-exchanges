@@ -2,7 +2,7 @@ use eyre::Ok;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{book_ticker::BinanceBookTicker, trades::BinanceTrade};
+use super::channels::{BinanceBookTicker, BinanceTrade};
 use crate::{clients::ws::CriticalWsMessage, exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 
 #[serde_with::serde_as]

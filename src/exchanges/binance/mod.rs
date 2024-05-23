@@ -19,7 +19,7 @@ use self::{
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
     exchanges::Exchange,
-    normalized::rest_api::NormalizedRestApiRequest,
+    normalized::{rest_api::NormalizedRestApiRequest, types::NormalizedTradingPair},
     CexExchange
 };
 
@@ -96,6 +96,11 @@ impl Exchange for Binance {
     type WsMessage = BinanceWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Binance;
+
+    fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
+        let pair = bad_pair.try_into().unwrap();
+        self.subscription.remove_pair(&pair)
+    }
 
     async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError> {
         let (mut ws, _) = tokio_tungstenite::connect_async(WSS_URL).await?;

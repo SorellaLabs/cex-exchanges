@@ -1,4 +1,7 @@
-use super::{BinanceSubscription, BinanceWsChannel, BinanceWsChannelKind};
+use super::{
+    channels::{BinanceWsChannel, BinanceWsChannelKind},
+    BinanceSubscription
+};
 use crate::{
     binance::Binance,
     clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},

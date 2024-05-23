@@ -1,6 +1,8 @@
-use std::{collections::HashSet, fmt::Display};
+mod tickers;
+pub use tickers::*;
 
-use serde::Serialize;
+mod trades;
+pub use trades::*;
 
 use crate::{
     exchanges::{
@@ -60,7 +62,7 @@ impl OkexWsChannel {
     }
 }
 
-impl Display for OkexWsChannel {
+impl std::fmt::Display for OkexWsChannel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             OkexWsChannel::TradesAll(_) => write!(f, "trades-all"),
@@ -112,7 +114,7 @@ pub enum OkexWsChannelKind {
     BookTicker
 }
 
-impl Display for OkexWsChannelKind {
+impl std::fmt::Display for OkexWsChannelKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             OkexWsChannelKind::TradesAll => write!(f, "trades-all"),
@@ -127,76 +129,5 @@ impl From<&OkexWsChannel> for OkexWsChannelKind {
             OkexWsChannel::TradesAll(_) => OkexWsChannelKind::TradesAll,
             OkexWsChannel::BookTicker(_) => OkexWsChannelKind::BookTicker
         }
-    }
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct OkexSubscription {
-    op:   String,
-    args: Vec<OkexSubscriptionInner>
-}
-
-impl OkexSubscription {
-    pub(crate) fn needs_business_ws(&self) -> bool {
-        self.args.iter().any(|arg| arg.channel == "trades-all")
-    }
-
-    pub fn remove_pair(&mut self, pair: &OkexTradingPair) -> bool {
-        let pre = self.args.len();
-        self.args.retain(|p| &p.trading_pair != pair);
-
-        self.args.is_empty()
-    }
-}
-
-impl Default for OkexSubscription {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl OkexSubscription {
-    pub fn new() -> Self {
-        OkexSubscription { op: "subscribe".to_string(), args: Vec::new() }
-    }
-
-    pub fn new_single_channel(channel: OkexWsChannel) -> Self {
-        OkexSubscription { op: "subscribe".to_string(), args: channel.into() }
-    }
-
-    pub(crate) fn add_channel(&mut self, channel: OkexWsChannel) {
-        let new: Vec<_> = channel.into();
-        self.args.extend(new);
-    }
-}
-
-#[derive(Debug, Clone, Serialize)]
-struct OkexSubscriptionInner {
-    channel:      String,
-    #[serde(rename = "instId")]
-    trading_pair: OkexTradingPair
-}
-
-impl From<OkexWsChannel> for Vec<OkexSubscriptionInner> {
-    fn from(val: OkexWsChannel) -> Self {
-        let name = val.to_string();
-
-        let all_pairs: Vec<_> = match val {
-            OkexWsChannel::TradesAll(pairs) => pairs
-                .into_iter()
-                .collect::<HashSet<_>>()
-                .into_iter()
-                .collect(),
-            OkexWsChannel::BookTicker(pairs) => pairs
-                .into_iter()
-                .collect::<HashSet<_>>()
-                .into_iter()
-                .collect()
-        };
-
-        all_pairs
-            .into_iter()
-            .map(|p| OkexSubscriptionInner { channel: name.clone(), trading_pair: p })
-            .collect()
     }
 }

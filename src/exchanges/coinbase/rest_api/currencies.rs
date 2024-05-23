@@ -6,7 +6,7 @@ use serde_with::{serde_as, DisplayFromStr};
 use crate::{
     normalized::{
         rest_api::NormalizedRestApiDataTypes,
-        types::{Blockchain, BlockchainCurrency, NormalizedCurrency}
+        types::{BlockchainCurrency, NormalizedCurrency}
     },
     CexExchange
 };

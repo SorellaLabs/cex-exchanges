@@ -1,8 +1,14 @@
+mod orderbook;
+pub use orderbook::*;
+
+mod trades;
 use std::fmt::Display;
+
+pub use trades::*;
 
 use crate::{
     exchanges::{
-        kucoin::pairs::KucoinTradingPair,
+        bybit::pairs::BybitTradingPair,
         normalized::{
             types::{NormalizedTradingPair, RawTradingPair},
             ws::NormalizedWsChannels
@@ -12,21 +18,21 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum KucoinWsChannel {
-    Match(Vec<KucoinTradingPair>),
-    Ticker(Vec<KucoinTradingPair>)
+pub enum BybitWsChannel {
+    Trade(Vec<BybitTradingPair>),
+    OrderbookL1(Vec<BybitTradingPair>)
 }
 
-impl KucoinWsChannel {
+impl BybitWsChannel {
     /// builds trade channel from a vec of raw trading pairs
     /// return an error if the symbol is incorrectly formatted
-    pub fn new_match(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+    pub fn new_trade(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
-            .map(|pair| pair.get_normalized_pair(CexExchange::Kucoin))
+            .map(|pair| pair.get_normalized_pair(CexExchange::Bybit))
             .collect();
 
-        Self::new_from_normalized(normalized, KucoinWsChannel::Match(Vec::new()))
+        Self::new_from_normalized(normalized, BybitWsChannel::Trade(Vec::new()))
     }
 
     /// builds the book ticker channel from a vec of raw trading
@@ -34,21 +40,21 @@ impl KucoinWsChannel {
     pub fn new_ticker(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
-            .map(|pair| pair.get_normalized_pair(CexExchange::Kucoin))
+            .map(|pair| pair.get_normalized_pair(CexExchange::Bybit))
             .collect();
 
-        Self::new_from_normalized(normalized, KucoinWsChannel::Ticker(Vec::new()))
+        Self::new_from_normalized(normalized, BybitWsChannel::OrderbookL1(Vec::new()))
     }
 
-    pub(crate) fn new_from_normalized(pairs: Vec<NormalizedTradingPair>, kind: KucoinWsChannel) -> eyre::Result<Self> {
+    pub(crate) fn new_from_normalized(pairs: Vec<NormalizedTradingPair>, kind: BybitWsChannel) -> eyre::Result<Self> {
         match kind {
-            KucoinWsChannel::Match(_) => Ok(KucoinWsChannel::Match(
+            BybitWsChannel::Trade(_) => Ok(BybitWsChannel::Trade(
                 pairs
                     .into_iter()
                     .map(TryInto::try_into)
                     .collect::<Result<_, _>>()?
             )),
-            KucoinWsChannel::Ticker(_) => Ok(KucoinWsChannel::Ticker(
+            BybitWsChannel::OrderbookL1(_) => Ok(BybitWsChannel::OrderbookL1(
                 pairs
                     .into_iter()
                     .map(TryInto::try_into)
@@ -59,34 +65,34 @@ impl KucoinWsChannel {
 
     pub fn count_entries(&self) -> usize {
         match self {
-            KucoinWsChannel::Match(vals) => vals.len(),
-            KucoinWsChannel::Ticker(vals) => vals.len()
+            BybitWsChannel::Trade(vals) => vals.len(),
+            BybitWsChannel::OrderbookL1(vals) => vals.len()
         }
     }
 }
 
-impl Display for KucoinWsChannel {
+impl Display for BybitWsChannel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            KucoinWsChannel::Match(_) => write!(f, "match"),
-            KucoinWsChannel::Ticker(_) => write!(f, "ticker")
+            BybitWsChannel::Trade(_) => write!(f, "trade"),
+            BybitWsChannel::OrderbookL1(_) => write!(f, "orderbook.1")
         }
     }
 }
 
-impl TryFrom<String> for KucoinWsChannel {
+impl TryFrom<String> for BybitWsChannel {
     type Error = eyre::Report;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
-            "match" => Ok(Self::Match(Vec::new())),
-            "ticker" => Ok(Self::Ticker(Vec::new())),
+            "trade" | "publicTrade" => Ok(Self::Trade(Vec::new())),
+            "orderbook.1" | "quote" => Ok(Self::OrderbookL1(Vec::new())),
             _ => Err(eyre::ErrReport::msg(format!("channel is not valid: {value}")))
         }
     }
 }
 
-impl TryFrom<NormalizedWsChannels> for KucoinWsChannel {
+impl TryFrom<NormalizedWsChannels> for BybitWsChannel {
     type Error = eyre::ErrReport;
 
     fn try_from(value: NormalizedWsChannels) -> Result<Self, Self::Error> {
@@ -97,40 +103,41 @@ impl TryFrom<NormalizedWsChannels> for KucoinWsChannel {
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<_>, Self::Error>>()?;
 
-                Ok(KucoinWsChannel::Match(norm_pairs))
+                Ok(BybitWsChannel::Trade(norm_pairs))
             }
+
             NormalizedWsChannels::Quotes(pairs) => {
                 let norm_pairs = pairs
                     .into_iter()
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<_>, Self::Error>>()?;
 
-                Ok(KucoinWsChannel::Ticker(norm_pairs))
+                Ok(BybitWsChannel::OrderbookL1(norm_pairs))
             }
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub enum KucoinWsChannelKind {
-    Match,
-    Ticker
+pub enum BybitWsChannelKind {
+    Trade,
+    OrderbookL1
 }
 
-impl Display for KucoinWsChannelKind {
+impl Display for BybitWsChannelKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            KucoinWsChannelKind::Match => write!(f, "match"),
-            KucoinWsChannelKind::Ticker => write!(f, "ticker")
+            BybitWsChannelKind::Trade => write!(f, "publicTrade"),
+            BybitWsChannelKind::OrderbookL1 => write!(f, "orderbook.1")
         }
     }
 }
 
-impl From<&KucoinWsChannel> for KucoinWsChannelKind {
-    fn from(value: &KucoinWsChannel) -> Self {
+impl From<&BybitWsChannel> for BybitWsChannelKind {
+    fn from(value: &BybitWsChannel) -> Self {
         match value {
-            KucoinWsChannel::Match(_) => KucoinWsChannelKind::Match,
-            KucoinWsChannel::Ticker(_) => KucoinWsChannelKind::Ticker
+            BybitWsChannel::Trade(_) => BybitWsChannelKind::Trade,
+            BybitWsChannel::OrderbookL1(_) => BybitWsChannelKind::OrderbookL1
         }
     }
 }

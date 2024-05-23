@@ -1,4 +1,7 @@
-use super::{CoinbaseSubscription, CoinbaseWsChannel, CoinbaseWsChannelKind};
+use super::{
+    channels::{CoinbaseWsChannel, CoinbaseWsChannelKind},
+    CoinbaseSubscription
+};
 use crate::{
     clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},
     coinbase::Coinbase,
@@ -148,8 +151,8 @@ impl CoinbaseWsBuilder {
 #[cfg(test)]
 mod tests {
 
+    use super::*;
     use crate::{
-        coinbase::ws::{CoinbaseWsBuilder, CoinbaseWsChannel},
         exchanges::{
             coinbase::CoinbaseTradingPair,
             normalized::{types::RawTradingPair, ws::NormalizedWsChannelKinds}

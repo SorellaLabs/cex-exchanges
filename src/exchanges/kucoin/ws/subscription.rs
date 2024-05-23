@@ -1,11 +1,9 @@
-#![allow(unused)]
-
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use super::{KucoinWsChannel, KucoinWsChannelKind};
+use super::channels::{KucoinWsChannel, KucoinWsChannelKind};
 use crate::kucoin::KucoinTradingPair;
 
 #[derive(Debug, Default, Clone)]
@@ -62,6 +60,12 @@ impl KucoinSubscription {
     pub fn add_pairs(&mut self, pairs: Vec<KucoinTradingPair>) {
         self.topic.trading_pairs.extend(pairs)
     }
+
+    pub fn remove_pair(&mut self, pair: &KucoinTradingPair) -> bool {
+        self.topic.trading_pairs.retain(|p| p != pair);
+
+        self.topic.trading_pairs.is_empty()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -93,6 +97,7 @@ impl Serialize for KucoinSubscriptionInner {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct KucoinWsEndpointResponse {
+    #[allow(unused)]
     code: String,
     data: KucoinWsEndpointDataResponse
 }
@@ -122,10 +127,13 @@ struct KucoinWsEndpointDataResponse {
 #[derive(Debug, Clone, Deserialize)]
 struct KucoinWsEndpointInstanceServersResponse {
     endpoint:      String,
+    #[allow(unused)]
     encrypt:       bool,
     protocol:      String,
+    #[allow(unused)]
     #[serde(rename = "pingInterval")]
     ping_interval: u64,
+    #[allow(unused)]
     #[serde(rename = "pingTimeout")]
     ping_timeout:  u64
 }

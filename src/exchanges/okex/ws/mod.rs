@@ -1,14 +1,10 @@
-mod channels;
-pub use channels::*;
+pub mod channels;
 
 mod message;
 pub use message::*;
 
-mod tickers;
-pub use tickers::*;
-
-mod trades;
-pub use trades::*;
-
 mod builder;
 pub use builder::*;
+
+mod subscription;
+pub use subscription::*;

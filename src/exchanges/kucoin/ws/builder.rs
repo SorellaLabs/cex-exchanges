@@ -1,4 +1,7 @@
-use super::{KucoinMultiSubscription, KucoinWsChannel, KucoinWsChannelKind};
+use super::{
+    channels::{KucoinWsChannel, KucoinWsChannelKind},
+    KucoinMultiSubscription
+};
 use crate::{
     clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},
     kucoin::Kucoin,

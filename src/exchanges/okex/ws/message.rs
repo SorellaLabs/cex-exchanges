@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{tickers::OkexTicker, trades::OkexTrade};
+use super::channels::{OkexTicker, OkexTrade};
 use crate::{clients::ws::CriticalWsMessage, exchanges::normalized::ws::NormalizedWsDataTypes, okex::OkexTradingPair, CexExchange};
 
 #[serde_with::serde_as]

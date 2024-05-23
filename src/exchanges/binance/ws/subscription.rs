@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use serde::Serialize;
 
-use super::{BinanceWsChannel, BinanceWsChannelKind};
+use super::channels::{BinanceWsChannel, BinanceWsChannelKind};
 use crate::binance::BinanceTradingPair;
 
 #[derive(Debug, Clone, Serialize)]
@@ -20,6 +20,12 @@ impl BinanceSubscription {
     pub fn add_channel(&mut self, channel: BinanceWsChannel) {
         let new: Vec<BinanceSubscriptionInner> = channel.into();
         self.params.extend(new);
+    }
+
+    pub fn remove_pair(&mut self, pair: &BinanceTradingPair) -> bool {
+        self.params.retain(|p| &p.trading_pair != pair);
+
+        self.params.is_empty()
     }
 }
 

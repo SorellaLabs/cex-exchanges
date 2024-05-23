@@ -1,12 +1,10 @@
 mod builder;
 pub use builder::*;
-mod channels;
-pub use channels::*;
-mod matches;
-pub use matches::*;
+
+pub mod channels;
+
 mod message;
 pub use message::*;
-mod status;
-pub use status::*;
-mod ticker;
-pub use ticker::*;
+
+mod subscription;
+pub use subscription::*;
