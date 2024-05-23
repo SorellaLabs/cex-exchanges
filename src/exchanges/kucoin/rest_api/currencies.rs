@@ -36,7 +36,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for KucoinAllCurrencies {
                 let this_currencies = self
                     .currencies
                     .iter()
-                    .map(|sym| (&sym.name, &sym.currency))
+                    .map(|sym| (&sym.full_name, &sym.currency))
                     .collect::<HashSet<_>>();
 
                 let others_currencies = other_currs.clone();
