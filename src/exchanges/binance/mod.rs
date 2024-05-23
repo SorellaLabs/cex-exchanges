@@ -48,6 +48,7 @@ impl Binance {
         let pos_symbols = instruments
             .instruments
             .into_iter()
+            .filter(|instr| &instr.status == "TRADING")
             .flat_map(|instr| vec![instr.base_asset, instr.quote_asset])
             .collect::<HashSet<_>>();
 
