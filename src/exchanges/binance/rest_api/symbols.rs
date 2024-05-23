@@ -45,8 +45,9 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllSymbols {
                 let mut normalized_out = 0;
 
                 others_currencies.iter().for_each(|curr| {
+                    let contains_name = this_currencies.contains(&(&curr.name, &curr.symbol));
                     curr.blockchains.iter().for_each(|blk| {
-                        if blk.wrapped_currency.is_some() && blk.is_wrapped && curr.blockchains.len() == 1 {
+                        if blk.wrapped_currency.is_some() && blk.is_wrapped && !contains_name {
                             normalized_out += 1;
                         }
                     })
