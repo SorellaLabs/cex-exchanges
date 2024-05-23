@@ -50,43 +50,7 @@ impl OkexAllSymbols {
 impl PartialEq<NormalizedRestApiDataTypes> for OkexAllSymbols {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match other {
-            NormalizedRestApiDataTypes::AllCurrencies(other_currs) => {
-                let this_currencies = self
-                    .currencies
-                    .iter()
-                    .map(|sym| (&sym.name, &sym.symbol))
-                    .collect::<HashSet<_>>();
-
-                let others_currencies = other_currs.clone();
-                let mut normalized_out = 0;
-
-                others_currencies.iter().for_each(|curr| {
-                    if curr.blockchains.iter().any(|blk| {
-                        if let Some(blk_curr) = blk.wrapped_currency.as_ref() {
-                            blk.is_wrapped && blk_curr.name.to_lowercase().contains("wrapped") && blk_curr.symbol.to_lowercase().starts_with("w")
-                        } else {
-                            false
-                        }
-                    }) {
-                        normalized_out += 1;
-                    }
-                });
-
-                println!("A: {}", self.currencies.len());
-                println!("B: {}", others_currencies.len());
-                println!("C: {}", normalized_out);
-                println!(
-                    "D: {}",
-                    others_currencies
-                        .iter()
-                        .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
-                );
-
-                self.currencies.len() == others_currencies.len() + normalized_out
-                    && others_currencies
-                        .iter()
-                        .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
-            }
+            NormalizedRestApiDataTypes::AllCurrencies(other_currs) => other_currs == &other.clone().take_currencies().unwrap(),
             _ => false
         }
     }
