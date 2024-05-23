@@ -1,6 +1,6 @@
 mod pairs;
 
-use std::collections::HashSet;
+use std::collections::{hash_map::Entry, HashMap, HashSet};
 
 use futures::SinkExt;
 pub use pairs::*;
@@ -53,7 +53,7 @@ impl Binance {
             .collect::<HashSet<_>>();
 
         let mut query_start = 1;
-        let mut symbols = Vec::new();
+        let mut symbols = HashMap::new();
         let mut err_count = 5;
         loop {
             let symbols_iteration = match Self::symbols_iteration(web_client, query_start).await {
@@ -73,16 +73,24 @@ impl Binance {
                 }
             };
 
-            symbols.extend(
-                symbols_iteration
-                    .into_iter()
-                    .filter(|sym| pos_symbols.contains(&sym.symbol))
-            );
+            symbols_iteration
+                .into_iter()
+                .filter(|sym| pos_symbols.contains(&sym.symbol))
+                .for_each(|sym| {
+                    symbols
+                        .entry((sym.name.clone(), sym.symbol.clone()))
+                        .and_modify(|curr_sym: &mut BinanceSymbol| {
+                            if sym.cmc_rank > curr_sym.cmc_rank {
+                                *curr_sym = sym.clone();
+                            }
+                        })
+                        .or_insert(sym.clone());
+                });
 
             query_start += 5000;
         }
 
-        Ok(BinanceAllSymbols { symbols })
+        Ok(BinanceAllSymbols { symbols: symbols.values().cloned().collect::<Vec<_>>() })
     }
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
