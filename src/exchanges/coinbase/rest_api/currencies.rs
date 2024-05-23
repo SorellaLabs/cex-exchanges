@@ -19,10 +19,12 @@ pub struct CoinbaseAllCurrencies {
 
 impl CoinbaseAllCurrencies {
     pub fn normalize(self) -> Vec<NormalizedCurrency> {
-        self.currencies
-            .into_iter()
-            .map(CoinbaseCurrency::normalize)
-            .collect()
+        NormalizedCurrency::handle_unwrapped(
+            self.currencies
+                .into_iter()
+                .map(CoinbaseCurrency::normalize)
+                .collect()
+        )
     }
 }
 
