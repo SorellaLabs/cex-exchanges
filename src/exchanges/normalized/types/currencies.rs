@@ -40,6 +40,7 @@ impl NormalizedCurrency {
             .filter_map(|curr| {
                 if curr.blockchains.iter().any(|b| b.is_wrapped) {
                     let (new, removed) = curr.combine_wrapped_assets(&unwrapped);
+                    println!("EASILY: {:?}", new);
                     removed.map(|r| {
                         to_remove.push(r);
                         to_remove.push(curr.clone());
