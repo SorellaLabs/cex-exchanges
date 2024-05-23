@@ -40,7 +40,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for BybitAllCoins {
                 others_currencies.iter().for_each(|curr| {
                     if curr.blockchains.iter().any(|blk| {
                         if let Some(blk_curr) = blk.wrapped_currency.as_ref() {
-                            blk.is_wrapped && blk_curr.name.to_lowercase().contains("wrapped") && blk_curr.symbol.to_lowercase().starts_with("w")
+                            blk.is_wrapped && blk_curr.name.to_lowercase().contains("wrapped") && blk_curr.symbol.to_lowercase().starts_with('w')
                         } else {
                             false
                         }
@@ -70,7 +70,7 @@ pub struct BybitCoin {
 impl BybitCoin {
     fn parse_blockchain(&self) -> Option<BlockchainCurrency> {
         self.platform.as_ref().map(|pl| {
-            let is_wrapped = if self.name.to_lowercase().contains("wrapped") && self.symbol.to_lowercase().starts_with("w") { true } else { false };
+            let is_wrapped = self.name.to_lowercase().contains("wrapped") && self.symbol.to_lowercase().starts_with('w');
             BlockchainCurrency { blockchain: pl.name.parse().unwrap(), address: Some(pl.token_address.clone()), is_wrapped, wrapped_currency: None }
         })
     }
@@ -82,7 +82,7 @@ impl BybitCoin {
             symbol: self.symbol,
             name: self.name,
             display_name: None,
-            status: format!("binance proxy"),
+            status: "binance proxy".to_string(),
             blockchains
         }
     }
@@ -115,12 +115,10 @@ impl PartialEq<NormalizedCurrency> for BybitCoin {
             && other.symbol == self.symbol
             && other.name == self.name
             && other.display_name.is_none()
-            && other.status == format!("binance proxy")
+            && other.status == *"binance proxy"
             && other
                 .blockchains
-                .iter()
-                .cloned()
-                .filter(|blk| blk.wrapped_currency.is_none())
+                .iter().filter(|&blk| blk.wrapped_currency.is_none()).cloned()
                 .collect::<Vec<_>>()
                 == blockchains;
 

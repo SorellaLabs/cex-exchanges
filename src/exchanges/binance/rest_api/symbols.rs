@@ -47,7 +47,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceAllSymbols {
                 others_currencies.iter().for_each(|curr| {
                     if curr.blockchains.iter().any(|blk| {
                         if let Some(blk_curr) = blk.wrapped_currency.as_ref() {
-                            blk.is_wrapped && blk_curr.name.to_lowercase().contains("wrapped") && blk_curr.symbol.to_lowercase().starts_with("w")
+                            blk.is_wrapped && blk_curr.name.to_lowercase().contains("wrapped") && blk_curr.symbol.to_lowercase().starts_with('w')
                         } else {
                             false
                         }
@@ -123,7 +123,7 @@ pub struct BinanceSymbol {
 impl BinanceSymbol {
     fn parse_blockchain(&self) -> Option<BlockchainCurrency> {
         if let Some(pl) = self.platform.as_ref() {
-            let is_wrapped = if self.name.to_lowercase().contains("wrapped") && self.symbol.to_lowercase().starts_with("w") { true } else { false };
+            let is_wrapped = self.name.to_lowercase().contains("wrapped") && self.symbol.to_lowercase().starts_with('w');
             Some(BlockchainCurrency {
                 blockchain: pl.name.parse().unwrap(),
                 address: Some(pl.token_address.clone()),
@@ -192,9 +192,7 @@ impl PartialEq<NormalizedCurrency> for BinanceSymbol {
             && other.status == format!("last updated: {:?}", self.last_updated)
             && other
                 .blockchains
-                .iter()
-                .cloned()
-                .filter(|blk| blk.wrapped_currency.is_none())
+                .iter().filter(|&blk| blk.wrapped_currency.is_none()).cloned()
                 .collect::<Vec<_>>()
                 == blockchains;
 

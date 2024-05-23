@@ -45,7 +45,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for KucoinAllCurrencies {
                 others_currencies.iter().for_each(|curr| {
                     if curr.blockchains.iter().any(|blk| {
                         if let Some(blk_curr) = blk.wrapped_currency.as_ref() {
-                            blk.is_wrapped && blk_curr.name.to_lowercase().contains("wrapped") && blk_curr.symbol.to_lowercase().starts_with("w")
+                            blk.is_wrapped && blk_curr.name.to_lowercase().contains("wrapped") && blk_curr.symbol.to_lowercase().starts_with('w')
                         } else {
                             false
                         }
@@ -86,7 +86,7 @@ pub struct KucoinCurrency {
 impl KucoinCurrency {
     pub fn normalize(self) -> NormalizedCurrency {
         let is_wrapped =
-            if self.full_name.to_lowercase().contains("wrapped") && self.currency.to_lowercase().starts_with("w") { true } else { false };
+            self.full_name.to_lowercase().contains("wrapped") && self.currency.to_lowercase().starts_with('w');
         NormalizedCurrency {
             exchange:     CexExchange::Kucoin,
             symbol:       self.currency,
@@ -137,11 +137,11 @@ pub struct KucoinCurrencyChain {
     pub confirms:            Option<u64>
 }
 
-impl Into<BlockchainCurrency> for KucoinCurrencyChain {
-    fn into(self) -> BlockchainCurrency {
+impl From<KucoinCurrencyChain> for BlockchainCurrency {
+    fn from(val: KucoinCurrencyChain) -> Self {
         BlockchainCurrency {
-            blockchain:       self.chain_name.parse().unwrap(),
-            address:          self.contract_address,
+            blockchain:       val.chain_name.parse().unwrap(),
+            address:          val.contract_address,
             is_wrapped:       false,
             wrapped_currency: None
         }

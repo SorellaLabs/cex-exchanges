@@ -55,7 +55,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllCurrencies {
                 others_currencies.iter().for_each(|curr| {
                     if curr.blockchains.iter().any(|blk| {
                         if let Some(blk_curr) = blk.wrapped_currency.as_ref() {
-                            blk.is_wrapped && blk_curr.name.to_lowercase().contains("wrapped") && blk_curr.symbol.to_lowercase().starts_with("w")
+                            blk.is_wrapped && blk_curr.name.to_lowercase().contains("wrapped") && blk_curr.symbol.to_lowercase().starts_with('w')
                         } else {
                             false
                         }
@@ -94,7 +94,7 @@ pub struct CoinbaseCurrency {
 
 impl CoinbaseCurrency {
     fn parse_blockchains(&self) -> Vec<BlockchainCurrency> {
-        let is_wrapped = if self.name.to_lowercase().contains("wrapped") && self.id.to_lowercase().starts_with("w") { true } else { false };
+        let is_wrapped = self.name.to_lowercase().contains("wrapped") && self.id.to_lowercase().starts_with('w');
 
         self.supported_networks
             .iter()
@@ -169,9 +169,7 @@ impl PartialEq<NormalizedCurrency> for CoinbaseCurrency {
             && other.status == self.status
             && other
                 .blockchains
-                .iter()
-                .cloned()
-                .filter(|blk| blk.wrapped_currency.is_none())
+                .iter().filter(|&blk| blk.wrapped_currency.is_none()).cloned()
                 .collect::<Vec<_>>()
                 == blockchains;
 

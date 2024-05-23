@@ -81,17 +81,17 @@ impl NormalizedTradingPair {
             if let Some(del) = self.delimiter() {
                 ed = ed.replace(&format!("{base}{del}{quote}"), "");
                 if ed.is_empty() {
-                    return None
+                    None
                 } else {
                     ed = ed[1..].to_string();
-                    return Some(ed)
+                    Some(ed)
                 }
             } else {
                 ed = ed.replace(&format!("{base}{quote}"), "");
                 if ed.is_empty() {
-                    return None
+                    None
                 } else {
-                    return Some(ed)
+                    Some(ed)
                 }
             }
         } else {

@@ -20,9 +20,7 @@ impl NormalizedCurrency {
         println!("0 - {}", normalized.len());
 
         let unwrapped = normalized
-            .iter()
-            .cloned()
-            .filter(|curr| !curr.blockchains.iter().any(|b| b.is_wrapped))
+            .iter().filter(|&curr| !curr.blockchains.iter().any(|b| b.is_wrapped)).cloned()
             .collect::<Vec<_>>();
 
         println!("1 - {}", unwrapped.len());

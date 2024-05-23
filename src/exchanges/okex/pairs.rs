@@ -29,10 +29,9 @@ impl OkexTradingPair {
     pub fn parse_for_bad_pair(value: &str) -> Option<Self> {
         let Some(st) = value.split("instId:").nth(1) else { return None };
 
-        st.split(" ")
+        st.split(' ')
             .next()
-            .map(|s| Self::try_from(s).ok())
-            .flatten()
+            .and_then(|s| Self::try_from(s).ok())
     }
 }
 
