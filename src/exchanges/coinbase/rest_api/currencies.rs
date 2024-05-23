@@ -60,6 +60,16 @@ impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllCurrencies {
                     })
                 });
 
+                println!("A: {}", self.currencies.len());
+                println!("B: {}", others_currencies.len());
+                println!("C: {}", normalized_out);
+                println!(
+                    "D: {}",
+                    others_currencies
+                        .iter()
+                        .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
+                );
+
                 self.currencies.len() == others_currencies.len() + normalized_out
                     && others_currencies
                         .iter()
