@@ -48,7 +48,9 @@ impl PartialEq<NormalizedRestApiDataTypes> for BybitAllCoins {
                         is_some
                     }) && curr.blockchains.len() == 1);
 
-                    println!("vvv: {:?}", curr);
+                    if !vvv {
+                        println!("vvv: {:?}", curr);
+                    }
 
                     vvv
                 });
