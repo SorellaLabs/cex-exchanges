@@ -80,7 +80,7 @@ impl Binance {
                     symbols
                         .entry((sym.name.clone(), sym.symbol.clone()))
                         .and_modify(|curr_sym: &mut BinanceSymbol| {
-                            if sym.cmc_rank > curr_sym.cmc_rank {
+                            if sym.cmc_rank < curr_sym.cmc_rank {
                                 *curr_sym = sym.clone();
                             }
                         })
