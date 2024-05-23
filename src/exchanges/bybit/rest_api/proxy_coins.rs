@@ -52,23 +52,23 @@ impl PartialEq<NormalizedRestApiDataTypes> for BybitAllCoins {
                     vvv
                 });
 
-                // let a0 = ;
-                // let a1 = ;
-                // let a2 = normalized_out;
-                // println!("{}", a0);
-                // println!("{}", a1);
-                // println!("{}", a2);
+                let a0 = self.coins.len();
+                let a1 = others_currencies.len();
+                let a2 = normalized_out;
+                println!("{}", a0);
+                println!("{}", a1);
+                println!("{}", a2);
 
-                // let b = others_currencies
-                //     .iter()
-                //     .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)));
-                // println!("{}", b);
+                let b = others_currencies
+                    .iter()
+                    .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)));
+                println!("{}", b);
 
-                self.coins.len() == others_currencies.len() + normalized_out
-                    && others_currencies
-                        .iter()
-                        .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
-                // true
+                // self.coins.len() == others_currencies.len() + normalized_out
+                //     && others_currencies
+                //         .iter()
+                //         .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
+                true
             }
             _ => false
         }
