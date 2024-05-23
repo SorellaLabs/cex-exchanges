@@ -50,10 +50,9 @@ impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllCurrencies {
                     .collect::<HashSet<_>>();
 
                 let others_currencies = other_currs.clone();
-                let mut normalized_out: i64 = 0;
+                let mut normalized_out = 0;
 
                 others_currencies.iter().for_each(|curr| {
-                    let contains_name = this_currencies.contains(&(&curr.name, &curr.symbol));
                     curr.blockchains.iter().for_each(|blk| {
                         if let Some(blk_curr) = blk.wrapped_currency.as_ref() {
                             if this_currencies.contains(&(&blk_curr.symbol, &blk_curr.name)) {
@@ -76,7 +75,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllCurrencies {
                         .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
                 );
 
-                self.currencies.len() == (others_currencies.len() as i64 + normalized_out) as usize
+                self.currencies.len() == others_currencies.len() + normalized_out
                     && others_currencies
                         .iter()
                         .all(|curr| this_currencies.contains(&(&curr.name, &curr.symbol)))
