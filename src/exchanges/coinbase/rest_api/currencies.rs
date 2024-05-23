@@ -55,7 +55,9 @@ impl PartialEq<NormalizedRestApiDataTypes> for CoinbaseAllCurrencies {
                 others_currencies.iter().for_each(|curr| {
                     curr.blockchains.iter().for_each(|blk| {
                         if let Some(blk_curr) = blk.wrapped_currency.as_ref() {
-                            if this_currencies.contains(&(&blk_curr.symbol, &blk_curr.name)) {
+                            if blk.is_wrapped
+                                && !(blk_curr.name.to_lowercase().contains("wrapped") && blk_curr.symbol.to_lowercase().starts_with("w"))
+                            {
                                 normalized_out += 1;
                             }
                         }
