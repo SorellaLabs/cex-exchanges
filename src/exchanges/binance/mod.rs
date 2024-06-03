@@ -1,6 +1,6 @@
 mod pairs;
 
-use std::collections::{hash_map::Entry, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 use futures::SinkExt;
 pub use pairs::*;
