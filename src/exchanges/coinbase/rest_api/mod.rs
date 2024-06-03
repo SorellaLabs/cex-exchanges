@@ -1,8 +1,5 @@
-mod currencies;
-pub use currencies::*;
+mod endpoints;
+pub use endpoints::*;
 
 mod response;
 pub use response::*;
-
-mod products;
-pub use products::*;

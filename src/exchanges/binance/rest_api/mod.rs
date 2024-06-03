@@ -1,8 +1,5 @@
-mod symbols;
-pub use symbols::*;
-
-mod instruments;
-pub use instruments::*;
+mod endpoints;
+pub use endpoints::*;
 
 mod response;
 pub use response::*;
