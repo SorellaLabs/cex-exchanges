@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 use super::NormalizedTradingPair;
-use crate::exchanges::CexExchange;
+use crate::{exchanges::CexExchange, ExchangeFilter};
 
 #[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
 pub struct NormalizedInstrument {
@@ -84,5 +84,50 @@ impl Display for NormalizedTradingType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = format!("{:?}", self).to_uppercase();
         write!(f, "{}", s)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub enum InstrumentFilter {
+    Pair(String),
+    BaseOrQuote(String),
+    BaseAndQuote { base: String, quote: String },
+    BaseOnly(String),
+    QuoteOnly(String),
+    Active
+}
+
+impl InstrumentFilter {
+    pub fn pair(v: String) -> Self {
+        Self::Pair(v)
+    }
+
+    pub fn base_or_quote(v: String) -> Self {
+        Self::BaseOrQuote(v)
+    }
+
+    pub fn base_and_quote(b: String, q: String) -> Self {
+        Self::BaseAndQuote { base: b, quote: q }
+    }
+
+    pub fn base_only(v: String) -> Self {
+        Self::BaseOnly(v)
+    }
+
+    pub fn quote_only(v: String) -> Self {
+        Self::QuoteOnly(v)
+    }
+}
+
+impl ExchangeFilter<NormalizedInstrument> for InstrumentFilter {
+    fn matches(&self, val: &NormalizedInstrument) -> bool {
+        match self {
+            InstrumentFilter::Pair(v) => &val.trading_pair.make_pair() == v,
+            InstrumentFilter::BaseOrQuote(v) => &val.base_asset_symbol == v || &val.quote_asset_symbol == v,
+            InstrumentFilter::BaseAndQuote { base, quote } => &val.base_asset_symbol == base && &val.quote_asset_symbol == quote,
+            InstrumentFilter::BaseOnly(v) => &val.base_asset_symbol == v,
+            InstrumentFilter::QuoteOnly(v) => &val.quote_asset_symbol == v,
+            InstrumentFilter::Active => val.active
+        }
     }
 }

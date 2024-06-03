@@ -1,5 +1,8 @@
 pub mod normalized;
 
+mod filter;
+pub use filter::*;
+
 #[cfg(feature = "non-us")]
 pub mod binance;
 
@@ -151,7 +154,17 @@ impl CexExchange {
         Ok(res)
     }
 
-    pub async fn get_all_currencies(self) -> Result<Vec<NormalizedCurrency>, RestApiError> {
+    /// gets the normalized currencies from the different exchange endpoints
+    /// ex: BNB, ETH, BTC
+    ///
+    /// if calling without a filter:
+    /// ```
+    /// CexExchange::Okex.get_all_currencies::<EmptyFilter>(None).await;
+    /// ```
+    pub async fn get_all_currencies<F>(self, filter: Option<F>) -> Result<Vec<NormalizedCurrency>, RestApiError>
+    where
+        F: ExchangeFilter<NormalizedCurrency>
+    {
         let exchange_api = ExchangeApi::new();
         let out = match self {
             #[cfg(feature = "us")]
@@ -159,42 +172,52 @@ impl CexExchange {
                 .all_currencies::<Coinbase>()
                 .await?
                 .normalize()
-                .take_currencies()
+                .take_currencies(filter)
                 .unwrap(),
             #[cfg(feature = "non-us")]
             CexExchange::Binance => exchange_api
                 .all_currencies::<Binance>()
                 .await?
                 .normalize()
-                .take_currencies()
+                .take_currencies(filter)
                 .unwrap(),
             #[cfg(feature = "us")]
             CexExchange::Okex => exchange_api
                 .all_currencies::<Okex>()
                 .await?
                 .normalize()
-                .take_currencies()
+                .take_currencies(filter)
                 .unwrap(),
             #[cfg(feature = "non-us")]
             CexExchange::Kucoin => exchange_api
                 .all_currencies::<Kucoin>()
                 .await?
                 .normalize()
-                .take_currencies()
+                .take_currencies(filter)
                 .unwrap(),
             #[cfg(feature = "non-us")]
             CexExchange::Bybit => exchange_api
                 .all_currencies::<Bybit>()
                 .await?
                 .normalize()
-                .take_currencies()
+                .take_currencies(filter)
                 .unwrap()
         };
 
         Ok(out)
     }
 
-    pub async fn get_all_instruments(self, active_only: bool) -> Result<Vec<NormalizedInstrument>, RestApiError> {
+    /// gets the normalized instruments from the different exchange endpoints
+    /// ex: BNB-ETH, ETHBTC, BTC/USDC
+    ///
+    /// if calling without a filter:
+    /// ```
+    /// CexExchange::Okex.get_all_instruments::<EmptyFilter>(None).await;
+    /// ```
+    pub async fn get_all_instruments<F>(self, filter: Option<F>) -> Result<Vec<NormalizedInstrument>, RestApiError>
+    where
+        F: ExchangeFilter<NormalizedInstrument>
+    {
         let exchange_api = ExchangeApi::new();
         let out = match self {
             #[cfg(feature = "us")]
@@ -202,35 +225,35 @@ impl CexExchange {
                 .all_instruments::<Coinbase>()
                 .await?
                 .normalize()
-                .take_instruments(active_only)
+                .take_instruments(filter)
                 .unwrap(),
             #[cfg(feature = "non-us")]
             CexExchange::Binance => exchange_api
                 .all_instruments::<Binance>()
                 .await?
                 .normalize()
-                .take_instruments(active_only)
+                .take_instruments(filter)
                 .unwrap(),
             #[cfg(feature = "us")]
             CexExchange::Okex => exchange_api
                 .all_instruments::<Okex>()
                 .await?
                 .normalize()
-                .take_instruments(active_only)
+                .take_instruments(filter)
                 .unwrap(),
             #[cfg(feature = "non-us")]
             CexExchange::Kucoin => exchange_api
                 .all_instruments::<Kucoin>()
                 .await?
                 .normalize()
-                .take_instruments(active_only)
+                .take_instruments(filter)
                 .unwrap(),
             #[cfg(feature = "non-us")]
             CexExchange::Bybit => exchange_api
                 .all_instruments::<Bybit>()
                 .await?
                 .normalize()
-                .take_instruments(active_only)
+                .take_instruments(filter)
                 .unwrap()
         };
 

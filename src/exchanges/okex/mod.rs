@@ -22,7 +22,7 @@ use crate::{
         rest_api::NormalizedRestApiRequest,
         types::{NormalizedTradingPair, NormalizedTradingType}
     },
-    CexExchange, Exchange
+    CexExchange, EmptyFilter, Exchange
 };
 
 const WSS_PUBLIC_URL: &str = "wss://ws.okx.com:8443/ws/v5/public";
@@ -47,7 +47,10 @@ impl Okex {
         web_client: &'a reqwest::Client
     ) -> Pin<Box<dyn Future<Output = Result<OkexAllSymbols, RestApiError>> + Send + 'a>> {
         Box::pin(async {
-            let proxy_symbols = self.exch_currency_proxy.get_all_currencies().await?;
+            let proxy_symbols = self
+                .exch_currency_proxy
+                .get_all_currencies::<EmptyFilter>(None)
+                .await?;
             let instruments = self.get_all_instruments(web_client).await?;
 
             Ok(OkexAllSymbols::new(proxy_symbols, instruments.instruments))

@@ -1,7 +1,7 @@
 #[cfg(feature = "us")]
 #[cfg(test)]
 mod coinbase_tests {
-    use cex_exchanges::{clients::rest_api::ExchangeApi, coinbase::Coinbase};
+    use cex_exchanges::{clients::rest_api::ExchangeApi, coinbase::Coinbase, EmptyFilter};
     use serial_test::serial;
 
     #[tokio::test]
@@ -22,7 +22,11 @@ mod coinbase_tests {
             assert!(test_length > 10);
 
             let normalized = all_currencies.clone().normalize();
-            let test_length = normalized.clone().take_currencies().unwrap().len();
+            let test_length = normalized
+                .clone()
+                .take_currencies::<EmptyFilter>(None)
+                .unwrap()
+                .len();
             assert!(test_length > 10);
 
             assert_eq!(all_currencies, normalized);
@@ -48,7 +52,7 @@ mod coinbase_tests {
 #[cfg(feature = "non-us")]
 #[cfg(test)]
 mod binance_tests {
-    use cex_exchanges::{binance::Binance, clients::rest_api::ExchangeApi};
+    use cex_exchanges::{binance::Binance, clients::rest_api::ExchangeApi, normalized::types::InstrumentFilter, EmptyFilter};
     use serial_test::serial;
 
     #[tokio::test]
@@ -65,7 +69,11 @@ mod binance_tests {
             assert!(test_length > 10);
 
             let normalized = all_symbols.clone().normalize();
-            let test_length = normalized.clone().take_currencies().unwrap().len();
+            let test_length = normalized
+                .clone()
+                .take_currencies::<EmptyFilter>(None)
+                .unwrap()
+                .len();
             assert!(test_length > 10);
 
             assert_eq!(all_symbols, normalized);
@@ -92,7 +100,11 @@ mod binance_tests {
             let normalized = all_instruments.clone().normalize();
             println!("{:?}", normalized);
 
-            let test_length = normalized.clone().take_instruments(true).unwrap().len();
+            let test_length = normalized
+                .clone()
+                .take_instruments(Some(InstrumentFilter::Active))
+                .unwrap()
+                .len();
             assert!(test_length > 10);
 
             assert_eq!(all_instruments, normalized);
@@ -103,7 +115,7 @@ mod binance_tests {
 #[cfg(feature = "us")]
 #[cfg(test)]
 mod okex_tests {
-    use cex_exchanges::{clients::rest_api::ExchangeApi, okex::Okex};
+    use cex_exchanges::{clients::rest_api::ExchangeApi, normalized::types::InstrumentFilter, okex::Okex, EmptyFilter};
     use serial_test::serial;
 
     #[tokio::test]
@@ -119,7 +131,11 @@ mod okex_tests {
             assert!(test_length > 10);
 
             let normalized = all_symbols.clone().normalize();
-            let test_length = normalized.clone().take_currencies().unwrap().len();
+            let test_length = normalized
+                .clone()
+                .take_currencies::<EmptyFilter>(None)
+                .unwrap()
+                .len();
             assert!(test_length > 10);
 
             assert_eq!(all_symbols, normalized);
@@ -144,7 +160,11 @@ mod okex_tests {
             assert!(test_length > 10);
 
             let normalized = all_instruments.clone().normalize();
-            let test_length = normalized.clone().take_instruments(false).unwrap().len();
+            let test_length = normalized
+                .clone()
+                .take_instruments(Some(InstrumentFilter::Active))
+                .unwrap()
+                .len();
             assert!(test_length > 10);
         }
     }
@@ -153,7 +173,7 @@ mod okex_tests {
 #[cfg(feature = "non-us")]
 #[cfg(test)]
 mod kucoin_tests {
-    use cex_exchanges::{clients::rest_api::ExchangeApi, kucoin::Kucoin};
+    use cex_exchanges::{clients::rest_api::ExchangeApi, kucoin::Kucoin, normalized::types::InstrumentFilter, EmptyFilter};
     use serial_test::serial;
 
     #[tokio::test]
@@ -174,7 +194,11 @@ mod kucoin_tests {
             assert!(test_length > 10);
 
             let normalized = all_currencies.clone().normalize();
-            let test_length = normalized.clone().take_currencies().unwrap().len();
+            let test_length = normalized
+                .clone()
+                .take_currencies::<EmptyFilter>(None)
+                .unwrap()
+                .len();
             assert!(test_length > 10);
 
             assert_eq!(all_currencies, normalized);
@@ -199,7 +223,11 @@ mod kucoin_tests {
             assert!(test_length > 10);
 
             let normalized = all_symbols.clone().normalize();
-            let test_length = normalized.clone().take_instruments(true).unwrap().len();
+            let test_length = normalized
+                .clone()
+                .take_instruments(Some(InstrumentFilter::Active))
+                .unwrap()
+                .len();
             assert!(test_length > 10);
         }
     }
@@ -208,7 +236,7 @@ mod kucoin_tests {
 #[cfg(feature = "non-us")]
 #[cfg(test)]
 mod bybit_tests {
-    use cex_exchanges::{bybit::Bybit, clients::rest_api::ExchangeApi};
+    use cex_exchanges::{bybit::Bybit, clients::rest_api::ExchangeApi, normalized::types::InstrumentFilter, EmptyFilter};
     use serial_test::serial;
 
     #[tokio::test]
@@ -225,7 +253,11 @@ mod bybit_tests {
             assert!(test_length > 10);
 
             let normalized = all_coins.clone().normalize();
-            let test_length = normalized.clone().take_currencies().unwrap().len();
+            let test_length = normalized
+                .clone()
+                .take_currencies::<EmptyFilter>(None)
+                .unwrap()
+                .len();
             assert!(test_length > 10);
 
             assert_eq!(all_coins, normalized);
@@ -250,7 +282,11 @@ mod bybit_tests {
             assert!(test_length > 10);
 
             let normalized = all_instruments.clone().normalize();
-            let test_length = normalized.clone().take_instruments(true).unwrap().len();
+            let test_length = normalized
+                .clone()
+                .take_instruments(Some(InstrumentFilter::Active))
+                .unwrap()
+                .len();
             assert!(test_length > 10);
         }
     }

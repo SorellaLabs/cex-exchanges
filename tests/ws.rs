@@ -7,8 +7,11 @@ mod coinbase_tests {
     use cex_exchanges::{
         coinbase::ws::channels::{CoinbaseWsChannel, CoinbaseWsChannelKind},
         exchanges::{coinbase::ws::CoinbaseWsBuilder, normalized::types::RawTradingPair},
-        normalized::ws::{NormalizedExchangeBuilder, NormalizedWsChannelKinds},
-        CexExchange
+        normalized::{
+            types::InstrumentFilter,
+            ws::{NormalizedExchangeBuilder, NormalizedWsChannelKinds}
+        },
+        CexExchange, EmptyFilter
     };
     use serial_test::serial;
 
@@ -80,7 +83,7 @@ mod coinbase_tests {
         let channels = vec![NormalizedWsChannelKinds::Trades, NormalizedWsChannelKinds::Quotes];
 
         let normalized_symbols = CexExchange::Coinbase
-            .get_all_instruments(true)
+            .get_all_instruments(Some(InstrumentFilter::Active))
             .await
             .unwrap();
         let mut builder = NormalizedExchangeBuilder::new();
@@ -102,9 +105,12 @@ mod coinbase_tests {
 mod okex_tests {
     use cex_exchanges::{
         exchanges::{normalized::types::RawTradingPair, okex::ws::OkexWsBuilder},
-        normalized::ws::{NormalizedExchangeBuilder, NormalizedWsChannelKinds},
+        normalized::{
+            types::InstrumentFilter,
+            ws::{NormalizedExchangeBuilder, NormalizedWsChannelKinds}
+        },
         okex::ws::channels::{OkexWsChannel, OkexWsChannelKind},
-        CexExchange
+        CexExchange, EmptyFilter
     };
     use serial_test::serial;
 
@@ -177,7 +183,10 @@ mod okex_tests {
     async fn test_multi_all_instruments_multithread_from_normalized() {
         let channels = vec![NormalizedWsChannelKinds::Trades, NormalizedWsChannelKinds::Quotes];
 
-        let normalized_symbols = CexExchange::Okex.get_all_instruments(true).await.unwrap();
+        let normalized_symbols = CexExchange::Okex
+            .get_all_instruments(Some(InstrumentFilter::Active))
+            .await
+            .unwrap();
         let mut builder = NormalizedExchangeBuilder::new();
         builder.add_pairs_all_channels(
             CexExchange::Okex,

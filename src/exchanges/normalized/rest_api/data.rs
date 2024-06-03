@@ -1,6 +1,9 @@
 use serde::Serialize;
 
-use crate::normalized::types::{NormalizedCurrency, NormalizedInstrument};
+use crate::{
+    normalized::types::{NormalizedCurrency, NormalizedInstrument},
+    ExchangeFilter
+};
 
 #[derive(Debug, Clone, Serialize)]
 pub enum NormalizedRestApiDataTypes {
@@ -9,21 +12,31 @@ pub enum NormalizedRestApiDataTypes {
 }
 
 impl NormalizedRestApiDataTypes {
-    pub fn take_currencies(self) -> Option<Vec<NormalizedCurrency>> {
+    pub fn take_currencies<F>(self, filter: Option<F>) -> Option<Vec<NormalizedCurrency>>
+    where
+        F: ExchangeFilter<NormalizedCurrency>
+    {
         match self {
-            NormalizedRestApiDataTypes::AllCurrencies(vals) => Some(vals),
+            NormalizedRestApiDataTypes::AllCurrencies(mut vals) => {
+                if let Some(f) = filter {
+                    f.filter_matches(&mut vals);
+                }
+                Some(vals)
+            }
             _ => None
         }
     }
 
-    pub fn take_instruments(self, active_only: bool) -> Option<Vec<NormalizedInstrument>> {
+    pub fn take_instruments<F>(self, filter: Option<F>) -> Option<Vec<NormalizedInstrument>>
+    where
+        F: ExchangeFilter<NormalizedInstrument>
+    {
         match self {
-            NormalizedRestApiDataTypes::AllInstruments(vals) => {
-                if active_only {
-                    Some(vals.into_iter().filter(|instr| instr.active).collect())
-                } else {
-                    Some(vals)
+            NormalizedRestApiDataTypes::AllInstruments(mut vals) => {
+                if let Some(f) = filter {
+                    f.filter_matches(&mut vals);
                 }
+                Some(vals)
             }
             _ => None
         }

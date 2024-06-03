@@ -3,6 +3,9 @@ use std::{fmt::Display, str::FromStr};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
+use super::NormalizedCurrency;
+use crate::ExchangeFilter;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, PartialOrd, Ord, ValueEnum)]
 pub enum Blockchain {
     Bitcoin,
@@ -171,5 +174,11 @@ impl FromStr for Blockchain {
             "eosc" => Ok(Self::EOSForce),
             _ => Ok(Self::Other(s.to_string()))
         }
+    }
+}
+
+impl ExchangeFilter<NormalizedCurrency> for Blockchain {
+    fn matches(&self, val: &NormalizedCurrency) -> bool {
+        val.has_blockchain(self)
     }
 }

@@ -2,7 +2,12 @@ use super::{
     channels::{OkexWsChannel, OkexWsChannelKind},
     OkexSubscription
 };
-use crate::{clients::ws::MutliWsStreamBuilder, normalized::ws::NormalizedWsChannels, okex::Okex, CexExchange};
+use crate::{
+    clients::ws::MutliWsStreamBuilder,
+    normalized::{types::InstrumentFilter, ws::NormalizedWsChannels},
+    okex::Okex,
+    CexExchange
+};
 
 /// There is a limit of 300 connections per attempt every 5 minutes per IP.
 const MAX_OKEX_STREAMS: usize = 300;
@@ -114,7 +119,10 @@ impl OkexWsBuilder {
     ) -> eyre::Result<Self> {
         let mut this = Self::new(proxy);
 
-        let all_symbols = this.exch_currency_proxy.get_all_instruments(true).await?;
+        let all_symbols = this
+            .exch_currency_proxy
+            .get_all_instruments(Some(InstrumentFilter::Active))
+            .await?;
 
         let rest = all_symbols
             .into_iter()

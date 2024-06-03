@@ -5,7 +5,7 @@ use super::OkexInstrument;
 use crate::{
     exchanges::normalized::types::NormalizedCurrency,
     normalized::{rest_api::NormalizedRestApiDataTypes, types::BlockchainCurrency},
-    CexExchange
+    CexExchange, EmptyFilter
 };
 
 #[serde_as]
@@ -48,7 +48,7 @@ impl OkexAllSymbols {
 impl PartialEq<NormalizedRestApiDataTypes> for OkexAllSymbols {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match other {
-            NormalizedRestApiDataTypes::AllCurrencies(other_currs) => other_currs == &other.clone().take_currencies().unwrap(),
+            NormalizedRestApiDataTypes::AllCurrencies(other_currs) => other_currs == &other.clone().take_currencies::<EmptyFilter>(None).unwrap(),
             _ => false
         }
     }
