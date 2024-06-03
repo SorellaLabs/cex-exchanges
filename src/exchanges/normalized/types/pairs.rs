@@ -171,3 +171,9 @@ impl From<NormalizedTradingPair> for RawTradingPair {
         unreachable!("NormalizedTradingPair must be convertable")
     }
 }
+
+impl PartialEq<&str> for NormalizedTradingPair {
+    fn eq(&self, other: &&str) -> bool {
+        other.to_uppercase() == self.make_pair()
+    }
+}
