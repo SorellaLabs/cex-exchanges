@@ -78,6 +78,11 @@ impl NormalizedCurrency {
             })
             .unwrap_or((self.clone(), None))
     }
+
+    /// checks if the currency is found in a certain blockchain
+    pub fn has_blockchain(&self, chain: &Blockchain) -> bool {
+        self.blockchains.iter().any(|c| &c.blockchain == chain)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
