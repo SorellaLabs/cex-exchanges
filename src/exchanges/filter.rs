@@ -15,15 +15,6 @@ impl<T> ExchangeFilter<T> for EmptyFilter {
     }
 }
 
-pub trait IterExchangeFilter<T>: IntoIterator
-where
-    <Self as IntoIterator>::Item: ExchangeFilter<T>
-{
-    fn matches_all(&self, val: &T) -> bool;
-
-    fn matches_any(&self, val: &T) -> bool;
-}
-
 /// this implementation retains values that match ANY of the filters
 impl<T, D> ExchangeFilter<T> for Vec<D>
 where
