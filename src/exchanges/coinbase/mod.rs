@@ -53,7 +53,6 @@ impl Coinbase {
     }
 }
 
-#[async_trait::async_trait]
 impl Exchange for Coinbase {
     type RestApiResult = CoinbaseRestApiResponse;
     type WsMessage = CoinbaseWsMessage;

@@ -98,7 +98,6 @@ impl Bybit {
     }
 }
 
-#[async_trait::async_trait]
 impl Exchange for Bybit {
     type RestApiResult = BybitRestApiResponse;
     type WsMessage = BybitWsMessage;

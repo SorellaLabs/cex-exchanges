@@ -21,6 +21,7 @@ use std::{
 };
 
 use clap::ValueEnum;
+use futures::Future;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -316,7 +317,6 @@ impl FromStr for CexExchange {
     }
 }
 
-#[async_trait::async_trait]
 pub trait Exchange: Clone + Default + Send {
     const EXCHANGE: CexExchange;
     type WsMessage: CriticalWsMessage + Send;
@@ -324,11 +324,15 @@ pub trait Exchange: Clone + Default + Send {
 
     fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool;
 
-    async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError>;
+    fn make_ws_connection(&self) -> impl Future<Output = Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError>> + Send;
 
-    async fn make_owned_ws_connection(self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError> {
-        self.make_ws_connection().await
+    fn make_owned_ws_connection(self) -> impl Future<Output = Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError>> + Send {
+        async move { Box::pin(self.make_ws_connection()).await }
     }
 
-    async fn rest_api_call(&self, web_client: &reqwest::Client, api_channel: NormalizedRestApiRequest) -> Result<Self::RestApiResult, RestApiError>;
+    fn rest_api_call(
+        &self,
+        web_client: &reqwest::Client,
+        api_channel: NormalizedRestApiRequest
+    ) -> impl Future<Output = Result<Self::RestApiResult, RestApiError>> + Send;
 }

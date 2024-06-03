@@ -55,7 +55,6 @@ impl Kucoin {
     }
 }
 
-#[async_trait::async_trait]
 impl Exchange for Kucoin {
     type RestApiResult = KucoinRestApiResponse;
     type WsMessage = KucoinWsMessage;

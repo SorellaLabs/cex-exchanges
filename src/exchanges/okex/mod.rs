@@ -1,10 +1,12 @@
 mod pairs;
+use std::pin::Pin;
+
 pub use pairs::*;
 
 pub mod rest_api;
 pub mod ws;
 
-use futures::{future::join_all, SinkExt};
+use futures::{future::join_all, Future, SinkExt};
 use serde::Deserialize;
 use strum::IntoEnumIterator;
 use tokio::net::TcpStream;
@@ -40,11 +42,16 @@ impl Okex {
         Self { subscription, exch_currency_proxy }
     }
 
-    pub async fn get_all_symbols(&self, web_client: &reqwest::Client) -> Result<OkexAllSymbols, RestApiError> {
-        let proxy_symbols = self.exch_currency_proxy.get_all_currencies().await?;
-        let instruments = self.get_all_instruments(web_client).await?;
+    pub fn get_all_symbols<'a>(
+        &'a self,
+        web_client: &'a reqwest::Client
+    ) -> Pin<Box<dyn Future<Output = Result<OkexAllSymbols, RestApiError>> + Send + 'a>> {
+        Box::pin(async {
+            let proxy_symbols = self.exch_currency_proxy.get_all_currencies().await?;
+            let instruments = self.get_all_instruments(web_client).await?;
 
-        Ok(OkexAllSymbols::new(proxy_symbols, instruments.instruments))
+            Ok(OkexAllSymbols::new(proxy_symbols, instruments.instruments))
+        })
     }
 
     pub async fn get_all_instruments(&self, web_client: &reqwest::Client) -> Result<OkexAllInstruments, RestApiError> {
@@ -78,7 +85,6 @@ impl Okex {
     }
 }
 
-#[async_trait::async_trait]
 impl Exchange for Okex {
     type RestApiResult = OkexRestApiResponse;
     type WsMessage = OkexWsMessage;

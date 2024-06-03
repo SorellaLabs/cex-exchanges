@@ -103,7 +103,6 @@ impl Binance {
     }
 }
 
-#[async_trait::async_trait]
 impl Exchange for Binance {
     type RestApiResult = BinanceRestApiResponse;
     type WsMessage = BinanceWsMessage;
