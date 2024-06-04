@@ -120,6 +120,7 @@ impl Binance {
         let data = web_client
             .get(&url)
             .header("Accept-Encoding", "gzip, deflate, br, zstd")
+            .header("Content-Type", "application/json")
             .send()
             .await?
             .text()
