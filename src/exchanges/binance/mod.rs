@@ -39,7 +39,7 @@ impl Binance {
     }
 
     pub async fn get_all_instruments(web_client: &reqwest::Client) -> Result<BinanceAllInstruments, RestApiError> {
-        let instruments: BinanceAllInstruments = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?;
+        let instruments: BinanceAllInstruments = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo"), None).await?;
         info!(target: "cex-exchanges::binance", "found {} instruments", instruments.instruments.len());
 
         Ok(instruments)
@@ -109,20 +109,24 @@ impl Binance {
 
     async fn symbols_iteration(web_client: &reqwest::Client, query_start: u64) -> Result<Vec<BinanceSymbol>, RestApiError> {
         let url = format!("{ALL_SYMBOLS_URL}?limit=5000&start={query_start}");
-        let iter_symbols: BinanceAllSymbols = Self::simple_rest_api_request(web_client, url).await?;
+        let iter_symbols: BinanceAllSymbols =
+            Self::simple_rest_api_request(web_client, url, Some(("Accept-Encoding", "gzip, deflate, br, zstd"))).await?;
         Ok(iter_symbols.symbols)
     }
 
-    pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
+    pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String, extra_header: Option<(&str, &str)>) -> Result<T, RestApiError>
     where
         T: for<'de> Deserialize<'de>
     {
-        let response = web_client
+        let mut builder = web_client
             .get(&url)
-            // .header("Accept-Encoding", "gzip, deflate, br, zstd")
-            .header("Content-Type", "application/json")
-            .send()
-            .await?;
+            .header("Content-Type", "application/json");
+
+        if let Some((k, v)) = extra_header {
+            builder = builder.header(k, v);
+        }
+
+        let response = builder.send().await?;
 
         debug!(target: "cex-exchanges::binance", "headers: {:?}", response.headers());
 
