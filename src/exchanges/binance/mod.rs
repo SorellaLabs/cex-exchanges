@@ -117,14 +117,16 @@ impl Binance {
     where
         T: for<'de> Deserialize<'de>
     {
-        let data = web_client
+        let response = web_client
             .get(&url)
             .header("Accept-Encoding", "gzip, deflate, br, zstd")
             .header("Content-Type", "application/json")
             .send()
-            .await?
-            .text()
             .await?;
+
+        debug!(target: "cex-exchanges::binance", "headers: {:?}", response.headers());
+
+        let data = response.text().await?;
 
         let parsed = serde_json::from_str(&data);
         match parsed {
