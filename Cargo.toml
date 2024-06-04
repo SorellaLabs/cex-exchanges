@@ -21,7 +21,7 @@ serde_with = "3.7"
 
 
 # web
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "gzip"] }
 
 # error handling
 eyre = "0.6.5"

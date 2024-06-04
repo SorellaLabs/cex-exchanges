@@ -8,6 +8,7 @@ pub use pairs::*;
 pub mod rest_api;
 pub mod ws;
 
+use reqwest::header;
 use serde::Deserialize;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
@@ -110,11 +111,15 @@ impl Binance {
     async fn symbols_iteration(web_client: &reqwest::Client, query_start: u64) -> Result<Vec<BinanceSymbol>, RestApiError> {
         let url = format!("{ALL_SYMBOLS_URL}?limit=5000&start={query_start}");
         let iter_symbols: BinanceAllSymbols =
-            Self::simple_rest_api_request(web_client, url, Some(("Accept-Encoding", "gzip, deflate, br, zstd"))).await?;
+            Self::simple_rest_api_request(web_client, url, Some((header::CONTENT_ENCODING, "gzip, deflate, br".parse().unwrap()))).await?;
         Ok(iter_symbols.symbols)
     }
 
-    pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String, extra_header: Option<(&str, &str)>) -> Result<T, RestApiError>
+    pub async fn simple_rest_api_request<T>(
+        web_client: &reqwest::Client,
+        url: String,
+        extra_header: Option<(header::HeaderName, header::HeaderValue)>
+    ) -> Result<T, RestApiError>
     where
         T: for<'de> Deserialize<'de>
     {
@@ -127,8 +132,6 @@ impl Binance {
         }
 
         let response = builder.send().await?;
-
-        debug!(target: "cex-exchanges::binance", "headers: {:?}", response.headers());
 
         let data = response.text().await?;
 
