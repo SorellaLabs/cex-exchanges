@@ -110,10 +110,15 @@ pub struct WrappedCurrency {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "non-us")]
+    const TEST_EXCHANGE: CexExchange = CexExchange::Binance;
+    #[cfg(not(feature = "non-us"))]
+    const TEST_EXCHANGE: CexExchange = CexExchange::Coinbase;
+
     #[test]
     fn test_combine_wrapped_assets_basic() {
         let wrapped = NormalizedCurrency {
-            exchange:     CexExchange::Binance,
+            exchange:     TEST_EXCHANGE,
             symbol:       "WETH".to_string(),
             name:         "Wrapped Ethereum".to_string(),
             display_name: None,
@@ -127,7 +132,7 @@ mod tests {
         };
 
         let unwrapped = NormalizedCurrency {
-            exchange:     CexExchange::Binance,
+            exchange:     TEST_EXCHANGE,
             symbol:       "ETH".to_string(),
             name:         "Ethereum".to_string(),
             display_name: None,
@@ -139,7 +144,7 @@ mod tests {
         let combined = wrapped.combine_wrapped_assets(&vec![unwrapped]);
 
         let expected = NormalizedCurrency {
-            exchange:     CexExchange::Binance,
+            exchange:     TEST_EXCHANGE,
             symbol:       "ETH".to_string(),
             name:         "Ethereum".to_string(),
             display_name: None,
@@ -158,7 +163,7 @@ mod tests {
     #[test]
     fn test_combine_wrapped_assets_2chain_address() {
         let wrapped = NormalizedCurrency {
-            exchange:     CexExchange::Binance,
+            exchange:     TEST_EXCHANGE,
             symbol:       "WETH".to_string(),
             name:         "Wrapped Ethereum".to_string(),
             display_name: None,
@@ -172,7 +177,7 @@ mod tests {
         };
 
         let unwrapped = NormalizedCurrency {
-            exchange:     CexExchange::Binance,
+            exchange:     TEST_EXCHANGE,
             symbol:       "ETH".to_string(),
             name:         "Ethereum".to_string(),
             display_name: None,
@@ -189,7 +194,7 @@ mod tests {
         let combined = wrapped.combine_wrapped_assets(&vec![unwrapped]);
 
         let expected = NormalizedCurrency {
-            exchange:     CexExchange::Binance,
+            exchange:     TEST_EXCHANGE,
             symbol:       "ETH".to_string(),
             name:         "Ethereum".to_string(),
             display_name: None,
@@ -216,7 +221,7 @@ mod tests {
     #[test]
     fn test_deduplicate_vec_self() {
         let wrapped = NormalizedCurrency {
-            exchange:     CexExchange::Binance,
+            exchange:     TEST_EXCHANGE,
             symbol:       "WETH".to_string(),
             name:         "Wrapped Ethereum".to_string(),
             display_name: None,
@@ -230,7 +235,7 @@ mod tests {
         };
 
         let unwrapped = NormalizedCurrency {
-            exchange:     CexExchange::Binance,
+            exchange:     TEST_EXCHANGE,
             symbol:       "ETH".to_string(),
             name:         "Ethereum".to_string(),
             display_name: None,
@@ -246,7 +251,7 @@ mod tests {
         let combined = NormalizedCurrency::handle_unwrapped(vec![wrapped.clone(), unwrapped.clone()]);
 
         let expected = NormalizedCurrency {
-            exchange:     CexExchange::Binance,
+            exchange:     TEST_EXCHANGE,
             symbol:       "ETH".to_string(),
             name:         "Ethereum".to_string(),
             display_name: None,

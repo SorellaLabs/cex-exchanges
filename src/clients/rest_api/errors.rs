@@ -9,6 +9,7 @@ pub enum RestApiError {
 }
 
 impl RestApiError {
+    #[allow(unused)]
     pub(crate) fn is_gateway_timeout(&self) -> bool {
         match self {
             Self::ReqwestError(err) => {
