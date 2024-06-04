@@ -38,8 +38,15 @@ impl Binance {
         Self { subscription }
     }
 
-    pub async fn get_all_symbols(web_client: &reqwest::Client) -> Result<BinanceAllSymbols, RestApiError> {
+    pub async fn get_all_instruments(web_client: &reqwest::Client) -> Result<BinanceAllInstruments, RestApiError> {
         let instruments: BinanceAllInstruments = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?;
+        info!(target: "cex-exchanges::binance", "found {} instruments", instruments.instruments.len());
+
+        Ok(instruments)
+    }
+
+    pub async fn get_all_symbols(web_client: &reqwest::Client) -> Result<BinanceAllSymbols, RestApiError> {
+        let instruments: BinanceAllInstruments = Self::get_all_instruments(web_client).await?;
         debug!(target: "cex-exchanges::binance", "got {} instruments to filter symbols", instruments.instruments.len());
 
         let pos_symbols = instruments
@@ -100,14 +107,6 @@ impl Binance {
         Ok(BinanceAllSymbols { symbols: symbols.values().cloned().collect::<Vec<_>>() })
     }
 
-    pub async fn get_all_instruments(web_client: &reqwest::Client) -> Result<BinanceAllInstruments, RestApiError> {
-        let instruments: BinanceAllInstruments = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?;
-
-        info!(target: "cex-exchanges::binance", "found {} instruments", instruments.instruments.len());
-
-        Ok(instruments)
-    }
-
     async fn symbols_iteration(web_client: &reqwest::Client, query_start: u64) -> Result<Vec<BinanceSymbol>, RestApiError> {
         let url = format!("{ALL_SYMBOLS_URL}?limit=5000&start={query_start}");
         let iter_symbols: BinanceAllSymbols = Self::simple_rest_api_request(web_client, url).await?;
@@ -119,7 +118,9 @@ impl Binance {
         T: for<'de> Deserialize<'de>
     {
         let data = web_client.get(&url).send().await?.text().await?;
-        debug!(target: "cex-exchanges::binance", "api request text: {}", data[..1000].to_string());
+
+        let e = if data.len() > 1000 { data[..1000].to_string() } else { data };
+        debug!(target: "cex-exchanges::binance", "api request text: {e}");
 
         Ok(serde_json::from_str(&data)?)
     }
