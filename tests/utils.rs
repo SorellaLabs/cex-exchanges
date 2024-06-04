@@ -87,7 +87,7 @@ pub async fn normalized_mutlithreaded_util(builder: NormalizedExchangeBuilder, i
         .build_all_multithreaded(tokio::runtime::Handle::current(), 1, Some(10), Some(25))
         .unwrap()
         .unwrap();
-    info!(target: "cex-exchanges::tests::ws", "connected stream");
+    info!(target: "cex-exchanges::tests::ws", "connected stream"); //
 
     let mut i = 0;
     while let Some(val) = rx.next().await {
