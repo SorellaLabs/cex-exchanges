@@ -119,7 +119,7 @@ impl Binance {
     {
         let response = web_client
             .get(&url)
-            .header("Accept-Encoding", "gzip, deflate, br, zstd")
+            // .header("Accept-Encoding", "gzip, deflate, br, zstd")
             .header("Content-Type", "application/json")
             .send()
             .await?;
