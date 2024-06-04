@@ -109,8 +109,10 @@ impl Binance {
     where
         T: for<'de> Deserialize<'de>
     {
-        let data = web_client.get(&url).send().await?.json().await?;
-        Ok(data)
+        let data = web_client.get(&url).send().await?.text().await?;
+        trace!(target: "cex-exchanges::binance", "api request text: {}", data);
+
+        Ok(serde_json::from_str(&data)?)
     }
 }
 

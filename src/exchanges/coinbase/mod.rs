@@ -7,9 +7,11 @@ pub mod rest_api;
 pub mod ws;
 
 use futures::SinkExt;
+use rest_api::{CoinbaseAllCurrencies, CoinbaseAllProducts};
 use serde::Deserialize;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
+use tracing::{error, info};
 
 use self::{
     rest_api::CoinbaseRestApiResponse,
@@ -32,6 +34,18 @@ pub struct Coinbase {
 impl Coinbase {
     pub fn new_ws_subscription(subscription: CoinbaseSubscription) -> Self {
         Self { subscription }
+    }
+
+    pub async fn get_all_currencies(web_client: &reqwest::Client) -> Result<CoinbaseAllCurrencies, RestApiError> {
+        let currencies: CoinbaseAllCurrencies = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/currencies")).await?;
+        info!(target: "cex-exchanges::coinbase", "found {} currencies", currencies.currencies.len());
+        Ok(currencies)
+    }
+
+    pub async fn get_all_products(web_client: &reqwest::Client) -> Result<CoinbaseAllProducts, RestApiError> {
+        let products: CoinbaseAllProducts = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/products")).await?;
+        info!(target: "cex-exchanges::coinbase", "found {} products", products.products.len());
+        Ok(products)
     }
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
@@ -79,14 +93,18 @@ impl Exchange for Coinbase {
         api_channel: NormalizedRestApiRequest
     ) -> Result<CoinbaseRestApiResponse, RestApiError> {
         let api_response = match api_channel {
-            NormalizedRestApiRequest::AllCurrencies => {
-                CoinbaseRestApiResponse::Currencies(Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/currencies")).await?)
-            }
-            NormalizedRestApiRequest::AllInstruments => {
-                CoinbaseRestApiResponse::Products(Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/products")).await?)
-            }
+            NormalizedRestApiRequest::AllCurrencies => Self::get_all_currencies(web_client)
+                .await
+                .map(|v| CoinbaseRestApiResponse::Currencies(v)),
+            NormalizedRestApiRequest::AllInstruments => Self::get_all_products(web_client)
+                .await
+                .map(|v| CoinbaseRestApiResponse::Products(v))
         };
 
-        Ok(api_response)
+        if let Err(e) = api_response.as_ref() {
+            error!(target: "cex-exchanges::coinbase", "error calling rest-api endpoint {:?} -- {:?}", api_channel, e);
+        }
+
+        api_response
     }
 }
