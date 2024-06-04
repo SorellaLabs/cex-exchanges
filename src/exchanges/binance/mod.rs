@@ -131,20 +131,9 @@ impl Binance {
             builder = builder.header(k, v);
         }
 
-        let response = builder.send().await?;
+        let data = builder.send().await?.json().await?;
 
-        let data = response.text().await?;
-
-        let parsed = serde_json::from_str(&data);
-        match parsed {
-            Ok(json) => Ok(json),
-            Err(error) => {
-                // Log the first 1000 characters of the data to see what's wrong
-                let sample = data.chars().take(1000).collect::<String>();
-                error!(target: "cex-exchanges::binance", "Failed to parse JSON: {error}, Data sample: {sample}");
-                Err(error.into()) // Convert the error to your custom error type
-            }
-        }
+        Ok(data)
     }
 }
 
