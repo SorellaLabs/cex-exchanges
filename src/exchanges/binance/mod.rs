@@ -117,7 +117,13 @@ impl Binance {
     where
         T: for<'de> Deserialize<'de>
     {
-        let data = web_client.get(&url).send().await?.text().await?;
+        let data = web_client
+            .get(&url)
+            .header("Accept-Encoding", "gzip, deflate, br, zstd")
+            .send()
+            .await?
+            .text()
+            .await?;
 
         let e = if data.len() > 1000 { data[..1000].to_string() } else { data.clone() };
         debug!(target: "cex-exchanges::binance", "api request text: {e}");
