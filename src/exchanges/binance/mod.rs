@@ -38,13 +38,7 @@ impl Binance {
         Self { subscription }
     }
 
-    async fn symbols_iteration(web_client: &reqwest::Client, query_start: u64) -> Result<Vec<BinanceSymbol>, RestApiError> {
-        let url = format!("{ALL_SYMBOLS_URL}?limit=5000&start={query_start}");
-        let iter_symbols: BinanceAllSymbols = Self::simple_rest_api_request(web_client, url).await?;
-        Ok(iter_symbols.symbols)
-    }
-
-    async fn get_all_symbols(web_client: &reqwest::Client) -> Result<BinanceAllSymbols, RestApiError> {
+    pub async fn get_all_symbols(web_client: &reqwest::Client) -> Result<BinanceAllSymbols, RestApiError> {
         let instruments: BinanceAllInstruments = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?;
         debug!(target: "cex-exchanges::binance", "got {} instruments to filter symbols", instruments.instruments.len());
 
@@ -103,6 +97,12 @@ impl Binance {
         info!(target: "cex-exchanges::binance", "found {} valid symbols", symbols.values().len());
 
         Ok(BinanceAllSymbols { symbols: symbols.values().cloned().collect::<Vec<_>>() })
+    }
+
+    async fn symbols_iteration(web_client: &reqwest::Client, query_start: u64) -> Result<Vec<BinanceSymbol>, RestApiError> {
+        let url = format!("{ALL_SYMBOLS_URL}?limit=5000&start={query_start}");
+        let iter_symbols: BinanceAllSymbols = Self::simple_rest_api_request(web_client, url).await?;
+        Ok(iter_symbols.symbols)
     }
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
