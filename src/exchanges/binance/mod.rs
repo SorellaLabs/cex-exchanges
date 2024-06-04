@@ -119,7 +119,7 @@ impl Binance {
     {
         let data = web_client.get(&url).send().await?.text().await?;
 
-        let e = if data.len() > 1000 { data[..1000].to_string() } else { data };
+        let e = if data.len() > 1000 { data[..1000].to_string() } else { data.clone() };
         debug!(target: "cex-exchanges::binance", "api request text: {e}");
 
         Ok(serde_json::from_str(&data)?)
