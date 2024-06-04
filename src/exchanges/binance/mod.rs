@@ -126,10 +126,16 @@ impl Binance {
             .text()
             .await?;
 
-        let e = if data.len() > 1000 { data[..1000].to_string() } else { data.clone() };
-        debug!(target: "cex-exchanges::binance", "api request text: {e}");
-
-        Ok(serde_json::from_str(&data)?)
+        let parsed = serde_json::from_str(&data);
+        match parsed {
+            Ok(json) => Ok(json),
+            Err(error) => {
+                // Log the first 1000 characters of the data to see what's wrong
+                let sample = data.chars().take(1000).collect::<String>();
+                error!(target: "cex-exchanges::binance", "Failed to parse JSON: {error}, Data sample: {sample}");
+                Err(error.into()) // Convert the error to your custom error type
+            }
+        }
     }
 }
 
