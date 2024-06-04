@@ -138,8 +138,8 @@ impl PartialEq<NormalizedCurrency> for BybitCoin {
             });
 
         if !equals {
-            println!("\n\nSELF: {:?}\n", self);
-            println!("NORMALIZED: {:?}\n\n", other);
+            warn!(target: "cex-exchanges::bybit", "bybit currency: {:?}", self);
+            warn!(target: "cex-exchanges::bybit", "normalized currency: {:?}", other);
         }
 
         equals

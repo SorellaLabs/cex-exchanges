@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+use tracing::warn;
 
 use crate::{binance::BinanceTradingPair, normalized::types::NormalizedQuote, CexExchange};
 
@@ -54,8 +55,8 @@ impl PartialEq<NormalizedQuote> for BinanceBookTicker {
             && other.quote_id == Some(self.orderbook_update_id.to_string());
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::binance", "binance book ticker: {:?}", self);
+            warn!(target: "cex-exchanges::binance", "normalized quote: {:?}", other);
         }
 
         equals

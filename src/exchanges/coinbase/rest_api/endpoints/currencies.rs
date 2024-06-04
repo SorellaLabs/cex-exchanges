@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+use tracing::warn;
 
 use crate::{
     normalized::{
@@ -169,13 +170,15 @@ impl PartialEq<NormalizedCurrency> for CoinbaseCurrency {
             && other.status == self.status
             && other
                 .blockchains
-                .iter().filter(|&blk| blk.wrapped_currency.is_none()).cloned()
+                .iter()
+                .filter(|&blk| blk.wrapped_currency.is_none())
+                .cloned()
                 .collect::<Vec<_>>()
                 == blockchains;
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::coinbase", "coinbase currency: {:?}", self);
+            warn!(target: "cex-exchanges::coinbase", "normalized currency: {:?}", other);
         }
 
         equals

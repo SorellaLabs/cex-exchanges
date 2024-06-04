@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr, NoneAsEmptyString};
+use tracing::warn;
 
 use crate::{
     coinbase::CoinbaseTradingPair,
@@ -127,8 +128,8 @@ impl PartialEq<NormalizedInstrument> for CoinbaseProduct {
             && (other.trading_type == NormalizedTradingType::Spot || (other.trading_type == NormalizedTradingType::Margin && self.margin_enabled));
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::coinbase", "coinbase product: {:?}", self);
+            warn!(target: "cex-exchanges::coinbase", "normalized instrument: {:?}", other);
         }
 
         equals

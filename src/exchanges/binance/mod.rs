@@ -11,6 +11,7 @@ pub mod ws;
 use serde::Deserialize;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
+use tracing::{debug, error, info, trace, warn};
 
 use self::{
     rest_api::{BinanceAllInstruments, BinanceAllSymbols, BinanceRestApiResponse, BinanceSymbol},
@@ -45,12 +46,16 @@ impl Binance {
 
     async fn get_all_symbols(web_client: &reqwest::Client) -> Result<BinanceAllSymbols, RestApiError> {
         let instruments: BinanceAllInstruments = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?;
+        debug!(target: "cex-exchanges::binance", "got {} instruments to filter symbols", instruments.instruments.len());
+
         let pos_symbols = instruments
             .instruments
             .into_iter()
             .filter(|instr| &instr.status == "TRADING")
             .flat_map(|instr| vec![instr.base_asset, instr.quote_asset])
             .collect::<HashSet<_>>();
+
+        debug!(target: "cex-exchanges::binance", "got {} symbols from instruments", pos_symbols.len());
 
         let mut query_start = 1;
         let mut symbols = HashMap::new();
@@ -59,17 +64,21 @@ impl Binance {
             let symbols_iteration = match Self::symbols_iteration(web_client, query_start).await {
                 Ok(vals) => {
                     if vals.is_empty() {
+                        trace!(target: "cex-exchanges::binance", "no symbols found in valid call - breaking loop");
                         break
                     }
                     vals
                 }
                 Err(e) => {
-                    err_count -= 1;
-                    println!("error getting symbols - retries remaining: {err_count}");
-                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                    if err_count == 0 {
-                        return Err(e)
+                    if !e.is_gateway_timeout() {
+                        err_count -= 1;
+                        if err_count == 0 {
+                            return Err(e)
+                        }
                     }
+
+                    warn!(target: "cex-exchanges::binance", "error getting symbols, {err_count} retries remaining - {:?}", e);
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                     continue;
                 }
             };
@@ -90,6 +99,8 @@ impl Binance {
 
             query_start += 5000;
         }
+
+        info!(target: "cex-exchanges::binance", "found {} valid symbols", symbols.values().len());
 
         Ok(BinanceAllSymbols { symbols: symbols.values().cloned().collect::<Vec<_>>() })
     }
@@ -129,12 +140,18 @@ impl Exchange for Binance {
         api_channel: NormalizedRestApiRequest
     ) -> Result<BinanceRestApiResponse, RestApiError> {
         let api_response = match api_channel {
-            NormalizedRestApiRequest::AllCurrencies => BinanceRestApiResponse::Symbols(Self::get_all_symbols(web_client).await?),
-            NormalizedRestApiRequest::AllInstruments => {
-                BinanceRestApiResponse::Instruments(Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?)
-            }
+            NormalizedRestApiRequest::AllCurrencies => Self::get_all_symbols(web_client)
+                .await
+                .map(|v| BinanceRestApiResponse::Symbols(v)),
+            NormalizedRestApiRequest::AllInstruments => Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo"))
+                .await
+                .map(|v| BinanceRestApiResponse::Instruments(v))
         };
 
-        Ok(api_response)
+        if let Err(e) = api_response.as_ref() {
+            error!(target: "cex-exchanges::binance", "error calling rest-api endpoint {:?} -- {:?}", api_channel, e);
+        }
+
+        api_response
     }
 }

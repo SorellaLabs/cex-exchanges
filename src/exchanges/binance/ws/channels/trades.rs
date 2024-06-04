@@ -1,6 +1,7 @@
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+use tracing::warn;
 
 use crate::{
     exchanges::{binance::pairs::BinanceTradingPair, normalized::types::NormalizedTrade},
@@ -55,8 +56,8 @@ impl PartialEq<NormalizedTrade> for BinanceTrade {
             && other.trade_id.as_ref().unwrap() == &self.trade_id.to_string();
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::binance", "binance trade: {:?}", self);
+            warn!(target: "cex-exchanges::binance", "normalized trade: {:?}", other);
         }
 
         equals

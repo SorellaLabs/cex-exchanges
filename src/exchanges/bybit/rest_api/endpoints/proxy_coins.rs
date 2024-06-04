@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use tracing::warn;
 
 use crate::{
     binance::rest_api::{BinanceSymbol, BinanceSymbolPlatform},
@@ -118,13 +119,15 @@ impl PartialEq<NormalizedCurrency> for BybitCoin {
             && other.status == *"binance proxy"
             && other
                 .blockchains
-                .iter().filter(|&blk| blk.wrapped_currency.is_none()).cloned()
+                .iter()
+                .filter(|&blk| blk.wrapped_currency.is_none())
+                .cloned()
                 .collect::<Vec<_>>()
                 == blockchains;
 
         if !equals {
-            println!("\n\nSELF: {:?}\n", self);
-            println!("NORMALIZED: {:?}\n\n", other);
+            warn!(target: "cex-exchanges::bybit", "bybit coin: {:?}", self);
+            warn!(target: "cex-exchanges::bybit", "normalized currency: {:?}", other);
         }
 
         equals

@@ -1,6 +1,7 @@
 use chrono::{TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr, NoneAsEmptyString};
+use tracing::warn;
 
 use crate::{
     exchanges::normalized::types::NormalizedInstrument,
@@ -189,8 +190,8 @@ impl PartialEq<NormalizedInstrument> for OkexInstrument {
             && other.active == (&self.state == "live");
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::okex", "okex instrument: {:?}", self);
+            warn!(target: "cex-exchanges::okex", "normalized instrument: {:?}", other);
         }
 
         equals

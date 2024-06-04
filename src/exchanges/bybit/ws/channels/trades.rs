@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+use tracing::warn;
 
 use crate::{
     exchanges::{bybit::pairs::BybitTradingPair, normalized::types::NormalizedTrade},
@@ -51,8 +52,8 @@ impl PartialEq<Vec<NormalizedTrade>> for BybitTrade {
         });
 
         if !all_equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::bybit", "bybit trade: {:?}", self);
+            warn!(target: "cex-exchanges::bybit", "normalized trade: {:?}", other);
         }
 
         all_equals

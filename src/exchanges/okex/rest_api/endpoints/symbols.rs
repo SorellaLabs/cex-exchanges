@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use tracing::warn;
 
 use super::OkexInstrument;
 use crate::{
@@ -102,8 +103,8 @@ impl PartialEq<NormalizedCurrency> for OkexCurrency {
             && other.blockchains == self.blockchains;
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::okex", "okex currency: {:?}", self);
+            warn!(target: "cex-exchanges::okex", "normalized currency: {:?}", other);
         }
 
         equals

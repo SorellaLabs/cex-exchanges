@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DefaultOnNull, DisplayFromStr, NoneAsEmptyString};
+use tracing::warn;
 
 use crate::{
     normalized::{
@@ -85,8 +86,7 @@ pub struct KucoinCurrency {
 
 impl KucoinCurrency {
     pub fn normalize(self) -> NormalizedCurrency {
-        let is_wrapped =
-            self.full_name.to_lowercase().contains("wrapped") && self.currency.to_lowercase().starts_with('w');
+        let is_wrapped = self.full_name.to_lowercase().contains("wrapped") && self.currency.to_lowercase().starts_with('w');
         NormalizedCurrency {
             exchange:     CexExchange::Kucoin,
             symbol:       self.currency,
@@ -161,8 +161,8 @@ impl PartialEq<NormalizedCurrency> for KucoinCurrency {
                 .all(|c| other.blockchains.contains(&c.clone().into()));
 
         if !equals {
-            println!("\n\nSELF: {:?}\n", self);
-            println!("NORMALIZED: {:?}\n\n", other);
+            warn!(target: "cex-exchanges::kucoin", "kucoin currency: {:?}", self);
+            warn!(target: "cex-exchanges::kucoin", "normalized currency: {:?}", other);
         }
 
         equals

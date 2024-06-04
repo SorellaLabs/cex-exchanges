@@ -1,12 +1,18 @@
+mod utils;
+use utils::init_test_tracing;
+
 #[cfg(feature = "us")]
 #[cfg(test)]
 mod coinbase_tests {
     use cex_exchanges::{clients::rest_api::ExchangeApi, coinbase::Coinbase, EmptyFilter};
     use serial_test::serial;
 
+    use super::init_test_tracing;
+
     #[tokio::test]
     #[serial]
     async fn test_all_currencies() {
+        init_test_tracing();
         let exchange_api = ExchangeApi::new();
         let all_currencies = exchange_api.all_currencies::<Coinbase>().await;
         all_currencies.as_ref().unwrap();
@@ -36,6 +42,7 @@ mod coinbase_tests {
     #[tokio::test]
     #[serial]
     async fn test_all_instruments() {
+        init_test_tracing();
         let exchange_api = ExchangeApi::new();
         let all_instruments = exchange_api.all_instruments::<Coinbase>().await;
         all_instruments.as_ref().unwrap();
@@ -55,9 +62,12 @@ mod binance_tests {
     use cex_exchanges::{binance::Binance, clients::rest_api::ExchangeApi, normalized::types::InstrumentFilter, EmptyFilter};
     use serial_test::serial;
 
+    use super::init_test_tracing;
+
     #[tokio::test]
     #[serial]
     async fn test_all_currencies() {
+        init_test_tracing();
         let exchange_api = ExchangeApi::new();
         let all_symbols = exchange_api.all_currencies::<Binance>().await;
         all_symbols.as_ref().unwrap();
@@ -83,6 +93,7 @@ mod binance_tests {
     #[tokio::test]
     #[serial]
     async fn test_all_instruments() {
+        init_test_tracing();
         let exchange_api = ExchangeApi::new();
         let all_instruments = exchange_api.all_instruments::<Binance>().await;
         all_instruments.as_ref().unwrap();
@@ -98,7 +109,6 @@ mod binance_tests {
             assert!(test_length > 10);
 
             let normalized = all_instruments.clone().normalize();
-            println!("{:?}", normalized);
 
             let test_length = normalized
                 .clone()
@@ -118,9 +128,12 @@ mod okex_tests {
     use cex_exchanges::{clients::rest_api::ExchangeApi, normalized::types::InstrumentFilter, okex::Okex, EmptyFilter};
     use serial_test::serial;
 
+    use super::init_test_tracing;
+
     #[tokio::test]
     #[serial]
     async fn test_all_currencies() {
+        init_test_tracing();
         let exchange_api = ExchangeApi::new();
         let all_symbols = exchange_api.all_currencies::<Okex>().await;
         assert!(all_symbols.is_ok());
@@ -145,6 +158,7 @@ mod okex_tests {
     #[tokio::test]
     #[serial]
     async fn test_all_instruments() {
+        init_test_tracing();
         let exchange_api = ExchangeApi::new();
         let all_instruments = exchange_api.all_instruments::<Okex>().await;
         all_instruments.as_ref().unwrap();
@@ -176,9 +190,12 @@ mod kucoin_tests {
     use cex_exchanges::{clients::rest_api::ExchangeApi, kucoin::Kucoin, normalized::types::InstrumentFilter, EmptyFilter};
     use serial_test::serial;
 
+    use super::init_test_tracing;
+
     #[tokio::test]
     #[serial]
     async fn test_all_currencies() {
+        init_test_tracing();
         let exchange_api = ExchangeApi::new();
         let all_currencies = exchange_api.all_currencies::<Kucoin>().await;
         all_currencies.as_ref().unwrap();
@@ -208,6 +225,7 @@ mod kucoin_tests {
     #[tokio::test]
     #[serial]
     async fn test_all_instruments() {
+        init_test_tracing();
         let exchange_api = ExchangeApi::new();
         let all_symbols = exchange_api.all_instruments::<Kucoin>().await;
         all_symbols.as_ref().unwrap();
@@ -236,12 +254,16 @@ mod kucoin_tests {
 #[cfg(feature = "non-us")]
 #[cfg(test)]
 mod bybit_tests {
+
     use cex_exchanges::{bybit::Bybit, clients::rest_api::ExchangeApi, normalized::types::InstrumentFilter, EmptyFilter};
     use serial_test::serial;
+
+    use super::init_test_tracing;
 
     #[tokio::test]
     #[serial]
     async fn test_all_currencies() {
+        init_test_tracing();
         let exchange_api = ExchangeApi::new();
         let all_coins = exchange_api.all_currencies::<Bybit>().await;
         all_coins.as_ref().unwrap();
@@ -267,6 +289,7 @@ mod bybit_tests {
     #[tokio::test]
     #[serial]
     async fn test_all_instruments() {
+        init_test_tracing();
         let exchange_api = ExchangeApi::new();
         let all_instruments = exchange_api.all_instruments::<Bybit>().await;
         all_instruments.as_ref().unwrap();

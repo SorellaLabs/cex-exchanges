@@ -260,6 +260,7 @@ impl CexExchange {
         Ok(out)
     }
 
+    /// converts a normalized trading pair back into the native exchange's pair
     pub fn denormalize_raw_trading_pair(self, pair: NormalizedTradingPair) -> eyre::Result<String> {
         let out = match self {
             #[cfg(feature = "us")]

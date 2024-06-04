@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::{serde_as, DisplayFromStr};
+use tracing::warn;
 
 use crate::{
     binance::{BinanceTradingPair, BinanceTradingType},
@@ -157,8 +158,8 @@ impl PartialEq<NormalizedInstrument> for BinanceInstrument {
             && other.futures_expiry.is_none();
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::binance", "binance instrument: {:?}", self);
+            warn!(target: "cex-exchanges::binance", "normalized instrument: {:?}", other);
         }
 
         equals

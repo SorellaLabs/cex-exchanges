@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use tracing::warn;
 
 use crate::{bybit::BybitTradingPair, normalized::types::NormalizedQuote, CexExchange};
 
@@ -63,8 +64,8 @@ impl PartialEq<Vec<NormalizedQuote>> for BybitOrderbook {
         });
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::bybit", "bybit orderbook: {:?}", self);
+            warn!(target: "cex-exchanges::bybit", "normalized quote: {:?}", other);
         }
 
         equals

@@ -16,7 +16,6 @@ pub enum OkexWsMessage {
 
 impl OkexWsMessage {
     fn try_deserialize(value: Value) -> eyre::Result<Self> {
-        // println!("\n\n\n\n\nVALUE: {:?}\n\n\n\n\n", value);
         if let Some(data) = value.get("data") {
             let channel = value
                 .get("arg")

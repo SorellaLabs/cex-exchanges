@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+use tracing::warn;
 
 use crate::{kucoin::KucoinTradingPair, normalized::types::NormalizedQuote, CexExchange};
 
@@ -41,8 +42,8 @@ impl PartialEq<NormalizedQuote> for KucoinTicker {
             && other.quote_id == Some(self.data.sequence.to_string());
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::kucoin", "kucoin ticker: {:?}", self);
+            warn!(target: "cex-exchanges::kucoin", "normalized quote: {:?}", other);
         }
 
         equals

@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+use tracing::warn;
 
 use crate::{
     exchanges::{coinbase::pairs::CoinbaseTradingPair, normalized::types::NormalizedQuote},
@@ -65,8 +66,8 @@ impl PartialEq<NormalizedQuote> for CoinbaseTicker {
             && other.quote_id == self.trade_id.map(|t| t.to_string());
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::coinbase", "coinbase ticker: {:?}", self);
+            warn!(target: "cex-exchanges::coinbase", "normalized quote: {:?}", other);
         }
 
         equals

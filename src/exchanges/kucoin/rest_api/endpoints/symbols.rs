@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+use tracing::warn;
 
 use crate::{
     exchanges::normalized::types::NormalizedInstrument,
@@ -135,8 +136,8 @@ impl PartialEq<NormalizedInstrument> for KucoinSymbol {
             && other.futures_expiry.is_none();
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::kucoin", "kucoin symbol: {:?}", self);
+            warn!(target: "cex-exchanges::kucoin", "normalized instrument: {:?}", other);
         }
 
         equals

@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
+use tracing::warn;
 
 use crate::{
     normalized::{
@@ -192,13 +193,15 @@ impl PartialEq<NormalizedCurrency> for BinanceSymbol {
             && other.status == format!("last updated: {:?}", self.last_updated)
             && other
                 .blockchains
-                .iter().filter(|&blk| blk.wrapped_currency.is_none()).cloned()
+                .iter()
+                .filter(|&blk| blk.wrapped_currency.is_none())
+                .cloned()
                 .collect::<Vec<_>>()
                 == blockchains;
 
         if !equals {
-            println!("\n\nSELF: {:?}\n", self);
-            println!("NORMALIZED: {:?}\n\n", other);
+            warn!(target: "cex-exchanges::binance", "binance currency: {:?}", self);
+            warn!(target: "cex-exchanges::binance", "normalized currency: {:?}", other);
         }
 
         equals

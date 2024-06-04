@@ -7,6 +7,7 @@ use std::{
 use futures::{Future, FutureExt, SinkExt, Stream, StreamExt};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
+use tracing::{error, trace};
 
 use super::WsError;
 use crate::{
@@ -37,7 +38,7 @@ where
     pub async fn connect(&mut self) -> Result<(), WsError> {
         let ws = self.exchange.make_ws_connection().await;
         if let Err(e) = ws {
-            println!("ERROR: {:?}", e);
+            error!(target: "cex-exchanges::live-stream", "error connecting to the {} websocket stream: {:?}", T::EXCHANGE, e);
             return Err(e)
         }
 
@@ -48,7 +49,7 @@ where
     fn handle_incoming(message: Message) -> Result<MessageOrPing<T>, (WsError, String)> {
         match message {
             Message::Text(msg) => {
-                // println!("MSG: {}", msg);
+                trace!(target: "cex-exchanges::live-stream", "recieved new message for the {} stream: {}",T::EXCHANGE, msg);
 
                 let mut des_msg = serde_json::from_str::<T::WsMessage>(&msg).map_err(|e| (e.into(), msg.clone()))?;
                 des_msg.make_critical(msg);

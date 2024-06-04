@@ -37,6 +37,10 @@ strum_macros = "0.25"
 clap = { version = "4", features = ["derive"] }
 rand = "0.8"
 
+# tracing
+tracing = "0.1.0"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "fmt"] }
+
 
 
 [features]

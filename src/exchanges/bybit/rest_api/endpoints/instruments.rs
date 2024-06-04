@@ -4,6 +4,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::{serde_as, DisplayFromStr, NoneAsEmptyString};
+use tracing::warn;
 
 use crate::{
     bybit::{BybitTradingPair, BybitTradingType},
@@ -213,8 +214,8 @@ impl PartialEq<NormalizedInstrument> for BybitInstrumentInner {
             && other.futures_expiry.is_none();
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::bybit", "bybit instrument: {:?}", self);
+            warn!(target: "cex-exchanges::bybit", "normalized instrument: {:?}", other);
         }
 
         equals

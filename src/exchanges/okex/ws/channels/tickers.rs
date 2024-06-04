@@ -1,6 +1,7 @@
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+use tracing::warn;
 
 use crate::{
     exchanges::{normalized::types::NormalizedQuote, okex::pairs::OkexTradingPair},
@@ -93,8 +94,8 @@ impl PartialEq<NormalizedQuote> for OkexTicker {
             && other.quote_id.is_none();
 
         if !equals {
-            println!("SELF: {:?}", self);
-            println!("NORMALIZED: {:?}", other);
+            warn!(target: "cex-exchanges::okex", "okex ticker: {:?}", self);
+            warn!(target: "cex-exchanges::okex", "normalized quote: {:?}", other);
         }
 
         equals
