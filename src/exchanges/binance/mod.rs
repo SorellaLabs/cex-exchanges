@@ -55,6 +55,7 @@ impl Binance {
         let mut symbols = HashMap::new();
         let mut err_count = 5;
         loop {
+            debug!(target: "cex-exchanges::binance", "starting symbols iteration {query_start}");
             let symbols_iteration = match Self::symbols_iteration(web_client, query_start).await {
                 Ok(vals) => {
                     if vals.is_empty() {
@@ -97,6 +98,14 @@ impl Binance {
         info!(target: "cex-exchanges::binance", "found {} valid symbols", symbols.values().len());
 
         Ok(BinanceAllSymbols { symbols: symbols.values().cloned().collect::<Vec<_>>() })
+    }
+
+    pub async fn get_all_instruments(web_client: &reqwest::Client) -> Result<BinanceAllInstruments, RestApiError> {
+        let instruments: BinanceAllInstruments = Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo")).await?;
+
+        info!(target: "cex-exchanges::binance", "found {} instruments", instruments.instruments.len());
+
+        Ok(instruments)
     }
 
     async fn symbols_iteration(web_client: &reqwest::Client, query_start: u64) -> Result<Vec<BinanceSymbol>, RestApiError> {
@@ -145,7 +154,7 @@ impl Exchange for Binance {
             NormalizedRestApiRequest::AllCurrencies => Self::get_all_symbols(web_client)
                 .await
                 .map(|v| BinanceRestApiResponse::Symbols(v)),
-            NormalizedRestApiRequest::AllInstruments => Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/exchangeInfo"))
+            NormalizedRestApiRequest::AllInstruments => Self::get_all_instruments(web_client)
                 .await
                 .map(|v| BinanceRestApiResponse::Instruments(v))
         };
