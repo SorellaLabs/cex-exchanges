@@ -21,8 +21,6 @@ pub struct BinanceTrade {
     pub quantity:              f64,
     #[serde(rename = "t")]
     pub trade_id:              u64,
-    #[serde(rename = "b")]
-    pub buyer_order_id:        u64,
     #[serde(rename = "a")]
     pub seller_order_id:       u64,
     #[serde(rename = "m")]
