@@ -1,5 +1,5 @@
 #![allow(unused)]
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Once};
 
 use cex_exchanges::{
     clients::ws::{MutliWsStreamBuilder, WsStream},
@@ -120,30 +120,34 @@ where
     writeln!(f0, "{}", serde_json::to_string(&a).unwrap()).unwrap();
 }
 
+static TRACING: Once = Once::new();
+
 pub fn init_test_tracing() {
-    let data_filter = EnvFilter::builder()
-        .with_default_directive(format!("cex-exchanges={}", Level::TRACE).parse().unwrap())
-        .from_env_lossy();
+    TRACING.call_once(|| {
+        let data_filter = EnvFilter::builder()
+            .with_default_directive(format!("cex-exchanges={}", Level::TRACE).parse().unwrap())
+            .from_env_lossy();
 
-    let data_layer = tracing_subscriber::fmt::layer()
-        .with_ansi(true)
-        .with_target(true)
-        .with_filter(data_filter)
-        .boxed();
+        let data_layer = tracing_subscriber::fmt::layer()
+            .with_ansi(true)
+            .with_target(true)
+            .with_filter(data_filter)
+            .boxed();
 
-    let general_filter = EnvFilter::builder()
-        .with_default_directive(Level::DEBUG.into())
-        .from_env_lossy();
+        let general_filter = EnvFilter::builder()
+            .with_default_directive(Level::DEBUG.into())
+            .from_env_lossy();
 
-    let general_layer = tracing_subscriber::fmt::layer()
-        .with_ansi(true)
-        .with_target(true)
-        .with_filter(general_filter)
-        .boxed();
+        let general_layer = tracing_subscriber::fmt::layer()
+            .with_ansi(true)
+            .with_target(true)
+            .with_filter(general_filter)
+            .boxed();
 
-    tracing_subscriber::registry()
-        .with(vec![data_layer, general_layer])
-        .init();
+        tracing_subscriber::registry()
+            .with(vec![data_layer, general_layer])
+            .init();
+    });
 }
 
 pub async fn timeout_function(test_duration_sec: u64, f: impl futures::Future<Output = ()>) -> bool
