@@ -64,7 +64,7 @@ impl<'de> Deserialize<'de> for BinanceAllInstruments {
 
         let instruments_value = val
             .get("symbols")
-            .ok_or(eyre::ErrReport::msg("could not find 'symbols' field in binance instruments response".to_string()))
+            .ok_or(eyre::ErrReport::msg(format!("could not find 'symbols' field in binance instruments response of {val:?}")))
             .map_err(serde::de::Error::custom)?;
 
         let instruments = serde_json::from_value(instruments_value.clone()).map_err(serde::de::Error::custom)?;
