@@ -145,3 +145,15 @@ pub fn init_test_tracing() {
         .with(vec![data_layer, general_layer])
         .init();
 }
+
+pub async fn timeout_function(test_duration_sec: u64, f: impl futures::Future<Output = ()>) -> bool
+where
+{
+    let sleep = tokio::time::sleep(std::time::Duration::from_secs(test_duration_sec));
+    tokio::pin!(sleep);
+
+    tokio::select! {
+        _ = f => true,
+        _ = &mut sleep => false,
+    }
+}

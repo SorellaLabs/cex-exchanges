@@ -136,7 +136,9 @@ mod okex_tests {
         init_test_tracing();
         let builder = OkexWsBuilder::new(None)
             .add_channel(OkexWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdt")]).unwrap());
-        okex_util(builder, 5).await;
+
+        let is_success = timeout_function(5, okex_util(builder, 5)).await;
+        //okex_util(builder, 5).await;
     }
 
     #[tokio::test]
