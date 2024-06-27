@@ -138,6 +138,7 @@ mod okex_tests {
             .add_channel(OkexWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdt")]).unwrap());
 
         let is_success = timeout_function(5, okex_util(builder, 5)).await;
+        assert!(is_success);
         //okex_util(builder, 5).await;
     }
 
