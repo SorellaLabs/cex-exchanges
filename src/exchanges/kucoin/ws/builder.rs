@@ -10,8 +10,8 @@ use crate::{
 
 /// There is a limit of 300 connections per attempt every 5 minutes per IP.
 const MAX_KUCOIN_STREAMS: usize = 300;
-/// A single connection can listen to a maximum of 1024 streams.
-const MAX_KUCOIN_WS_CONNS_PER_STREAM: usize = 1024;
+/// A single connection can listen to a maximum of 100 streams.
+const MAX_KUCOIN_WS_CONNS_PER_STREAM: usize = 100;
 
 #[derive(Debug, Clone, Default)]
 pub struct KucoinWsBuilder {
