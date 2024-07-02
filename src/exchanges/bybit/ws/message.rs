@@ -35,7 +35,7 @@ impl BybitWsMessage {
             }
         }
 
-        Err(eyre::ErrReport::msg(format!("Could not deserialize kucoin ws message: {:?}", value)))
+        Err(eyre::ErrReport::msg(format!("Could not deserialize bybit ws message: {:?}", value)))
     }
 }
 
