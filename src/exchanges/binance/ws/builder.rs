@@ -13,7 +13,7 @@ use crate::{
 const MAX_BINANCE_STREAMS: usize = 300;
 /// A single connection can listen to a maximum of 1024 streams.
 /// (https://binance-docs.github.io/apidocs/spot/en/#limits)
-const MAX_BINANCE_WS_CONNS_PER_STREAM: usize = 1024;
+pub const MAX_BINANCE_WS_CONNS_PER_STREAM: usize = 1024;
 
 #[derive(Debug, Clone, Default)]
 pub struct BinanceWsBuilder {

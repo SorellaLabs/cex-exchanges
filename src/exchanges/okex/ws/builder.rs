@@ -13,7 +13,7 @@ use crate::{
 const MAX_OKEX_STREAMS: usize = 300;
 /// A single connection can listen to a maximum of 100 streams.
 /// Setting lower for io purposes
-const MAX_OKEX_WS_CONNS_PER_STREAM: usize = 1024;
+pub const MAX_OKEX_WS_CONNS_PER_STREAM: usize = 100;
 
 #[derive(Debug, Clone)]
 pub struct OkexWsBuilder {
