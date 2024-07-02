@@ -8,7 +8,7 @@ use crate::{
     normalized::ws::NormalizedWsChannels
 };
 
-/// There is a limit of 500 connections per 5 minutes per IP.
+/// There is a limit of 300 connections per 5 minutes per IP.
 const MAX_BYBIT_STREAMS: usize = 300;
 /// A single connection can listen to a maximum of 10 streams.
 const MAX_BYBIT_WS_CONNS_PER_STREAM: usize = 10;
