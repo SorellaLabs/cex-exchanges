@@ -11,7 +11,7 @@ use crate::{
 /// There is a limit of 300 connections per 5 minutes per IP.
 const MAX_BYBIT_STREAMS: usize = 300;
 /// A single connection can listen to a maximum of 10 streams.
-const MAX_BYBIT_WS_CONNS_PER_STREAM: usize = 10;
+pub const MAX_BYBIT_WS_CONNS_PER_STREAM: usize = 10;
 
 #[derive(Debug, Clone, Default)]
 pub struct BybitWsBuilder {
