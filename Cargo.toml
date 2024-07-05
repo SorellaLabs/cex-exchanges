@@ -49,3 +49,6 @@ default = ["us", "non-us"]
 all = ["non-us", "us"]
 non-us = []
 us = []
+
+[dev-dependencies]
+once_cell = "1.18.0"

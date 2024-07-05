@@ -30,7 +30,7 @@ mod coinbase_tests {
         let builder = CoinbaseWsBuilder::default().add_channel(
             CoinbaseWsChannel::new_match(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
         );
-        coinbase_util(builder, 5).await;
+        assert!(timeout_function(5, coinbase_util(builder, 5)).await);
     }
 
     #[tokio::test]
@@ -40,7 +40,7 @@ mod coinbase_tests {
         let builder = CoinbaseWsBuilder::default().add_channel(
             CoinbaseWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
         );
-        coinbase_util(builder, 5).await;
+        assert!(timeout_function(5, coinbase_util(builder, 5)).await);
     }
 
     #[tokio::test]
@@ -56,7 +56,7 @@ mod coinbase_tests {
             .build_many_distributed()
             .unwrap();
 
-        mutlistream_util(builder, 50).await;
+            assert!(timeout_function(30, mutlistream_util(builder, 50)).await);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -69,7 +69,7 @@ mod coinbase_tests {
             .await
             .unwrap();
 
-        mutlistream_util(builder, 1000).await;
+            assert!(timeout_function(45, mutlistream_util(builder, 1000)).await);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -81,7 +81,7 @@ mod coinbase_tests {
         let builder = CoinbaseWsBuilder::build_from_all_instruments(&channels, Some(10))
             .await
             .unwrap();
-        mutlithreaded_util(builder, 1000).await;
+        assert!(timeout_function(45, mutlithreaded_util(builder, 1000)).await);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -104,7 +104,7 @@ mod coinbase_tests {
                 .collect::<Vec<_>>()
         );
 
-        normalized_mutlithreaded_util(builder, 1000).await;
+        assert!(timeout_function(45, normalized_mutlithreaded_util(builder, 1000)).await);
     }
 }
 
@@ -127,7 +127,7 @@ mod okex_tests {
     use super::*;
 
     async fn okex_util(builder: OkexWsBuilder, iterations: usize) {
-        stream_util(builder.build_single(), iterations).await;
+        assert!(timeout_function(15, stream_util(builder.build_single(), iterations)).await);
     }
 
     #[tokio::test]
@@ -136,7 +136,8 @@ mod okex_tests {
         init_test_tracing();
         let builder = OkexWsBuilder::new(None)
             .add_channel(OkexWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdt")]).unwrap());
-        okex_util(builder, 5).await;
+
+        assert!(timeout_function(15, okex_util(builder, 5)).await);
     }
 
     #[tokio::test]
@@ -146,7 +147,7 @@ mod okex_tests {
         let builder = OkexWsBuilder::new(None).add_channel(
             OkexWsChannel::new_book_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
         );
-        okex_util(builder, 5).await;
+        assert!(timeout_function(5, okex_util(builder, 5)).await);
     }
 
     #[tokio::test]
@@ -165,7 +166,7 @@ mod okex_tests {
             .build_many_distributed()
             .unwrap();
 
-        mutlistream_util(builder, 50).await;
+        assert!(timeout_function(60, mutlistream_util(builder, 50)).await);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -178,7 +179,7 @@ mod okex_tests {
             .await
             .unwrap();
 
-        mutlistream_util(builder, 1000).await;
+        assert!(timeout_function(15, mutlistream_util(builder, 1000)).await);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -190,7 +191,7 @@ mod okex_tests {
         let builder = OkexWsBuilder::build_from_all_instruments(&channels, None, Some(10))
             .await
             .unwrap();
-        mutlithreaded_util(builder, 1000).await;
+        assert!(timeout_function(15, mutlithreaded_util(builder, 1000)).await);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -213,7 +214,7 @@ mod okex_tests {
                 .collect::<Vec<_>>()
         );
 
-        normalized_mutlithreaded_util(builder, 1000).await;
+        assert!(timeout_function(25, normalized_mutlithreaded_util(builder, 1000)).await);
     }
 }
 
@@ -242,7 +243,7 @@ mod binance_tests {
         let builder = BinanceWsBuilder::default().add_channel(
             BinanceWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
         );
-        binance_util(builder, 5).await;
+        assert!(timeout_function(60, binance_util(builder, 5)).await);
     }
 
     #[tokio::test]
@@ -252,7 +253,7 @@ mod binance_tests {
         let builder = BinanceWsBuilder::default().add_channel(
             BinanceWsChannel::new_book_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
         );
-        binance_util(builder, 5).await;
+        assert!(timeout_function(5, binance_util(builder, 5)).await);
     }
 
     #[tokio::test]
@@ -271,7 +272,7 @@ mod binance_tests {
             .build_many_distributed()
             .unwrap();
 
-        mutlistream_util(builder, 50).await;
+        assert!(timeout_function(120, mutlistream_util(builder, 50)).await);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -284,7 +285,7 @@ mod binance_tests {
             .await
             .unwrap();
 
-        mutlistream_util(builder, 1000).await;
+        assert!(timeout_function(120, mutlistream_util(builder, 1000)).await);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -296,7 +297,7 @@ mod binance_tests {
         let builder = BinanceWsBuilder::build_from_all_instruments(&channels)
             .await
             .unwrap();
-        mutlithreaded_util(builder, 1000).await;
+        assert!(timeout_function(120, mutlithreaded_util(builder, 1000)).await);
     }
 }
 
@@ -325,7 +326,7 @@ mod kucoin_tests {
         let builder = KucoinWsBuilder::default().add_channel(
             KucoinWsChannel::new_match(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
         );
-        kucoin_util(builder, 5).await;
+        assert!(timeout_function(45, kucoin_util(builder, 5)).await);
     }
 
     #[tokio::test]
@@ -335,7 +336,7 @@ mod kucoin_tests {
         let builder = KucoinWsBuilder::default().add_channel(
             KucoinWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
         );
-        kucoin_util(builder, 5).await;
+        assert!(timeout_function(5, kucoin_util(builder, 5)).await);
     }
 
     #[tokio::test]
@@ -352,7 +353,7 @@ mod kucoin_tests {
             .build_many_distributed()
             .unwrap();
 
-        mutlistream_util(builder, 50).await;
+        assert!(timeout_function(15, mutlistream_util(builder, 50)).await);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -365,7 +366,7 @@ mod kucoin_tests {
             .await
             .unwrap();
 
-        mutlistream_util(builder, 1000).await;
+        assert!(timeout_function(145, mutlistream_util(builder, 1000)).await);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -377,7 +378,7 @@ mod kucoin_tests {
         let builder = KucoinWsBuilder::build_from_all_instruments(&channels)
             .await
             .unwrap();
-        mutlithreaded_util(builder, 1000).await;
+        assert!(timeout_function(145, mutlithreaded_util(builder, 1000)).await);
     }
 }
 
@@ -406,7 +407,7 @@ mod bybit_tests {
         let builder = BybitWsBuilder::default().add_channel(
             BybitWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
         );
-        bybit_util(builder, 5).await;
+        assert!(timeout_function(5, bybit_util(builder, 5)).await);
     }
 
     #[tokio::test]
@@ -416,7 +417,7 @@ mod bybit_tests {
         let builder = BybitWsBuilder::default().add_channel(
             BybitWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
         );
-        bybit_util(builder, 5).await;
+        assert!(timeout_function(5, bybit_util(builder, 5)).await);
     }
 
     #[tokio::test]
@@ -431,7 +432,7 @@ mod bybit_tests {
             .build_many_distributed()
             .unwrap();
 
-        mutlistream_util(builder, 50).await;
+        assert!(timeout_function(5, mutlistream_util(builder, 50)).await);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -444,7 +445,7 @@ mod bybit_tests {
             .await
             .unwrap();
 
-        mutlistream_util(builder, 1000).await;
+        assert!(timeout_function(15, mutlistream_util(builder, 1000)).await);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
@@ -456,6 +457,6 @@ mod bybit_tests {
         let builder = BybitWsBuilder::build_from_all_instruments(&channels)
             .await
             .unwrap();
-        mutlithreaded_util(builder, 1000).await;
+        assert!(timeout_function(15, mutlithreaded_util(builder, 1000)).await);
     }
 }

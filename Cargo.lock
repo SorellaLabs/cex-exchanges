@@ -189,6 +189,7 @@ dependencies = [
  "clap",
  "eyre",
  "futures",
+ "once_cell",
  "paste",
  "rand",
  "reqwest",

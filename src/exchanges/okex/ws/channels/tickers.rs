@@ -22,9 +22,9 @@ pub struct OkexTicker {
     #[serde_as(as = "DisplayFromStr")]
     #[serde(rename = "lastSz")]
     pub last_size:         f64,
-    #[serde_as(as = "DisplayFromStr")]
+    #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(rename = "askPx")]
-    pub ask_price:         f64,
+    pub ask_price:         Option<f64>,
     #[serde_as(as = "DisplayFromStr")]
     #[serde(rename = "askSz")]
     pub ask_amt:           f64,
@@ -74,7 +74,7 @@ impl OkexTicker {
             pair:       self.pair.normalize(),
             time:       DateTime::from_timestamp_millis(self.timestamp as i64).unwrap(),
             ask_amount: self.ask_amt,
-            ask_price:  self.ask_price,
+            ask_price:  self.ask_price.unwrap_or_default(),
             bid_amount: self.bid_amt,
             bid_price:  self.bid_price,
             quote_id:   None
@@ -90,7 +90,7 @@ impl PartialEq<NormalizedQuote> for OkexTicker {
             && other.bid_amount == self.bid_amt
             && other.bid_price == self.bid_price
             && other.ask_amount == self.ask_amt
-            && other.ask_price == self.ask_price
+            && other.ask_price == self.ask_price.unwrap_or_default()
             && other.quote_id.is_none();
 
         if !equals {
