@@ -166,55 +166,55 @@ impl PartialEq<NormalizedInstrument> for BinanceInstrument {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::normalized::types::NormalizedTradingPair;
+#[cfg(test)]
+mod tests {
+    use crate::normalized::types::NormalizedTradingPair;
 
-//     use super::*;
+    use super::*;
 
-//     #[test]
-//     fn test_binance_instrument_normalize() {
-//         let bi = BinanceInstrument {
-//             symbol: BinanceTradingPair("ETHBTC".to_string()),
-//             status: "TRADING".to_string(),
-//             base_asset: "ETH".to_string(),
-//             base_asset_precision: 8,
-//             quote_asset: "BTC".to_string(),
-//             quote_precision: 8,
-//             quote_asset_precision: 8,
-//             order_types: vec!["LIMIT".to_string(), "LIMIT_MAKER".to_string(), "MARKET".to_string(), "STOP_LOSS_LIMIT".to_string(), "TAKE_PROFIT_LIMIT".to_string()],
-//             iceberg_allowed: true,
-//             oco_allowed: true,
-//             quote_order_qty_market_allowed: true,
-//             allow_trailing_stop: true,
-//             cancel_replace_allowed: true,
-//             is_spot_trading_allowed: true,
-//             is_margin_trading_allowed: true,
-//             permission_sets: vec![vec![BinanceTradingType::Spot, BinanceTradingType::Margin, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other]],
-//             permissions: vec![],
-//             default_self_trade_prevention_mode: "EXPIRE_MAKER".to_string(),
-//             allowed_self_trade_prevention_modes: vec!["EXPIRE_TAKER".to_string(), "EXPIRE_MAKER".to_string(), "EXPIRE_BOTH".to_string()],
-//         };
+    #[test]
+    fn test_binance_instrument_normalize() {
+        let bi = BinanceInstrument {
+            symbol: BinanceTradingPair("ETHBTC".to_string()),
+            status: "TRADING".to_string(),
+            base_asset: "ETH".to_string(),
+            base_asset_precision: 8,
+            quote_asset: "BTC".to_string(),
+            quote_precision: 8,
+            quote_asset_precision: 8,
+            order_types: vec!["LIMIT".to_string(), "LIMIT_MAKER".to_string(), "MARKET".to_string(), "STOP_LOSS_LIMIT".to_string(), "TAKE_PROFIT_LIMIT".to_string()],
+            iceberg_allowed: true,
+            oco_allowed: true,
+            quote_order_qty_market_allowed: true,
+            allow_trailing_stop: true,
+            cancel_replace_allowed: true,
+            is_spot_trading_allowed: true,
+            is_margin_trading_allowed: true,
+            permission_sets: vec![vec![BinanceTradingType::Spot, BinanceTradingType::Margin, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other, BinanceTradingType::Other]],
+            permissions: vec![],
+            default_self_trade_prevention_mode: "EXPIRE_MAKER".to_string(),
+            allowed_self_trade_prevention_modes: vec!["EXPIRE_TAKER".to_string(), "EXPIRE_MAKER".to_string(), "EXPIRE_BOTH".to_string()],
+        };
         
-//         let expected = vec![
-//             NormalizedInstrument {
-//                 exchange: CexExchange::Binance,
-//                 trading_pair: NormalizedTradingPair::new_base_quote(CexExchange::Binance, "ETH", "BTC", None, None),
-//                 trading_type: NormalizedTradingType::Spot,
-//                 base_asset_symbol: "ETH".to_string(),
-//                 quote_asset_symbol: "BTC".to_string(),
-//                 active: true,
-//                 futures_expiry: None
-//             }, NormalizedInstrument {
-//                 exchange: CexExchange::Binance,
-//                 trading_pair: NormalizedTradingPair::new_base_quote(CexExchange::Binance, "ETH", "BTC", None, None),
-//                 trading_type: NormalizedTradingType::Margin,
-//                 base_asset_symbol: "ETH".to_string(),
-//                 quote_asset_symbol: "BTC".to_string(),
-//                 active: true,
-//                 futures_expiry: None
-//              }
-//         ];
-//         assert_eq!(bi.normalize(), expected);
-//     }
-// }
+        let expected = vec![
+            NormalizedInstrument {
+                exchange: CexExchange::Binance,
+                trading_pair: NormalizedTradingPair::new_base_quote(CexExchange::Binance, "ETH", "BTC", None, None),
+                trading_type: NormalizedTradingType::Spot,
+                base_asset_symbol: "ETH".to_string(),
+                quote_asset_symbol: "BTC".to_string(),
+                active: true,
+                futures_expiry: None
+            }, NormalizedInstrument {
+                exchange: CexExchange::Binance,
+                trading_pair: NormalizedTradingPair::new_base_quote(CexExchange::Binance, "ETH", "BTC", None, None),
+                trading_type: NormalizedTradingType::Margin,
+                base_asset_symbol: "ETH".to_string(),
+                quote_asset_symbol: "BTC".to_string(),
+                active: true,
+                futures_expiry: None
+             }
+        ];
+        assert_eq!(bi.normalize(), expected);
+    }
+}

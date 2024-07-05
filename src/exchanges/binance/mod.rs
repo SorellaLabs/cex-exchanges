@@ -170,7 +170,6 @@ impl Exchange for Binance {
                 .await
                 .map(|v| BinanceRestApiResponse::Instruments(v))
         };
-        info!(target: "cex-exchanges::binance", "response: {:?}", api_response);
 
         if let Err(e) = api_response.as_ref() {
             error!(target: "cex-exchanges::binance", "error calling rest-api endpoint {:?} -- {:?}", api_channel, e);
