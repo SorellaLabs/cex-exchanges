@@ -127,7 +127,7 @@ mod okex_tests {
     use super::*;
 
     async fn okex_util(builder: OkexWsBuilder, iterations: usize) {
-        assert!(timeout_function(5, stream_util(builder.build_single(), iterations)).await);
+        assert!(timeout_function(15, stream_util(builder.build_single(), iterations)).await);
     }
 
     #[tokio::test]

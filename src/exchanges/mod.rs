@@ -159,7 +159,11 @@ impl CexExchange {
     ///
     /// if calling without a filter:
     /// ```
-    /// CexExchange::Okex.get_all_currencies::<EmptyFilter>(None).await;
+    /// use cex_exchanges::{CexExchange, EmptyFilter};
+    /// async {
+    ///     CexExchange::Okex.get_all_currencies::<EmptyFilter>(None).await;
+    /// };
+    /// ()
     /// ```
     pub async fn get_all_currencies<F>(self, filter: Option<F>) -> Result<Vec<NormalizedCurrency>, RestApiError>
     where
@@ -212,7 +216,11 @@ impl CexExchange {
     ///
     /// if calling without a filter:
     /// ```
-    /// CexExchange::Okex.get_all_instruments::<EmptyFilter>(None).await;
+    /// use cex_exchanges::{CexExchange, EmptyFilter};
+    /// async {
+    ///     CexExchange::Okex.get_all_instruments::<EmptyFilter>(None).await;
+    /// };
+    /// ()
     /// ```
     pub async fn get_all_instruments<F>(self, filter: Option<F>) -> Result<Vec<NormalizedInstrument>, RestApiError>
     where
