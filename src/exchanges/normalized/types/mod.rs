@@ -4,6 +4,9 @@ pub use blockchain::*;
 mod currencies;
 pub use currencies::*;
 
+mod fees;
+pub use fees::*;
+
 mod pairs;
 pub use pairs::*;
 

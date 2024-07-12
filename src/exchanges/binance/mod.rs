@@ -15,7 +15,7 @@ use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 use tracing::{debug, error, info, trace, warn};
 
 use self::{
-    rest_api::{BinanceAllInstruments, BinanceAllSymbols, BinanceRestApiResponse, BinanceSymbol},
+    rest_api::{BinanceAllInstruments, BinanceAllSymbols, BinanceRestApiResponse, BinanceSymbol, BinanceTradeFees},
     ws::{BinanceSubscription, BinanceWsMessage}
 };
 use crate::{
@@ -113,6 +113,12 @@ impl Binance {
         let iter_symbols: BinanceAllSymbols =
             Self::simple_rest_api_request(web_client, url, Some((header::CONTENT_ENCODING, "gzip, deflate, br".parse().unwrap()))).await?;
         Ok(iter_symbols.symbols)
+    }
+
+    async fn get_fees(web_client: &reqwest::Client) -> Result<BinanceTradeFees, RestApiError> {
+        let url = format!("{BASE_REST_API_URL}/asset/tradeFee");
+        let trade_fees: BinanceTradeFees = Self::simple_rest_api_request(web_client, url, None).await?;
+        Ok(trade_fees)
     }
 
     pub async fn simple_rest_api_request<T>(

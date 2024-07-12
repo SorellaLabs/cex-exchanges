@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{BinanceAllInstruments, BinanceAllSymbols, BinanceInstrument, BinanceSymbol};
+use super::{BinanceAllInstruments, BinanceAllSymbols, BinanceInstrument, BinanceSymbol, BinanceTradeFees};
 use crate::exchanges::normalized::rest_api::NormalizedRestApiDataTypes;
 
 #[serde_with::serde_as]
@@ -8,14 +8,16 @@ use crate::exchanges::normalized::rest_api::NormalizedRestApiDataTypes;
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum BinanceRestApiResponse {
     Symbols(BinanceAllSymbols),
-    Instruments(BinanceAllInstruments)
+    Instruments(BinanceAllInstruments),
+    TradeFees(BinanceTradeFees),
 }
 
 impl BinanceRestApiResponse {
     pub fn normalize(self) -> NormalizedRestApiDataTypes {
         match self {
             BinanceRestApiResponse::Symbols(v) => NormalizedRestApiDataTypes::AllCurrencies(v.normalize()),
-            BinanceRestApiResponse::Instruments(v) => NormalizedRestApiDataTypes::AllInstruments(v.normalize())
+            BinanceRestApiResponse::Instruments(v) => NormalizedRestApiDataTypes::AllInstruments(v.normalize()),
+            BinanceRestApiResponse::TradeFees(v) => NormalizedRestApiDataTypes::TradeFees(v.normalize()),
         }
     }
 
@@ -49,7 +51,8 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceRestApiResponse {
     fn eq(&self, other: &NormalizedRestApiDataTypes) -> bool {
         match self {
             BinanceRestApiResponse::Symbols(vals) => vals == other,
-            BinanceRestApiResponse::Instruments(vals) => vals == other
+            BinanceRestApiResponse::Instruments(vals) => vals == other,
+            BinanceRestApiResponse::TradeFees(vals) => vals == other,
         }
     }
 }

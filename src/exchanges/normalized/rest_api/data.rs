@@ -1,14 +1,15 @@
 use serde::Serialize;
 
 use crate::{
-    normalized::types::{NormalizedCurrency, NormalizedInstrument},
+    normalized::types::{NormalizedCurrency, NormalizedInstrument, NormalizedTradeFee},
     ExchangeFilter
 };
 
 #[derive(Debug, Clone, Serialize)]
 pub enum NormalizedRestApiDataTypes {
     AllCurrencies(Vec<NormalizedCurrency>),
-    AllInstruments(Vec<NormalizedInstrument>)
+    AllInstruments(Vec<NormalizedInstrument>),
+    TradeFees(Vec<NormalizedTradeFee>),
 }
 
 impl NormalizedRestApiDataTypes {
