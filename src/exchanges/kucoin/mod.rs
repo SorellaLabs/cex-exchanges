@@ -99,6 +99,7 @@ impl Exchange for Kucoin {
             NormalizedRestApiRequest::AllInstruments => {
                 KucoinRestApiResponse::Symbols(Self::simple_rest_api_request(web_client, format!("{BASE_REST_API_URL}/api/v2/symbols")).await?)
             }
+            NormalizedRestApiRequest::AllTradeFees => todo!(),
         };
 
         Ok(api_response)

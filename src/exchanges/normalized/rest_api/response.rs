@@ -3,7 +3,7 @@ use serde::Serialize;
 use super::NormalizedRestApiDataTypes;
 #[cfg(feature = "non-us")]
 use crate::{
-    binance::rest_api::{BinanceInstrument, BinanceRestApiResponse, BinanceSymbol},
+    binance::rest_api::{BinanceInstrument, BinanceRestApiResponse, BinanceSymbol, BinanceTradeFee},
     bybit::rest_api::{BybitCoin, BybitInstrument, BybitRestApiResponse},
     kucoin::rest_api::{KucoinCurrency, KucoinRestApiResponse, KucoinSymbol}
 };
@@ -62,7 +62,38 @@ impl PartialEq<NormalizedRestApiDataTypes> for CombinedRestApiResponse {
 }
 
 macro_rules! combined_exchange {
-    ($exchange:ident, $currency:ident, $instrument:ident) => {
+    ($exchange:ident, $currency:ident, $instrument:ident, $trade_fee:ident) => {
+        paste::paste! {
+            impl From<[<$exchange RestApiResponse>]> for CombinedRestApiResponse {
+                fn from(value: [<$exchange RestApiResponse>]) -> Self {
+                    Self::$exchange(value)
+                }
+            }
+
+            impl CombinedRestApiResponse {
+                pub fn [<take_ $exchange:lower _currencies>](self) -> Option<Vec<[<$exchange $currency>]>> {
+                    self.[<take_ $exchange:lower>]().and_then(|v| v.[<take_ $currency:lower s>]())
+                }
+
+                pub fn [<take_ $exchange:lower _instruments>](self, active_only: bool) -> Option<Vec<[<$exchange $instrument>]>> {
+                    self.[<take_ $exchange:lower>]().and_then(|v| v.[<take_ $instrument:lower s>](active_only))
+                }
+
+                pub fn [<take_ $exchange:lower _trade_fees>](self) -> Option<Vec<[<$exchange $trade_fee>]>> {
+                    self.[<take_ $exchange:lower>]().and_then(|v| v.[<take_trade_fees>]())
+                }
+
+                pub fn[<take_ $exchange:lower>](self) -> Option<[<$exchange RestApiResponse>]> {
+                    match self {
+                        CombinedRestApiResponse::$exchange(val) => Some(val),
+                        _ => None
+                    }
+                }
+            }
+        }
+    };
+
+    ($exchange:ident, $currency:ident, $instrument:ident, (TRADE_FEE)) => {
         paste::paste! {
             impl From<[<$exchange RestApiResponse>]> for CombinedRestApiResponse {
                 fn from(value: [<$exchange RestApiResponse>]) -> Self {
@@ -88,8 +119,8 @@ macro_rules! combined_exchange {
             }
         }
     };
-
-    ($exchange:ident, (CURRENCY), $instrument:ident) => {
+    
+    ($exchange:ident, (CURRENCY), $instrument:ident, (TRADE_FEE)) => {
         paste::paste! {
             impl From<[<$exchange RestApiResponse>]> for CombinedRestApiResponse {
                 fn from(value: [<$exchange RestApiResponse>]) -> Self {
@@ -118,16 +149,16 @@ macro_rules! combined_exchange {
 }
 
 #[cfg(feature = "us")]
-combined_exchange!(Coinbase, (CURRENCY), Product);
+combined_exchange!(Coinbase, (CURRENCY), Product, (TRADE_FEE));
 
 #[cfg(feature = "us")]
-combined_exchange!(Okex, (CURRENCY), Instrument);
+combined_exchange!(Okex, (CURRENCY), Instrument, (TRADE_FEE));
 
 #[cfg(feature = "non-us")]
-combined_exchange!(Kucoin, (CURRENCY), Symbol);
+combined_exchange!(Kucoin, (CURRENCY), Symbol, (TRADE_FEE));
 
 #[cfg(feature = "non-us")]
-combined_exchange!(Binance, Symbol, Instrument);
+combined_exchange!(Binance, Symbol, Instrument, TradeFee);
 
 #[cfg(feature = "non-us")]
-combined_exchange!(Bybit, Coin, Instrument);
+combined_exchange!(Bybit, Coin, Instrument, (TRADE_FEE));

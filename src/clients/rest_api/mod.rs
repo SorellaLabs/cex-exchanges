@@ -24,4 +24,10 @@ impl ExchangeApi {
             .await?
             .into())
     }
+
+    pub async fn all_trade_fees<E: Exchange>(&self) -> Result<CombinedRestApiResponse, RestApiError> {
+        Ok(E::rest_api_call(&E::default(), &self.web_client, NormalizedRestApiRequest::AllTradeFees)
+            .await?
+            .into())
+    }
 }

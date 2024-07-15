@@ -113,7 +113,8 @@ impl Exchange for Okex {
     async fn rest_api_call(&self, web_client: &reqwest::Client, api_channel: NormalizedRestApiRequest) -> Result<OkexRestApiResponse, RestApiError> {
         let call_result = match api_channel {
             NormalizedRestApiRequest::AllCurrencies => OkexRestApiResponse::Symbols(self.get_all_symbols(web_client).await?),
-            NormalizedRestApiRequest::AllInstruments => OkexRestApiResponse::Instruments(self.get_all_instruments(web_client).await?)
+            NormalizedRestApiRequest::AllInstruments => OkexRestApiResponse::Instruments(self.get_all_instruments(web_client).await?),
+            NormalizedRestApiRequest::AllTradeFees => todo!(),
         };
 
         Ok(call_result)

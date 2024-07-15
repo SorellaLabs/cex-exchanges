@@ -98,7 +98,8 @@ impl Exchange for Coinbase {
                 .map(|v| CoinbaseRestApiResponse::Currencies(v)),
             NormalizedRestApiRequest::AllInstruments => Self::get_all_products(web_client)
                 .await
-                .map(|v| CoinbaseRestApiResponse::Products(v))
+                .map(|v| CoinbaseRestApiResponse::Products(v)),
+            NormalizedRestApiRequest::AllTradeFees => todo!(),
         };
 
         if let Err(e) = api_response.as_ref() {

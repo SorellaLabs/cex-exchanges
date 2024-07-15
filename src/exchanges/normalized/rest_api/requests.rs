@@ -4,5 +4,5 @@ use serde::{Deserialize, Serialize};
 pub enum NormalizedRestApiRequest {
     AllCurrencies,
     AllInstruments,
-    TradeFees,
+    AllTradeFees,
 }

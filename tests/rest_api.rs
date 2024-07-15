@@ -120,6 +120,38 @@ mod binance_tests {
             assert_eq!(all_instruments, normalized);
         }
     }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_all_trade_fees() {
+        init_test_tracing();
+        let exchange_api = ExchangeApi::new();
+        let all_trade_fees = exchange_api.all_trade_fees::<Binance>().await;
+        all_trade_fees.as_ref().unwrap();
+        assert!(all_trade_fees.is_ok());
+
+        {
+            let all_trade_fees = all_trade_fees.unwrap();
+            let test_length = all_trade_fees
+                .clone()
+                .take_binance_trade_fees()
+                .unwrap()
+                .len();
+            assert!(test_length > 10);
+
+            let normalized = all_trade_fees.clone().normalize();
+
+            let test_length = normalized
+                .clone()
+                .take_instruments(Some(InstrumentFilter::Active))
+                .unwrap()
+                .len();
+            assert!(test_length > 10);
+
+            assert_eq!(all_trade_fees, normalized);
+        }
+
+    }
 }
 
 #[cfg(feature = "us")]

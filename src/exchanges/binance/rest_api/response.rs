@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{BinanceAllInstruments, BinanceAllSymbols, BinanceInstrument, BinanceSymbol, BinanceTradeFees};
+use super::{BinanceAllInstruments, BinanceAllSymbols, BinanceInstrument, BinanceSymbol, BinanceTradeFee, BinanceTradeFees};
 use crate::exchanges::normalized::rest_api::NormalizedRestApiDataTypes;
 
 #[serde_with::serde_as]
@@ -10,6 +10,7 @@ pub enum BinanceRestApiResponse {
     Symbols(BinanceAllSymbols),
     Instruments(BinanceAllInstruments),
     TradeFees(BinanceTradeFees),
+    TradeFees2(Vec<BinanceTradeFee>),
 }
 
 impl BinanceRestApiResponse {
@@ -18,6 +19,7 @@ impl BinanceRestApiResponse {
             BinanceRestApiResponse::Symbols(v) => NormalizedRestApiDataTypes::AllCurrencies(v.normalize()),
             BinanceRestApiResponse::Instruments(v) => NormalizedRestApiDataTypes::AllInstruments(v.normalize()),
             BinanceRestApiResponse::TradeFees(v) => NormalizedRestApiDataTypes::TradeFees(v.normalize()),
+            BinanceRestApiResponse::TradeFees2(_) => todo!(),
         }
     }
 
@@ -45,6 +47,13 @@ impl BinanceRestApiResponse {
             Some(instruments)
         }
     }
+
+    pub fn take_trade_fees(self) -> Option<Vec<BinanceTradeFee>> {
+        match self {
+            BinanceRestApiResponse::TradeFees(val) => Some(val.0),
+            _ => None,
+        }
+    }
 }
 
 impl PartialEq<NormalizedRestApiDataTypes> for BinanceRestApiResponse {
@@ -53,6 +62,7 @@ impl PartialEq<NormalizedRestApiDataTypes> for BinanceRestApiResponse {
             BinanceRestApiResponse::Symbols(vals) => vals == other,
             BinanceRestApiResponse::Instruments(vals) => vals == other,
             BinanceRestApiResponse::TradeFees(vals) => vals == other,
+            BinanceRestApiResponse::TradeFees2(_) => todo!(),
         }
     }
 }

@@ -1,6 +1,6 @@
 mod pairs;
 
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, time::SystemTime};
 
 use futures::SinkExt;
 pub use pairs::*;
@@ -35,6 +35,13 @@ pub struct Binance {
 }
 
 impl Binance {
+    fn get_timestamp() -> u64 {
+        SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_millis() as u64
+    }
+
     pub fn new_ws_subscription(subscription: BinanceSubscription) -> Self {
         Self { subscription }
     }
@@ -115,8 +122,8 @@ impl Binance {
         Ok(iter_symbols.symbols)
     }
 
-    async fn get_fees(web_client: &reqwest::Client) -> Result<BinanceTradeFees, RestApiError> {
-        let url = format!("{BASE_REST_API_URL}/asset/tradeFee");
+    async fn get_all_trade_fees(web_client: &reqwest::Client) -> Result<BinanceTradeFees, RestApiError> {
+        let url = format!("https://api.binance.com/sapi/v1/asset/tradeFee");
         let trade_fees: BinanceTradeFees = Self::simple_rest_api_request(web_client, url, None).await?;
         Ok(trade_fees)
     }
@@ -129,6 +136,7 @@ impl Binance {
     where
         T: for<'de> Deserialize<'de>
     {
+        println!("{url}");
         let mut builder = web_client
             .get(&url)
             .header("Content-Type", "application/json");
@@ -137,9 +145,9 @@ impl Binance {
             builder = builder.header(k, v);
         }
 
-        let data = builder.send().await?.json().await?;
-
-        Ok(data)
+        let data = builder.send().await?;
+        println!("{data:?}");
+        Ok(data.json().await?)
     }
 }
 
@@ -174,7 +182,10 @@ impl Exchange for Binance {
                 .map(|v| BinanceRestApiResponse::Symbols(v)),
             NormalizedRestApiRequest::AllInstruments => Self::get_all_instruments(web_client)
                 .await
-                .map(|v| BinanceRestApiResponse::Instruments(v))
+                .map(|v| BinanceRestApiResponse::Instruments(v)),
+            NormalizedRestApiRequest::AllTradeFees => Self::get_all_trade_fees(web_client)
+                .await
+                .map(|v| BinanceRestApiResponse::TradeFees(v))
         };
 
         if let Err(e) = api_response.as_ref() {
