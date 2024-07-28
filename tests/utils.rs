@@ -141,7 +141,7 @@ pub fn init_test_tracing() {
         .with_filter(general_filter)
         .boxed();
 
-    tracing_subscriber::registry()
+    let _ =tracing_subscriber::registry()
         .with(vec![data_layer, general_layer])
-        .init();
+        .try_init();
 }
