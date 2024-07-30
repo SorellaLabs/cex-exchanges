@@ -1,4 +1,3 @@
-use eyre::Ok;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -75,7 +74,7 @@ impl BybitWsMessage {
                 value:    format!("result: {} -- id: {}", msg, id)
             },
             BybitWsMessage::InvalidSymbol { id, pair, msg } => {
-                NormalizedWsDataTypes::RemovedPair { exchange: CexExchange::Bybit, bad_pair: pair, raw_message: msg }
+                NormalizedWsDataTypes::RemovedPair { exchange: CexExchange::Bybit, bad_pair: pair.normalize(), raw_message: msg }
             }
         }
     }
