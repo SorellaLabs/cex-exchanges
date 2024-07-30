@@ -1,3 +1,5 @@
+use std::f64::EPSILON;
+
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
@@ -91,10 +93,10 @@ impl PartialEq<NormalizedQuote> for OkexTicker {
         let equals = other.exchange == CexExchange::Okex
             && other.pair == self.pair.normalize()
             && other.time == DateTime::from_timestamp_millis(self.timestamp as i64).unwrap()
-            && other.bid_amount == self.bid_amt.unwrap_or_default()
-            && other.bid_price == self.bid_price.unwrap_or_default()
-            && other.ask_amount == self.ask_amt.unwrap_or_default()
-            && other.ask_price == self.ask_price.unwrap_or_default()
+            && (other.bid_amount - self.bid_amt.unwrap_or_default()).abs() < EPSILON
+            && (other.bid_price - self.bid_price.unwrap_or_default()).abs() < EPSILON
+            && (other.ask_amount - self.ask_amt.unwrap_or_default()).abs() < EPSILON
+            && (other.ask_price - self.ask_price.unwrap_or_default()).abs() < EPSILON
             && other.quote_id.is_none();
 
         if !equals {
