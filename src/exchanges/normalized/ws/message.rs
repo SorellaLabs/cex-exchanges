@@ -61,6 +61,8 @@ impl CombinedWsMessage {
     pub fn bad_pair(&self) -> Option<NormalizedTradingPair> {
         match self {
             CombinedWsMessage::Disconnect { bad_pair, .. } => bad_pair.clone(),
+            #[cfg(feature = "non-us")]
+            CombinedWsMessage::Bybit(BybitWsMessage::InvalidSymbol { id, pair, msg }) => Some(pair.clone().normalized()),
             _ => None
         }
     }
