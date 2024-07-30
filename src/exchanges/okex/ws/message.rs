@@ -95,7 +95,13 @@ impl PartialEq<NormalizedWsDataTypes> for OkexWsMessage {
     fn eq(&self, other: &NormalizedWsDataTypes) -> bool {
         match (self, other) {
             (OkexWsMessage::TradesAll(this), NormalizedWsDataTypes::Trade(that)) => this == that,
-            (OkexWsMessage::Tickers(this), NormalizedWsDataTypes::Quotes(that)) => &vec![this.clone()] == that,
+            (OkexWsMessage::Tickers(this), NormalizedWsDataTypes::Quotes(that)) => {
+                if this.ask_amt.is_none() || this.ask_price.is_none() || this.bid_amt.is_none() || this.bid_price.is_none() {
+                    that.is_empty()
+                } else {
+                    &vec![this.clone()] == that
+                }
+            }
             (OkexWsMessage::Subscribe(_), NormalizedWsDataTypes::Other { .. }) => true,
             (OkexWsMessage::Error { .. }, NormalizedWsDataTypes::Other { .. }) => true,
             (OkexWsMessage::Error { .. }, NormalizedWsDataTypes::RemovedPair { .. }) => true,
