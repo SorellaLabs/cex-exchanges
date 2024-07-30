@@ -24,16 +24,16 @@ pub struct OkexTicker {
     #[serde_as(as = "DisplayFromStr")]
     #[serde(rename = "lastSz")]
     pub last_size:         f64,
-    #[serde_as(as = "Option<DisplayFromStr>")]
+    #[serde_as(deserialize_as = "DefaultOnError")]
     #[serde(rename = "askPx")]
     pub ask_price:         Option<f64>,
-    #[serde_as(as = "Option<DisplayFromStr>")]
+    #[serde_as(deserialize_as = "DefaultOnError")]
     #[serde(rename = "askSz")]
     pub ask_amt:           Option<f64>,
-    #[serde_as(as = "Option<DisplayFromStr>")]
+    #[serde_as(deserialize_as = "DefaultOnError")]
     #[serde(rename = "bidPx")]
     pub bid_price:         Option<f64>,
-    #[serde_as(as = "Option<DisplayFromStr>")]
+    #[serde_as(deserialize_as = "DefaultOnError")]
     #[serde(rename = "bidSz")]
     pub bid_amt:           Option<f64>,
     #[serde_as(as = "DisplayFromStr")]
