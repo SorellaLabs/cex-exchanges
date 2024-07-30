@@ -72,7 +72,7 @@ impl OkexWsMessage {
     pub fn normalize(self) -> NormalizedWsDataTypes {
         match self {
             OkexWsMessage::TradesAll(v) => NormalizedWsDataTypes::Trade(v.normalize()),
-            OkexWsMessage::Tickers(v) => NormalizedWsDataTypes::Quote(v.normalize()),
+            OkexWsMessage::Tickers(v) => NormalizedWsDataTypes::Quotes(v.normalize().map(|val| vec![val]).unwrap_or_default()),
             OkexWsMessage::Subscribe(v) => {
                 NormalizedWsDataTypes::Other { exchange: CexExchange::Okex, kind: "Subscribe".to_string(), value: format!("{:?}", v) }
             }

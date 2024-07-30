@@ -68,16 +68,20 @@ pub struct OkexTicker {
 }
 
 impl OkexTicker {
-    pub fn normalize(self) -> NormalizedQuote {
-        NormalizedQuote {
-            exchange:   CexExchange::Okex,
-            pair:       self.pair.normalize(),
-            time:       DateTime::from_timestamp_millis(self.timestamp as i64).unwrap(),
-            ask_amount: self.ask_amt,
-            ask_price:  self.ask_price,
-            bid_amount: self.bid_amt,
-            bid_price:  self.bid_price,
-            quote_id:   None
+    pub fn normalize(self) -> Option<NormalizedQuote> {
+        if let (Some(ask_amount), Some(ask_price), Some(bid_amount), Some(bid_price)) = (self.ask_amt, self.ask_price, self.bid_amt, self.bid_price) {
+            Some(NormalizedQuote {
+                exchange: CexExchange::Okex,
+                pair: self.pair.normalize(),
+                time: DateTime::from_timestamp_millis(self.timestamp as i64).unwrap(),
+                ask_amount,
+                ask_price,
+                bid_amount,
+                bid_price,
+                quote_id: None
+            })
+        } else {
+            None
         }
     }
 }
@@ -87,10 +91,10 @@ impl PartialEq<NormalizedQuote> for OkexTicker {
         let equals = other.exchange == CexExchange::Okex
             && other.pair == self.pair.normalize()
             && other.time == DateTime::from_timestamp_millis(self.timestamp as i64).unwrap()
-            && other.bid_amount == self.bid_amt
-            && other.bid_price == self.bid_price
-            && other.ask_amount == self.ask_amt
-            && other.ask_price == self.ask_price
+            && other.bid_amount == self.bid_amt.unwrap_or_default()
+            && other.bid_price == self.bid_price.unwrap_or_default()
+            && other.ask_amount == self.ask_amt.unwrap_or_default()
+            && other.ask_price == self.ask_price.unwrap_or_default()
             && other.quote_id.is_none();
 
         if !equals {
