@@ -2,7 +2,7 @@ use std::f64::EPSILON;
 
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{serde_as, DefaultOnError, DisplayFromStr};
 use tracing::warn;
 
 use crate::{
