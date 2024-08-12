@@ -14,6 +14,7 @@ use crate::{
             ws::NormalizedWsChannels
         }
     },
+    traits::SpecificWsChannel,
     CexExchange
 };
 
@@ -23,31 +24,29 @@ pub enum KucoinWsChannel {
     Ticker(Vec<KucoinTradingPair>)
 }
 
-impl KucoinWsChannel {
-    /// builds trade channel from a vec of raw trading pairs
-    /// return an error if the symbol is incorrectly formatted
-    pub fn new_match(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+impl SpecificWsChannel for KucoinWsChannel {
+    type ChannelKind = KucoinWsChannelKind;
+
+    fn new_trade(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Kucoin))
             .collect();
 
-        Self::new_from_normalized(normalized, KucoinWsChannel::Match(Vec::new()))
+        Self::new_from_normalized(KucoinWsChannel::Match(Vec::new()), normalized)
     }
 
-    /// builds the book ticker channel from a vec of raw trading
-    /// pairs return an error if the symbol is incorrectly formatted
-    pub fn new_ticker(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+    fn new_quote(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Kucoin))
             .collect();
 
-        Self::new_from_normalized(normalized, KucoinWsChannel::Ticker(Vec::new()))
+        Self::new_from_normalized(KucoinWsChannel::Ticker(Vec::new()), normalized)
     }
 
-    pub(crate) fn new_from_normalized(pairs: Vec<NormalizedTradingPair>, kind: KucoinWsChannel) -> eyre::Result<Self> {
-        match kind {
+    fn new_from_normalized(self, pairs: Vec<NormalizedTradingPair>) -> eyre::Result<Self> {
+        match self {
             KucoinWsChannel::Match(_) => Ok(KucoinWsChannel::Match(
                 pairs
                     .into_iter()
@@ -63,7 +62,7 @@ impl KucoinWsChannel {
         }
     }
 
-    pub fn count_entries(&self) -> usize {
+    fn count_entries(&self) -> usize {
         match self {
             KucoinWsChannel::Match(vals) => vals.len(),
             KucoinWsChannel::Ticker(vals) => vals.len()

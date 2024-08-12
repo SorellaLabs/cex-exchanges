@@ -73,7 +73,7 @@ impl BybitWsMessage {
                 kind:     "subscribe".to_string(),
                 value:    format!("result: {} -- id: {}", msg, id)
             },
-            BybitWsMessage::InvalidSymbol { id, pair, msg } => {
+            BybitWsMessage::InvalidSymbol { id: _, pair, msg } => {
                 NormalizedWsDataTypes::RemovedPair { exchange: CexExchange::Bybit, bad_pair: pair.normalize(), raw_message: msg }
             }
         }

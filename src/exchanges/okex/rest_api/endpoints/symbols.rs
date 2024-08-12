@@ -6,7 +6,8 @@ use super::OkexInstrument;
 use crate::{
     exchanges::normalized::types::NormalizedCurrency,
     normalized::{rest_api::NormalizedRestApiDataTypes, types::BlockchainCurrency},
-    CexExchange, EmptyFilter
+    traits::EmptyFilter,
+    CexExchange
 };
 
 #[serde_as]

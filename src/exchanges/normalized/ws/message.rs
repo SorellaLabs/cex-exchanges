@@ -62,7 +62,7 @@ impl CombinedWsMessage {
         match self {
             CombinedWsMessage::Disconnect { bad_pair, .. } => bad_pair.clone(),
             #[cfg(feature = "non-us")]
-            CombinedWsMessage::Bybit(BybitWsMessage::InvalidSymbol { id, pair, msg }) => Some(pair.clone().normalize()),
+            CombinedWsMessage::Bybit(BybitWsMessage::InvalidSymbol { pair, .. }) => Some(pair.clone().normalize()),
             _ => None
         }
     }

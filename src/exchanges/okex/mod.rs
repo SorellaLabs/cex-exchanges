@@ -22,7 +22,8 @@ use crate::{
         rest_api::NormalizedRestApiRequest,
         types::{NormalizedTradingPair, NormalizedTradingType}
     },
-    CexExchange, EmptyFilter, Exchange
+    traits::EmptyFilter,
+    CexExchange, Exchange
 };
 
 const WSS_PUBLIC_URL: &str = "wss://ws.okx.com:8443/ws/v5/public";

@@ -4,7 +4,7 @@ use utils::init_test_tracing;
 #[cfg(feature = "us")]
 #[cfg(test)]
 mod coinbase_tests {
-    use cex_exchanges::{clients::rest_api::ExchangeApi, coinbase::Coinbase, EmptyFilter};
+    use cex_exchanges::{clients::rest_api::ExchangeApi, coinbase::Coinbase, traits::EmptyFilter};
     use serial_test::serial;
 
     use super::init_test_tracing;
@@ -59,7 +59,7 @@ mod coinbase_tests {
 #[cfg(feature = "non-us")]
 #[cfg(test)]
 mod binance_tests {
-    use cex_exchanges::{binance::Binance, clients::rest_api::ExchangeApi, normalized::types::InstrumentFilter, EmptyFilter};
+    use cex_exchanges::{binance::Binance, clients::rest_api::ExchangeApi, normalized::types::InstrumentFilter, traits::EmptyFilter};
     use serial_test::serial;
 
     use super::init_test_tracing;
@@ -125,7 +125,7 @@ mod binance_tests {
 #[cfg(feature = "us")]
 #[cfg(test)]
 mod okex_tests {
-    use cex_exchanges::{clients::rest_api::ExchangeApi, normalized::types::InstrumentFilter, okex::Okex, EmptyFilter};
+    use cex_exchanges::{clients::rest_api::ExchangeApi, normalized::types::InstrumentFilter, okex::Okex, traits::EmptyFilter};
     use serial_test::serial;
 
     use super::init_test_tracing;
@@ -187,7 +187,7 @@ mod okex_tests {
 #[cfg(feature = "non-us")]
 #[cfg(test)]
 mod kucoin_tests {
-    use cex_exchanges::{clients::rest_api::ExchangeApi, kucoin::Kucoin, normalized::types::InstrumentFilter, EmptyFilter};
+    use cex_exchanges::{clients::rest_api::ExchangeApi, kucoin::Kucoin, normalized::types::InstrumentFilter, traits::EmptyFilter};
     use serial_test::serial;
 
     use super::init_test_tracing;
@@ -255,7 +255,7 @@ mod kucoin_tests {
 #[cfg(test)]
 mod bybit_tests {
 
-    use cex_exchanges::{bybit::Bybit, clients::rest_api::ExchangeApi, normalized::types::InstrumentFilter, EmptyFilter};
+    use cex_exchanges::{bybit::Bybit, clients::rest_api::ExchangeApi, normalized::types::InstrumentFilter, traits::EmptyFilter};
     use serial_test::serial;
 
     use super::init_test_tracing;

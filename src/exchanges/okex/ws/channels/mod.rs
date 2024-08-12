@@ -12,6 +12,7 @@ use crate::{
         },
         okex::pairs::OkexTradingPair
     },
+    traits::SpecificWsChannel,
     CexExchange
 };
 
@@ -21,31 +22,29 @@ pub enum OkexWsChannel {
     BookTicker(Vec<OkexTradingPair>)
 }
 
-impl OkexWsChannel {
-    /// builds trade channel from a vec of raw trading pairs
-    /// return an error if the symbol is incorrectly formatted
-    pub fn new_trade(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+impl SpecificWsChannel for OkexWsChannel {
+    type ChannelKind = OkexWsChannelKind;
+
+    fn new_trade(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Okex))
             .collect();
 
-        Self::new_from_kind(normalized, OkexWsChannel::TradesAll(Vec::new()))
+        Self::new_from_normalized(OkexWsChannel::TradesAll(Vec::new()), normalized)
     }
 
-    /// builds book ticker channel from a vec of raw trading pairs
-    /// return an error if the symbol is incorrectly formatted
-    pub fn new_book_ticker(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+    fn new_quote(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Okex))
             .collect();
 
-        Self::new_from_kind(normalized, OkexWsChannel::BookTicker(Vec::new()))
+        Self::new_from_normalized(OkexWsChannel::BookTicker(Vec::new()), normalized)
     }
 
-    fn new_from_kind(pairs: Vec<NormalizedTradingPair>, kind: OkexWsChannel) -> eyre::Result<Self> {
-        match kind {
+    fn new_from_normalized(self, pairs: Vec<NormalizedTradingPair>) -> eyre::Result<Self> {
+        match self {
             OkexWsChannel::TradesAll(_) => Ok(OkexWsChannel::TradesAll(
                 pairs
                     .into_iter()
@@ -58,6 +57,13 @@ impl OkexWsChannel {
                     .map(TryInto::try_into)
                     .collect::<Result<_, _>>()?
             ))
+        }
+    }
+
+    fn count_entries(&self) -> usize {
+        match self {
+            OkexWsChannel::TradesAll(vals) => vals.len(),
+            OkexWsChannel::BookTicker(vals) => vals.len()
         }
     }
 }

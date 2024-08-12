@@ -4,8 +4,8 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
-use super::NormalizedTradingPair;
-use crate::{exchanges::CexExchange, ExchangeFilter};
+use super::{NormalizedCurrency, NormalizedTradingPair};
+use crate::{exchanges::CexExchange, traits::ExchangeFilter};
 
 #[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
 pub struct NormalizedInstrument {
@@ -128,6 +128,18 @@ impl ExchangeFilter<NormalizedInstrument> for InstrumentFilter {
             InstrumentFilter::BaseOnly(v) => &val.base_asset_symbol == v,
             InstrumentFilter::QuoteOnly(v) => &val.quote_asset_symbol == v,
             InstrumentFilter::Active => val.active
+        }
+    }
+}
+
+impl ExchangeFilter<NormalizedCurrency> for InstrumentFilter {
+    fn matches(&self, val: &NormalizedCurrency) -> bool {
+        match self {
+            InstrumentFilter::BaseOrQuote(v) => &val.symbol == v,
+            InstrumentFilter::BaseOnly(v) => &val.symbol == v,
+            InstrumentFilter::QuoteOnly(v) => &val.symbol == v,
+            InstrumentFilter::BaseAndQuote { .. } | InstrumentFilter::Pair(_) => false,
+            InstrumentFilter::Active => true
         }
     }
 }

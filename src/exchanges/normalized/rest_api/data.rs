@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use crate::{
     normalized::types::{NormalizedCurrency, NormalizedInstrument},
-    ExchangeFilter
+    traits::ExchangeFilter
 };
 
 #[derive(Debug, Clone, Serialize)]

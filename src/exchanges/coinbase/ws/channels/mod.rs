@@ -17,6 +17,7 @@ use crate::{
             ws::NormalizedWsChannels
         }
     },
+    traits::SpecificWsChannel,
     CexExchange
 };
 
@@ -27,31 +28,29 @@ pub enum CoinbaseWsChannel {
     Ticker(Vec<CoinbaseTradingPair>)
 }
 
-impl CoinbaseWsChannel {
-    /// builds match channel from a vec of raw trading pairs
-    /// return an error if the symbol is incorrectly formatted
-    pub fn new_match(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+impl SpecificWsChannel for CoinbaseWsChannel {
+    type ChannelKind = CoinbaseWsChannelKind;
+
+    fn new_trade(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Coinbase))
             .collect();
 
-        Self::new_from_kind(normalized, CoinbaseWsChannel::Matches(Vec::new()))
+        Self::new_from_normalized(CoinbaseWsChannel::Matches(Vec::new()), normalized)
     }
 
-    /// builds ticker channel from a vec of raw trading pairs
-    /// return an error if the symbol is incorrectly formatted
-    pub fn new_ticker(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+    fn new_quote(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Coinbase))
             .collect();
 
-        Self::new_from_kind(normalized, CoinbaseWsChannel::Ticker(Vec::new()))
+        Self::new_from_normalized(CoinbaseWsChannel::Ticker(Vec::new()), normalized)
     }
 
-    fn new_from_kind(pairs: Vec<NormalizedTradingPair>, kind: CoinbaseWsChannel) -> eyre::Result<Self> {
-        match kind {
+    fn new_from_normalized(self, pairs: Vec<NormalizedTradingPair>) -> eyre::Result<Self> {
+        match self {
             CoinbaseWsChannel::Matches(_) => Ok(CoinbaseWsChannel::Matches(
                 pairs
                     .into_iter()
@@ -65,6 +64,14 @@ impl CoinbaseWsChannel {
                     .collect::<Result<_, _>>()?
             )),
             CoinbaseWsChannel::Status => Ok(CoinbaseWsChannel::Status)
+        }
+    }
+
+    fn count_entries(&self) -> usize {
+        match self {
+            CoinbaseWsChannel::Matches(vals) => vals.len(),
+            CoinbaseWsChannel::Ticker(vals) => vals.len(),
+            CoinbaseWsChannel::Status => 0
         }
     }
 }

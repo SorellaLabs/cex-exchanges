@@ -14,6 +14,7 @@ use crate::{
             ws::NormalizedWsChannels
         }
     },
+    traits::SpecificWsChannel,
     CexExchange
 };
 
@@ -23,31 +24,29 @@ pub enum BybitWsChannel {
     OrderbookL1(Vec<BybitTradingPair>)
 }
 
-impl BybitWsChannel {
-    /// builds trade channel from a vec of raw trading pairs
-    /// return an error if the symbol is incorrectly formatted
-    pub fn new_trade(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+impl SpecificWsChannel for BybitWsChannel {
+    type ChannelKind = BybitWsChannelKind;
+
+    fn new_trade(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Bybit))
             .collect();
 
-        Self::new_from_normalized(normalized, BybitWsChannel::Trade(Vec::new()))
+        Self::new_from_normalized(BybitWsChannel::Trade(Vec::new()), normalized)
     }
 
-    /// builds the book ticker channel from a vec of raw trading
-    /// pairs return an error if the symbol is incorrectly formatted
-    pub fn new_ticker(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+    fn new_quote(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Bybit))
             .collect();
 
-        Self::new_from_normalized(normalized, BybitWsChannel::OrderbookL1(Vec::new()))
+        Self::new_from_normalized(BybitWsChannel::OrderbookL1(Vec::new()), normalized)
     }
 
-    pub(crate) fn new_from_normalized(pairs: Vec<NormalizedTradingPair>, kind: BybitWsChannel) -> eyre::Result<Self> {
-        match kind {
+    fn new_from_normalized(self, pairs: Vec<NormalizedTradingPair>) -> eyre::Result<Self> {
+        match self {
             BybitWsChannel::Trade(_) => Ok(BybitWsChannel::Trade(
                 pairs
                     .into_iter()
@@ -63,7 +62,7 @@ impl BybitWsChannel {
         }
     }
 
-    pub fn count_entries(&self) -> usize {
+    fn count_entries(&self) -> usize {
         match self {
             BybitWsChannel::Trade(vals) => vals.len(),
             BybitWsChannel::OrderbookL1(vals) => vals.len()

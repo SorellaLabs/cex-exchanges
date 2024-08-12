@@ -4,7 +4,7 @@ use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
 use super::NormalizedCurrency;
-use crate::ExchangeFilter;
+use crate::traits::ExchangeFilter;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, PartialOrd, Ord, ValueEnum)]
 pub enum Blockchain {

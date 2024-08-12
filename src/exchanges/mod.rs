@@ -1,7 +1,6 @@
 pub mod normalized;
 
-mod filter;
-pub use filter::*;
+pub mod traits;
 
 #[cfg(feature = "non-us")]
 pub mod binance;
@@ -30,6 +29,7 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use tokio::{net::TcpStream, sync::mpsc::UnboundedReceiver};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
+use traits::SpecificWsBuilder;
 
 use self::normalized::{
     rest_api::NormalizedRestApiRequest,
@@ -52,7 +52,8 @@ use crate::{
         rest_api::{ExchangeApi, RestApiError},
         ws::{CriticalWsMessage, MutliWsStream, WsError}
     },
-    exchanges::normalized::rest_api::CombinedRestApiResponse
+    exchanges::normalized::rest_api::CombinedRestApiResponse,
+    traits::ExchangeFilter
 };
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord, EnumIter, ValueEnum)]
@@ -79,33 +80,33 @@ impl CexExchange {
         map: Vec<NormalizedWsChannels>,
         max_retries: Option<u64>,
         connections_per_stream: Option<usize>,
-        _exch_currency_proxy: Option<CexExchange>
+        exch_currency_proxy: Option<CexExchange>
     ) -> eyre::Result<MutliWsStream> {
         let res = match self {
             #[cfg(feature = "us")]
-            CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map)?
+            CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
                 .build_multistream_unconnected(max_retries),
             #[cfg(feature = "us")]
             CexExchange::Okex => OkexWsBuilder::make_from_normalized_map(
                 map,
                 #[cfg(not(feature = "non-us"))]
-                _exch_currency_proxy.unwrap_or(CexExchange::Coinbase),
+                exch_currency_proxy.unwrap_or(CexExchange::Coinbase),
                 #[cfg(feature = "non-us")]
-                _exch_currency_proxy.unwrap_or(CexExchange::Binance)
+                Some(exch_currency_proxy.unwrap_or(CexExchange::Binance))
             )?
             .build_many_packed(connections_per_stream)?
             .build_multistream_unconnected(max_retries),
             #[cfg(feature = "non-us")]
-            CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map)?
+            CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
                 .build_multistream_unconnected(max_retries),
             #[cfg(feature = "non-us")]
-            CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map)?
+            CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
                 .build_multistream_unconnected(max_retries),
             #[cfg(feature = "non-us")]
-            CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map)?
+            CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
                 .build_multistream_unconnected(max_retries)
         };
@@ -116,7 +117,7 @@ impl CexExchange {
     pub(crate) fn build_multithreaded_multistream_ws_from_normalized(
         self,
         map: Vec<NormalizedWsChannels>,
-        _exch_currency_proxy: Option<CexExchange>,
+        exch_currency_proxy: Option<CexExchange>,
         max_retries: Option<u64>,
         connections_per_stream: Option<usize>,
         handle: tokio::runtime::Handle,
@@ -124,29 +125,29 @@ impl CexExchange {
     ) -> eyre::Result<UnboundedReceiver<CombinedWsMessage>> {
         let res = match self {
             #[cfg(feature = "us")]
-            CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map)?
+            CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
                 .spawn_multithreaded(number_threads, max_retries, handle),
             #[cfg(feature = "us")]
             CexExchange::Okex => OkexWsBuilder::make_from_normalized_map(
                 map,
                 #[cfg(not(feature = "non-us"))]
-                _exch_currency_proxy.unwrap_or(CexExchange::Coinbase),
+                exch_currency_proxy.unwrap_or(CexExchange::Coinbase),
                 #[cfg(feature = "non-us")]
-                _exch_currency_proxy.unwrap_or(CexExchange::Binance)
+                Some(exch_currency_proxy.unwrap_or(CexExchange::Binance))
             )?
             .build_many_packed(connections_per_stream)?
             .spawn_multithreaded(number_threads, max_retries, handle),
             #[cfg(feature = "non-us")]
-            CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map)?
+            CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
                 .spawn_multithreaded(number_threads, max_retries, handle),
             #[cfg(feature = "non-us")]
-            CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map)?
+            CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
                 .spawn_multithreaded(number_threads, max_retries, handle),
             #[cfg(feature = "non-us")]
-            CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map)?
+            CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
                 .spawn_multithreaded(number_threads, max_retries, handle)
         };

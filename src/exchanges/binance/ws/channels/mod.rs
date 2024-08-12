@@ -14,6 +14,7 @@ use crate::{
             ws::NormalizedWsChannels
         }
     },
+    traits::SpecificWsChannel,
     CexExchange
 };
 
@@ -23,31 +24,29 @@ pub enum BinanceWsChannel {
     BookTicker(Vec<BinanceTradingPair>)
 }
 
-impl BinanceWsChannel {
-    /// builds trade channel from a vec of raw trading pairs
-    /// return an error if the symbol is incorrectly formatted
-    pub fn new_trade(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+impl SpecificWsChannel for BinanceWsChannel {
+    type ChannelKind = BinanceWsChannelKind;
+
+    fn new_trade(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Binance))
             .collect();
 
-        Self::new_from_normalized(normalized, BinanceWsChannel::Trade(Vec::new()))
+        Self::new_from_normalized(BinanceWsChannel::Trade(Vec::new()), normalized)
     }
 
-    /// builds the book ticker channel from a vec of raw trading
-    /// pairs return an error if the symbol is incorrectly formatted
-    pub fn new_book_ticker(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+    fn new_quote(pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Binance))
             .collect();
 
-        Self::new_from_normalized(normalized, BinanceWsChannel::BookTicker(Vec::new()))
+        Self::new_from_normalized(BinanceWsChannel::BookTicker(Vec::new()), normalized)
     }
 
-    pub(crate) fn new_from_normalized(pairs: Vec<NormalizedTradingPair>, kind: BinanceWsChannel) -> eyre::Result<Self> {
-        match kind {
+    fn new_from_normalized(self, pairs: Vec<NormalizedTradingPair>) -> eyre::Result<Self> {
+        match self {
             BinanceWsChannel::Trade(_) => Ok(BinanceWsChannel::Trade(
                 pairs
                     .into_iter()
@@ -63,7 +62,7 @@ impl BinanceWsChannel {
         }
     }
 
-    pub fn count_entries(&self) -> usize {
+    fn count_entries(&self) -> usize {
         match self {
             BinanceWsChannel::Trade(vals) => vals.len(),
             BinanceWsChannel::BookTicker(vals) => vals.len()

@@ -1,5 +1,8 @@
+#![allow(unexpected_cfgs)]
+
 #[cfg(not(feature = "bybit-apikey"))]
 mod proxy_coins;
+
 #[cfg(not(feature = "bybit-apikey"))]
 pub use proxy_coins::*;
 

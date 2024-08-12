@@ -13,6 +13,7 @@ mod coinbase_tests {
             types::{InstrumentFilter, RawTradingPair},
             ws::{NormalizedExchangeBuilder, NormalizedWsChannelKinds}
         },
+        traits::{SpecificWsBuilder, SpecificWsChannel},
         CexExchange
     };
     use serial_test::serial;
@@ -28,7 +29,7 @@ mod coinbase_tests {
     async fn test_matches() {
         init_test_tracing();
         let builder = CoinbaseWsBuilder::default().add_channel(
-            CoinbaseWsChannel::new_match(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
+            CoinbaseWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
         );
         coinbase_util(builder, 5).await;
     }
@@ -38,7 +39,7 @@ mod coinbase_tests {
     async fn test_ticker() {
         init_test_tracing();
         let builder = CoinbaseWsBuilder::default().add_channel(
-            CoinbaseWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
+            CoinbaseWsChannel::new_quote(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
         );
         coinbase_util(builder, 5).await;
     }
@@ -48,9 +49,9 @@ mod coinbase_tests {
     async fn test_multi_distributed() {
         init_test_tracing();
         let builder = CoinbaseWsBuilder::default()
-            .add_channel(CoinbaseWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USD", '_')]).unwrap())
+            .add_channel(CoinbaseWsChannel::new_quote(vec![RawTradingPair::new_raw("ETH_USD", '_')]).unwrap())
             .add_channel(
-                CoinbaseWsChannel::new_match(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
+                CoinbaseWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
             )
             .add_channel(CoinbaseWsChannel::Status)
             .build_many_distributed()
@@ -65,7 +66,7 @@ mod coinbase_tests {
         init_test_tracing();
         let channels = vec![CoinbaseWsChannelKind::Matches, CoinbaseWsChannelKind::Ticker];
 
-        let builder = CoinbaseWsBuilder::build_from_all_instruments(&channels, Some(10))
+        let builder = CoinbaseWsBuilder::build_from_all_instruments(&channels, Some(10), None)
             .await
             .unwrap();
 
@@ -78,7 +79,7 @@ mod coinbase_tests {
         init_test_tracing();
         let channels = vec![CoinbaseWsChannelKind::Matches, CoinbaseWsChannelKind::Ticker];
 
-        let builder = CoinbaseWsBuilder::build_from_all_instruments(&channels, Some(10))
+        let builder = CoinbaseWsBuilder::build_from_all_instruments(&channels, Some(10), None)
             .await
             .unwrap();
         mutlithreaded_util(builder, 1000).await;
@@ -120,6 +121,7 @@ mod okex_tests {
             channels::{OkexWsChannel, OkexWsChannelKind},
             OkexWsBuilder
         },
+        traits::{SpecificWsBuilder, SpecificWsChannel},
         CexExchange
     };
     use serial_test::serial;
@@ -143,9 +145,8 @@ mod okex_tests {
     #[serial]
     async fn test_book_ticker() {
         init_test_tracing();
-        let builder = OkexWsBuilder::new(None).add_channel(
-            OkexWsChannel::new_book_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
-        );
+        let builder = OkexWsBuilder::new(None)
+            .add_channel(OkexWsChannel::new_quote(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap());
         okex_util(builder, 5).await;
     }
 
@@ -174,7 +175,7 @@ mod okex_tests {
         init_test_tracing();
         let channels = vec![OkexWsChannelKind::TradesAll, OkexWsChannelKind::BookTicker];
 
-        let builder = OkexWsBuilder::build_from_all_instruments(&channels, None, Some(10))
+        let builder = OkexWsBuilder::build_from_all_instruments(&channels, Some(10), None)
             .await
             .unwrap();
 
@@ -187,7 +188,7 @@ mod okex_tests {
         init_test_tracing();
         let channels = vec![OkexWsChannelKind::TradesAll, OkexWsChannelKind::BookTicker];
 
-        let builder = OkexWsBuilder::build_from_all_instruments(&channels, None, Some(10))
+        let builder = OkexWsBuilder::build_from_all_instruments(&channels, Some(10), None)
             .await
             .unwrap();
         mutlithreaded_util(builder, 1000).await;
@@ -225,7 +226,8 @@ mod binance_tests {
             channels::{BinanceWsChannel, BinanceWsChannelKind},
             BinanceWsBuilder
         },
-        normalized::types::RawTradingPair
+        normalized::types::RawTradingPair,
+        traits::{SpecificWsBuilder, SpecificWsChannel}
     };
     use serial_test::serial;
 
@@ -250,7 +252,7 @@ mod binance_tests {
     async fn test_book_ticker() {
         init_test_tracing();
         let builder = BinanceWsBuilder::default().add_channel(
-            BinanceWsChannel::new_book_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
+            BinanceWsChannel::new_quote(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
         );
         binance_util(builder, 5).await;
     }
@@ -280,7 +282,7 @@ mod binance_tests {
         init_test_tracing();
         let channels = vec![BinanceWsChannelKind::Trade, BinanceWsChannelKind::BookTicker];
 
-        let builder = BinanceWsBuilder::build_from_all_instruments(&channels)
+        let builder = BinanceWsBuilder::build_from_all_instruments(&channels, None, None)
             .await
             .unwrap();
 
@@ -293,7 +295,7 @@ mod binance_tests {
         init_test_tracing();
         let channels = vec![BinanceWsChannelKind::Trade, BinanceWsChannelKind::BookTicker];
 
-        let builder = BinanceWsBuilder::build_from_all_instruments(&channels)
+        let builder = BinanceWsBuilder::build_from_all_instruments(&channels, None, None)
             .await
             .unwrap();
         mutlithreaded_util(builder, 1000).await;
@@ -308,7 +310,8 @@ mod kucoin_tests {
             channels::{KucoinWsChannel, KucoinWsChannelKind},
             KucoinWsBuilder
         },
-        normalized::types::RawTradingPair
+        normalized::types::RawTradingPair,
+        traits::{SpecificWsBuilder, SpecificWsChannel}
     };
     use serial_test::serial;
 
@@ -323,7 +326,7 @@ mod kucoin_tests {
     async fn test_match() {
         init_test_tracing();
         let builder = KucoinWsBuilder::default().add_channel(
-            KucoinWsChannel::new_match(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
+            KucoinWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
         );
         kucoin_util(builder, 5).await;
     }
@@ -333,7 +336,7 @@ mod kucoin_tests {
     async fn test_book_ticker() {
         init_test_tracing();
         let builder = KucoinWsBuilder::default().add_channel(
-            KucoinWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
+            KucoinWsChannel::new_quote(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
         );
         kucoin_util(builder, 5).await;
     }
@@ -344,10 +347,10 @@ mod kucoin_tests {
         init_test_tracing();
         let builder = KucoinWsBuilder::default()
             .add_channel(
-                KucoinWsChannel::new_match(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("btc-usdc")]).unwrap()
+                KucoinWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("btc-usdc")]).unwrap()
             )
             .add_channel(
-                KucoinWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("btc-usdc")]).unwrap()
+                KucoinWsChannel::new_quote(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("btc-usdc")]).unwrap()
             )
             .build_many_distributed()
             .unwrap();
@@ -361,7 +364,7 @@ mod kucoin_tests {
         init_test_tracing();
         let channels = vec![KucoinWsChannelKind::Match, KucoinWsChannelKind::Ticker];
 
-        let builder = KucoinWsBuilder::build_from_all_instruments(&channels)
+        let builder = KucoinWsBuilder::build_from_all_instruments(&channels, None, None)
             .await
             .unwrap();
 
@@ -374,7 +377,7 @@ mod kucoin_tests {
         init_test_tracing();
         let channels = vec![KucoinWsChannelKind::Match, KucoinWsChannelKind::Ticker];
 
-        let builder = KucoinWsBuilder::build_from_all_instruments(&channels)
+        let builder = KucoinWsBuilder::build_from_all_instruments(&channels, None, None)
             .await
             .unwrap();
         mutlithreaded_util(builder, 1000).await;
@@ -389,7 +392,8 @@ mod bybit_tests {
             channels::{BybitWsChannel, BybitWsChannelKind},
             BybitWsBuilder
         },
-        normalized::types::RawTradingPair
+        normalized::types::RawTradingPair,
+        traits::{SpecificWsBuilder, SpecificWsChannel}
     };
     use serial_test::serial;
 
@@ -414,7 +418,7 @@ mod bybit_tests {
     async fn test_ticker() {
         init_test_tracing();
         let builder = BybitWsBuilder::default().add_channel(
-            BybitWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
+            BybitWsChannel::new_quote(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
         );
         bybit_util(builder, 5).await;
     }
@@ -425,9 +429,7 @@ mod bybit_tests {
         init_test_tracing();
         let builder = BybitWsBuilder::default()
             .add_channel(BybitWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("btc-usdc")]).unwrap())
-            .add_channel(
-                BybitWsChannel::new_ticker(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("btc-usdc")]).unwrap()
-            )
+            .add_channel(BybitWsChannel::new_quote(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("btc-usdc")]).unwrap())
             .build_many_distributed()
             .unwrap();
 
@@ -440,7 +442,7 @@ mod bybit_tests {
         init_test_tracing();
         let channels = vec![BybitWsChannelKind::Trade, BybitWsChannelKind::OrderbookL1];
 
-        let builder = BybitWsBuilder::build_from_all_instruments(&channels)
+        let builder = BybitWsBuilder::build_from_all_instruments(&channels, None, None)
             .await
             .unwrap();
 
@@ -453,7 +455,7 @@ mod bybit_tests {
         init_test_tracing();
         let channels = vec![BybitWsChannelKind::Trade, BybitWsChannelKind::OrderbookL1];
 
-        let builder = BybitWsBuilder::build_from_all_instruments(&channels)
+        let builder = BybitWsBuilder::build_from_all_instruments(&channels, None, None)
             .await
             .unwrap();
         mutlithreaded_util(builder, 1000).await;
