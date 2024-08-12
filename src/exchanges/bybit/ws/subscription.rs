@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use serde::Serialize;
 
 use super::channels::{BybitWsChannel, BybitWsChannelKind};
-use crate::bybit::BybitTradingPair;
+use crate::{bybit::BybitTradingPair, traits::SpecificWsSubscription};
 
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct BybitSubscription {
@@ -15,13 +15,18 @@ impl BybitSubscription {
     pub fn new() -> Self {
         BybitSubscription { op: "subscribe".to_string(), args: Vec::new() }
     }
+}
 
-    pub fn add_channel(&mut self, channel: BybitWsChannel) {
+impl SpecificWsSubscription for BybitSubscription {
+    type TradingPair = BybitTradingPair;
+    type WsChannel = BybitWsChannel;
+
+    fn add_channel(&mut self, channel: Self::WsChannel) {
         let new: Vec<BybitSubscriptionInner> = channel.into();
         self.args.extend(new);
     }
 
-    pub fn remove_pair(&mut self, pair: &BybitTradingPair) -> bool {
+    fn remove_pair(&mut self, pair: &Self::TradingPair) -> bool {
         self.args.retain(|p| &p.trading_pair != pair);
 
         self.args.is_empty()

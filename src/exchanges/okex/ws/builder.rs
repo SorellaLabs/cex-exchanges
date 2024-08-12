@@ -6,7 +6,7 @@ use crate::{
     clients::ws::MutliWsStreamBuilder,
     normalized::{types::InstrumentFilter, ws::NormalizedWsChannels},
     okex::Okex,
-    traits::SpecificWsBuilder,
+    traits::{SpecificWsBuilder, SpecificWsSubscription},
     CexExchange
 };
 

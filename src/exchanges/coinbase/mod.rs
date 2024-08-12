@@ -17,6 +17,7 @@ use self::{
     rest_api::CoinbaseRestApiResponse,
     ws::{CoinbaseSubscription, CoinbaseWsMessage}
 };
+use super::traits::SpecificWsSubscription;
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
     normalized::{rest_api::NormalizedRestApiRequest, types::NormalizedTradingPair},

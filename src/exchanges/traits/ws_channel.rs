@@ -16,4 +16,12 @@ pub trait SpecificWsChannel: Sized {
 
     // return the number of entries in the channel
     fn count_entries(&self) -> usize;
+
+    // channel kind (without values)
+    fn kind(&self) -> Self::ChannelKind
+    where
+        for<'a> &'a Self: Into<Self::ChannelKind>
+    {
+        self.into()
+    }
 }

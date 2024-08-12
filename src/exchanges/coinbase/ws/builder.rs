@@ -6,7 +6,7 @@ use crate::{
     clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},
     coinbase::Coinbase,
     normalized::ws::NormalizedWsChannels,
-    traits::SpecificWsBuilder,
+    traits::{SpecificWsBuilder, SpecificWsSubscription},
     CexExchange
 };
 

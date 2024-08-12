@@ -14,6 +14,7 @@ use self::{
     rest_api::KucoinRestApiResponse,
     ws::{KucoinMultiSubscription, KucoinSubscription, KucoinWsEndpointResponse, KucoinWsMessage}
 };
+use super::traits::SpecificWsSubscription;
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
     exchanges::Exchange,

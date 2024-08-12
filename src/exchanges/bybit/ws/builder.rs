@@ -6,7 +6,7 @@ use crate::{
     bybit::{Bybit, BybitTradingType},
     clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},
     normalized::ws::NormalizedWsChannels,
-    traits::SpecificWsBuilder,
+    traits::{SpecificWsBuilder, SpecificWsSubscription},
     CexExchange
 };
 

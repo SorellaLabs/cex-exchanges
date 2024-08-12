@@ -4,7 +4,10 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use super::channels::{KucoinWsChannel, KucoinWsChannelKind};
-use crate::kucoin::KucoinTradingPair;
+use crate::{
+    kucoin::KucoinTradingPair,
+    traits::{SpecificWsChannel, SpecificWsSubscription}
+};
 
 #[derive(Debug, Default, Clone)]
 pub struct KucoinMultiSubscription {
@@ -60,8 +63,17 @@ impl KucoinSubscription {
     pub fn add_pairs(&mut self, pairs: Vec<KucoinTradingPair>) {
         self.topic.trading_pairs.extend(pairs)
     }
+}
 
-    pub fn remove_pair(&mut self, pair: &KucoinTradingPair) -> bool {
+impl SpecificWsSubscription for KucoinSubscription {
+    type TradingPair = KucoinTradingPair;
+    type WsChannel = KucoinWsChannel;
+
+    fn add_channel(&mut self, channel: Self::WsChannel) {
+        self.topic = KucoinSubscriptionInner::new(channel.kind());
+    }
+
+    fn remove_pair(&mut self, pair: &Self::TradingPair) -> bool {
         self.topic.trading_pairs.retain(|p| p != pair);
 
         self.topic.trading_pairs.is_empty()

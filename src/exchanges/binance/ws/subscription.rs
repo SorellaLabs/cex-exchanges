@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use serde::Serialize;
 
 use super::channels::{BinanceWsChannel, BinanceWsChannelKind};
-use crate::binance::BinanceTradingPair;
+use crate::{binance::BinanceTradingPair, traits::SpecificWsSubscription};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct BinanceSubscription {
@@ -16,22 +16,27 @@ impl BinanceSubscription {
     pub fn new() -> Self {
         BinanceSubscription { method: "SUBSCRIBE".to_string(), params: Vec::new(), id: 1 }
     }
-
-    pub fn add_channel(&mut self, channel: BinanceWsChannel) {
-        let new: Vec<BinanceSubscriptionInner> = channel.into();
-        self.params.extend(new);
-    }
-
-    pub fn remove_pair(&mut self, pair: &BinanceTradingPair) -> bool {
-        self.params.retain(|p| &p.trading_pair != pair);
-
-        self.params.is_empty()
-    }
 }
 
 impl Default for BinanceSubscription {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl SpecificWsSubscription for BinanceSubscription {
+    type TradingPair = BinanceTradingPair;
+    type WsChannel = BinanceWsChannel;
+
+    fn add_channel(&mut self, channel: Self::WsChannel) {
+        let new: Vec<BinanceSubscriptionInner> = channel.into();
+        self.params.extend(new);
+    }
+
+    fn remove_pair(&mut self, pair: &Self::TradingPair) -> bool {
+        self.params.retain(|p| &p.trading_pair != pair);
+
+        self.params.is_empty()
     }
 }
 

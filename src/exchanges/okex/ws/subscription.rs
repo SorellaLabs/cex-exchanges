@@ -3,24 +3,12 @@ use std::collections::HashSet;
 use serde::Serialize;
 
 use super::channels::OkexWsChannel;
-use crate::okex::OkexTradingPair;
+use crate::{okex::OkexTradingPair, traits::SpecificWsSubscription};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct OkexSubscription {
     op:   String,
     args: Vec<OkexSubscriptionInner>
-}
-
-impl OkexSubscription {
-    pub(crate) fn needs_business_ws(&self) -> bool {
-        self.args.iter().any(|arg| arg.channel == "trades-all")
-    }
-
-    pub fn remove_pair(&mut self, pair: &OkexTradingPair) -> bool {
-        self.args.retain(|p| &p.trading_pair != pair);
-
-        self.args.is_empty()
-    }
 }
 
 impl Default for OkexSubscription {
@@ -30,17 +18,32 @@ impl Default for OkexSubscription {
 }
 
 impl OkexSubscription {
-    pub fn new() -> Self {
-        OkexSubscription { op: "subscribe".to_string(), args: Vec::new() }
+    pub(crate) fn needs_business_ws(&self) -> bool {
+        self.args.iter().any(|arg| arg.channel == "trades-all")
     }
 
     pub fn new_single_channel(channel: OkexWsChannel) -> Self {
         OkexSubscription { op: "subscribe".to_string(), args: channel.into() }
     }
 
-    pub(crate) fn add_channel(&mut self, channel: OkexWsChannel) {
+    pub fn new() -> Self {
+        OkexSubscription { op: "subscribe".to_string(), args: Vec::new() }
+    }
+}
+
+impl SpecificWsSubscription for OkexSubscription {
+    type TradingPair = OkexTradingPair;
+    type WsChannel = OkexWsChannel;
+
+    fn add_channel(&mut self, channel: Self::WsChannel) {
         let new: Vec<_> = channel.into();
         self.args.extend(new);
+    }
+
+    fn remove_pair(&mut self, pair: &Self::TradingPair) -> bool {
+        self.args.retain(|p| &p.trading_pair != pair);
+
+        self.args.is_empty()
     }
 }
 

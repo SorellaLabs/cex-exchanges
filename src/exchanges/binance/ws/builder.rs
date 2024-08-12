@@ -6,7 +6,7 @@ use crate::{
     binance::Binance,
     clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},
     normalized::ws::NormalizedWsChannels,
-    traits::SpecificWsBuilder,
+    traits::{SpecificWsBuilder, SpecificWsSubscription},
     CexExchange
 };
 

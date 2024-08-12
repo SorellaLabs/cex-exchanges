@@ -18,6 +18,7 @@ use self::{
     rest_api::{BinanceAllInstruments, BinanceAllSymbols, BinanceRestApiResponse, BinanceSymbol},
     ws::{BinanceSubscription, BinanceWsMessage}
 };
+use super::traits::SpecificWsSubscription;
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
     exchanges::Exchange,

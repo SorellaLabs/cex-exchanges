@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use serde::Serialize;
 
 use super::channels::CoinbaseWsChannel;
-use crate::coinbase::CoinbaseTradingPair;
+use crate::{coinbase::CoinbaseTradingPair, traits::SpecificWsSubscription};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct CoinbaseSubscription {
@@ -23,19 +23,24 @@ impl CoinbaseSubscription {
         CoinbaseSubscription { sub_name: "subscribe".to_string(), channels: Vec::new() }
     }
 
-    pub fn remove_pair(&mut self, pair: &CoinbaseTradingPair) -> bool {
+    pub fn new_single_channel(channel: CoinbaseWsChannel) -> Self {
+        CoinbaseSubscription { sub_name: "subscribe".to_string(), channels: vec![channel.into()] }
+    }
+}
+
+impl SpecificWsSubscription for CoinbaseSubscription {
+    type TradingPair = CoinbaseTradingPair;
+    type WsChannel = CoinbaseWsChannel;
+
+    fn add_channel(&mut self, channel: Self::WsChannel) {
+        self.channels.push(channel.into());
+    }
+
+    fn remove_pair(&mut self, pair: &Self::TradingPair) -> bool {
         self.channels.iter_mut().for_each(|sub| {
             sub.remove_pair(pair);
         });
         self.channels.is_empty()
-    }
-
-    pub fn new_single_channel(channel: CoinbaseWsChannel) -> Self {
-        CoinbaseSubscription { sub_name: "subscribe".to_string(), channels: vec![channel.into()] }
-    }
-
-    pub(crate) fn add_channel(&mut self, channel: CoinbaseWsChannel) {
-        self.channels.push(channel.into());
     }
 }
 

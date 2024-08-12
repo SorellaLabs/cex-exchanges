@@ -16,6 +16,7 @@ use self::{
     rest_api::{OkexAllInstruments, OkexAllSymbols, OkexRestApiResponse},
     ws::{OkexSubscription, OkexWsMessage}
 };
+use super::traits::SpecificWsSubscription;
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
     normalized::{

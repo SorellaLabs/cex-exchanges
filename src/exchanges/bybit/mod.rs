@@ -16,6 +16,7 @@ use self::{
     rest_api::{BybitAllCoins, BybitAllInstruments, BybitRestApiResponse},
     ws::{BybitSubscription, BybitWsMessage}
 };
+use super::traits::SpecificWsSubscription;
 use crate::{
     binance::Binance,
     clients::{rest_api::RestApiError, ws::WsError},
