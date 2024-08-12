@@ -93,8 +93,7 @@ where
     }
 
     pub fn spawn_multithreaded(self, num_threads: usize, max_retries: Option<u64>) -> UnboundedReceiver<CombinedWsMessage> {
-        let chunk_size = if self.exchanges.len() < num_threads + 1 { 1 } else { self.exchanges.len() / num_threads + 1 };
-        let exchange_chunks = self.exchanges.chunks(chunk_size);
+        let exchange_chunks = self.exchanges.chunks(num_threads);
 
         let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
 
