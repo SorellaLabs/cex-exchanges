@@ -131,7 +131,6 @@ impl NormalizedExchangeBuilder {
     /// builds the multithreaded multistream ws client
     pub fn build_all_multithreaded(
         self,
-        handle: tokio::runtime::Handle,
         number_threads: usize,
         max_retries: Option<u64>,
         connections_per_stream: Option<usize>
@@ -150,7 +149,6 @@ impl NormalizedExchangeBuilder {
                     self.exch_currency_proxy,
                     max_retries,
                     connections_per_stream,
-                    handle.clone(),
                     number_threads
                 )?;
                 Ok::<_, eyre::Report>(UnboundedReceiverStream::new(new_stream))

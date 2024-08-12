@@ -5,7 +5,7 @@ use std::{
 };
 
 use futures::{Stream, StreamExt};
-use tokio::{runtime::Handle, sync::mpsc::UnboundedReceiver};
+use tokio::sync::mpsc::UnboundedReceiver;
 
 use super::{errors::WsError, WsStream};
 use crate::{exchanges::normalized::ws::CombinedWsMessage, Exchange};
@@ -92,17 +92,19 @@ where
         MutliWsStream { combined_streams, stream_count }
     }
 
-    pub fn spawn_multithreaded(self, num_threads: usize, max_retries: Option<u64>, handle: Handle) -> UnboundedReceiver<CombinedWsMessage> {
+    pub fn spawn_multithreaded(self, num_threads: usize, max_retries: Option<u64>) -> UnboundedReceiver<CombinedWsMessage> {
         let chunk_size = if self.exchanges.len() < num_threads + 1 { 1 } else { self.exchanges.len() / num_threads + 1 };
         let exchange_chunks = self.exchanges.chunks(chunk_size);
 
         let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
 
         exchange_chunks.into_iter().for_each(|exchanges| {
-            let handle = handle.clone();
             let exchanges = exchanges.to_vec();
             let tx = tx.clone();
             std::thread::spawn(move || {
+                let thread_rt = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()?;
                 let this_new = Self { exchanges };
                 let mut ms = this_new.build_multistream_unconnected(max_retries);
 
@@ -114,7 +116,7 @@ where
                     Ok::<(), eyre::Report>(())
                 };
 
-                handle.block_on(fut)?;
+                thread_rt.block_on(fut)?;
                 Ok::<(), eyre::Report>(())
             });
         });

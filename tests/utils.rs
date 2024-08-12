@@ -59,7 +59,7 @@ pub async fn mutlistream_util<E: Exchange + Unpin + Debug + Send + 'static>(buil
 }
 
 pub async fn mutlithreaded_util<E: Exchange + Unpin + Debug + Send + 'static>(builder: MutliWsStreamBuilder<E>, iterations: usize) {
-    let mut rx = builder.spawn_multithreaded(8, None, tokio::runtime::Handle::current());
+    let mut rx = builder.spawn_multithreaded(8, None);
     info!(target: "cex-exchanges::tests::ws", "connected stream");
 
     let mut i = 0;
@@ -84,7 +84,7 @@ pub async fn mutlithreaded_util<E: Exchange + Unpin + Debug + Send + 'static>(bu
 
 pub async fn normalized_mutlithreaded_util(builder: NormalizedExchangeBuilder, iterations: usize) {
     let mut rx = builder
-        .build_all_multithreaded(tokio::runtime::Handle::current(), 1, Some(10), Some(25))
+        .build_all_multithreaded(1, Some(10), Some(25))
         .unwrap()
         .unwrap();
     info!(target: "cex-exchanges::tests::ws", "connected stream");

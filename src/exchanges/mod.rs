@@ -120,14 +120,13 @@ impl CexExchange {
         exch_currency_proxy: Option<CexExchange>,
         max_retries: Option<u64>,
         connections_per_stream: Option<usize>,
-        handle: tokio::runtime::Handle,
         number_threads: usize
     ) -> eyre::Result<UnboundedReceiver<CombinedWsMessage>> {
         let res = match self {
             #[cfg(feature = "us")]
             CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
-                .spawn_multithreaded(number_threads, max_retries, handle),
+                .spawn_multithreaded(number_threads, max_retries),
             #[cfg(feature = "us")]
             CexExchange::Okex => OkexWsBuilder::make_from_normalized_map(
                 map,
@@ -137,19 +136,19 @@ impl CexExchange {
                 Some(exch_currency_proxy.unwrap_or(CexExchange::Binance))
             )?
             .build_many_packed(connections_per_stream)?
-            .spawn_multithreaded(number_threads, max_retries, handle),
+            .spawn_multithreaded(number_threads, max_retries),
             #[cfg(feature = "non-us")]
             CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
-                .spawn_multithreaded(number_threads, max_retries, handle),
+                .spawn_multithreaded(number_threads, max_retries),
             #[cfg(feature = "non-us")]
             CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
-                .spawn_multithreaded(number_threads, max_retries, handle),
+                .spawn_multithreaded(number_threads, max_retries),
             #[cfg(feature = "non-us")]
             CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
-                .spawn_multithreaded(number_threads, max_retries, handle)
+                .spawn_multithreaded(number_threads, max_retries)
         };
 
         Ok(res)
