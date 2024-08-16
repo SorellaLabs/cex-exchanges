@@ -36,6 +36,7 @@ strum = "0.25"
 strum_macros = "0.25"
 clap = { version = "4", features = ["derive"] }
 rand = "0.8"
+owned_chunks = "0.1.1"
 
 # tracing
 tracing = "0.1.0"

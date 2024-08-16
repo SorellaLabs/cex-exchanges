@@ -1,6 +1,7 @@
 use std::{collections::HashMap, pin::Pin};
 
-use futures::{stream::select_all, Stream};
+use futures::Stream;
+use owned_chunks::OwnedChunks;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use super::CombinedWsMessage;
@@ -135,7 +136,7 @@ impl NormalizedExchangeBuilder {
         max_retries: Option<u64>,
         connections_per_stream: Option<usize>
     ) -> eyre::Result<Option<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>>> {
-        let all_streams = self
+        let mut all_streams = self
             .ws_exchanges
             .into_iter()
             .map(|(exch, map)| {
@@ -144,21 +145,40 @@ impl NormalizedExchangeBuilder {
                     .flat_map(|channel| channel.make_many_single())
                     .collect::<Vec<_>>();
 
-                let new_stream = exch.build_multithreaded_multistream_ws_from_normalized(
-                    channel_map,
-                    self.exch_currency_proxy,
-                    max_retries,
-                    connections_per_stream,
-                    number_threads
-                )?;
-                Ok::<_, eyre::Report>(UnboundedReceiverStream::new(new_stream))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+                exch.build_multistream_unconnected_raw_ws_from_normalized(channel_map, self.exch_currency_proxy, max_retries, connections_per_stream)
 
-        if all_streams.is_empty() {
-            Ok(None)
+                // let new_stream =
+                // exch.build_multithreaded_multistream_ws_from_normalized(
+                //     channel_map,
+                //     self.exch_currency_proxy,
+                //     max_retries,
+                //     connections_per_stream,
+                //     number_threads
+                // )?;
+                // Ok::<_, eyre::Report>(UnboundedReceiverStream::new(new_stream))
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+
+        if !all_streams.is_empty() {
+            let chunk_size = (all_streams.len() as f64 / number_threads as f64).ceil() as usize;
+
+            let stream_chks = all_streams.owned_chunks(chunk_size); //.take(chunk_size).collect::<Vec<_>>();
+
+            stream_chks.into_iter().for_each(|chk| {
+                let stream_chk = chk.collect::<Vec<_>>();
+                let tx = tx.clone();
+                let multi = MutliWsStream::build_from_raw(stream_chk);
+                multi.spawn_on_new_thread(tx.clone());
+            });
+
+            Ok(Some(Box::pin(UnboundedReceiverStream::new(rx))))
         } else {
-            Ok(Some(Box::pin(select_all(all_streams))))
+            Ok(None)
         }
     }
 }

@@ -19,11 +19,12 @@ pub mod okex;
 
 use std::{
     fmt::{Debug, Display},
+    pin::Pin,
     str::FromStr
 };
 
 use clap::ValueEnum;
-use futures::Future;
+use futures::{Future, Stream};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -149,6 +150,45 @@ impl CexExchange {
             CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
                 .spawn_multithreaded(number_threads, max_retries)
+        };
+
+        Ok(res)
+    }
+
+    fn build_multistream_unconnected_raw_ws_from_normalized(
+        self,
+        map: Vec<NormalizedWsChannels>,
+        exch_currency_proxy: Option<CexExchange>,
+        max_retries: Option<u64>,
+        connections_per_stream: Option<usize>
+    ) -> eyre::Result<Vec<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>>> {
+        let res = match self {
+            #[cfg(feature = "us")]
+            CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map, None)?
+                .build_many_packed(connections_per_stream)?
+                .build_multistream_unconnected_raw(max_retries),
+            #[cfg(feature = "us")]
+            CexExchange::Okex => OkexWsBuilder::make_from_normalized_map(
+                map,
+                #[cfg(not(feature = "non-us"))]
+                exch_currency_proxy.unwrap_or(CexExchange::Coinbase),
+                #[cfg(feature = "non-us")]
+                Some(exch_currency_proxy.unwrap_or(CexExchange::Binance))
+            )?
+            .build_many_packed(connections_per_stream)?
+            .build_multistream_unconnected_raw(max_retries),
+            #[cfg(feature = "non-us")]
+            CexExchange::Binance => BinanceWsBuilder::make_from_normalized_map(map, None)?
+                .build_many_packed(connections_per_stream)?
+                .build_multistream_unconnected_raw(max_retries),
+            #[cfg(feature = "non-us")]
+            CexExchange::Kucoin => KucoinWsBuilder::make_from_normalized_map(map, None)?
+                .build_many_packed(connections_per_stream)?
+                .build_multistream_unconnected_raw(max_retries),
+            #[cfg(feature = "non-us")]
+            CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map, None)?
+                .build_many_packed(connections_per_stream)?
+                .build_multistream_unconnected_raw(max_retries)
         };
 
         Ok(res)

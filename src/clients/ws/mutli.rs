@@ -5,7 +5,7 @@ use std::{
 };
 
 use futures::{Stream, StreamExt};
-use tokio::sync::mpsc::UnboundedReceiver;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 use super::{errors::WsError, WsStream};
 use crate::{exchanges::normalized::ws::CombinedWsMessage, Exchange};
@@ -24,6 +24,31 @@ impl MutliWsStream {
 
     pub fn stream_count(&self) -> usize {
         self.stream_count
+    }
+
+    pub(crate) fn spawn_on_new_thread(self, tx: UnboundedSender<CombinedWsMessage>) {
+        std::thread::spawn(move || {
+            let thread_rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?;
+
+            thread_rt.block_on(self.run_with_sender(tx))?;
+            Ok::<(), eyre::Report>(())
+        });
+    }
+
+    pub async fn run_with_sender(mut self, tx: UnboundedSender<CombinedWsMessage>) -> eyre::Result<()> {
+        while let Some(val) = self.next().await {
+            tx.send(val)?;
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn build_from_raw(raw_streams: Vec<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>>) -> Self {
+        let stream_count = raw_streams.len();
+        let combined_streams = Box::pin(futures::stream::select_all(raw_streams));
+        Self { stream_count, combined_streams }
     }
 }
 
@@ -92,8 +117,16 @@ where
         MutliWsStream { combined_streams, stream_count }
     }
 
+    pub(crate) fn build_multistream_unconnected_raw(self, max_retries: Option<u64>) -> Vec<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>> {
+        self.exchanges
+            .into_iter()
+            .map(|exch| Box::pin(WsStream::new(exch, max_retries)) as Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>)
+            .collect::<Vec<_>>()
+    }
+
     pub fn spawn_multithreaded(self, num_threads: usize, max_retries: Option<u64>) -> UnboundedReceiver<CombinedWsMessage> {
-        let exchange_chunks = self.exchanges.chunks(num_threads);
+        let chunk_size = if self.exchanges.len() < num_threads + 1 { 1 } else { self.exchanges.len() / num_threads + 1 };
+        let exchange_chunks = self.exchanges.chunks(chunk_size);
 
         let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
 
@@ -105,17 +138,9 @@ where
                     .enable_all()
                     .build()?;
                 let this_new = Self { exchanges };
-                let mut ms = this_new.build_multistream_unconnected(max_retries);
+                let ms = this_new.build_multistream_unconnected(max_retries);
 
-                let fut = async move {
-                    while let Some(val) = ms.next().await {
-                        tx.send(val)?;
-                    }
-
-                    Ok::<(), eyre::Report>(())
-                };
-
-                thread_rt.block_on(fut)?;
+                thread_rt.block_on(ms.run_with_sender(tx))?;
                 Ok::<(), eyre::Report>(())
             });
         });
