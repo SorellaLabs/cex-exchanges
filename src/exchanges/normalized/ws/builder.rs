@@ -107,6 +107,19 @@ impl NormalizedExchangeBuilder {
             .add_pairs(exchange, pairs);
     }
 
+    /// returns a vec of all channels with a SINGLE value for a certain cex
+    /// exchange
+    pub fn take_all_single_channels(&self, exchange: CexExchange) -> eyre::Result<Vec<NormalizedWsChannels>> {
+        Ok(self
+            .ws_exchanges
+            .get(&exchange)
+            .ok_or(eyre::eyre!("no value for {exchange} found in builder map"))?
+            .clone()
+            .into_iter()
+            .flat_map(|(_, channel)| channel.make_many_single())
+            .collect())
+    }
+
     /// builds the multistream ws client
     pub fn build_all_multistream(self, max_retries: Option<u64>, connections_per_stream: Option<usize>) -> eyre::Result<Option<MutliWsStream>> {
         let mut multistream_ws: Option<MutliWsStream> = None;
