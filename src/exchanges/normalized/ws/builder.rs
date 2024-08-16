@@ -3,6 +3,7 @@ use std::{collections::HashMap, pin::Pin};
 use futures::Stream;
 use owned_chunks::OwnedChunks;
 use tokio_stream::wrappers::UnboundedReceiverStream;
+use tracing::debug;
 
 use super::CombinedWsMessage;
 use crate::{
@@ -145,7 +146,18 @@ impl NormalizedExchangeBuilder {
                     .flat_map(|channel| channel.make_many_single())
                     .collect::<Vec<_>>();
 
-                exch.build_multistream_unconnected_raw_ws_from_normalized(channel_map, self.exch_currency_proxy, max_retries, connections_per_stream)
+                debug!(target: "cex-exchanges::live-stream",exchange=?exch, "made {} channels", channel_map.len());
+
+                let streams = exch.build_multistream_unconnected_raw_ws_from_normalized(
+                    channel_map,
+                    self.exch_currency_proxy,
+                    max_retries,
+                    connections_per_stream
+                )?;
+
+                debug!(target: "cex-exchanges::live-stream",exchange=?exch, "made {} streams", streams.len());
+
+                Ok::<_, eyre::ErrReport>(streams)
 
                 // let new_stream =
                 // exch.build_multithreaded_multistream_ws_from_normalized(
