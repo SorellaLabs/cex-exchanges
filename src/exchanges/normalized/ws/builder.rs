@@ -3,7 +3,7 @@ use std::{collections::HashMap, pin::Pin};
 use futures::Stream;
 use owned_chunks::OwnedChunks;
 use tokio_stream::wrappers::UnboundedReceiverStream;
-use tracing::debug;
+use tracing::{debug, info};
 
 use super::CombinedWsMessage;
 use crate::{
@@ -174,6 +174,8 @@ impl NormalizedExchangeBuilder {
             .flatten()
             .collect::<Vec<_>>();
 
+        info!(target: "cex-exchanges::live-stream", "made {} total streams for all exchanges", all_streams.len());
+
         let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
 
         if !all_streams.is_empty() {
@@ -181,7 +183,10 @@ impl NormalizedExchangeBuilder {
 
             let stream_chks = all_streams.owned_chunks(chunk_size); //.take(chunk_size).collect::<Vec<_>>();
 
+            debug!(target: "cex-exchanges::live-stream", "chunking streams by size {}", stream_chks.len());
+
             stream_chks.into_iter().for_each(|chk| {
+                debug!(target: "cex-exchanges::live-stream", "made {} streams in stream chunk", chk.len());
                 let stream_chk = chk.collect::<Vec<_>>();
                 let tx = tx.clone();
                 let multi = MutliWsStream::build_from_raw(stream_chk);
