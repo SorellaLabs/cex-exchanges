@@ -53,7 +53,7 @@ impl SpecificWsBuilder for CoinbaseWsBuilder {
     type CexExchange = Coinbase;
     type WsChannel = CoinbaseWsChannel;
 
-    /// There is a limit of 300 connections per attempt every 5 minutes per IP.
+    /// There is a limit of 8 connections per attempt every 5 minutes per IP.
     const MAX_CONNECTIONS: usize = 8;
     /// A single connection can listen to a maximum of 100 streams.
     const MAX_STREAMS_PER_CONNECTION: usize = 100;
