@@ -136,7 +136,7 @@ impl NormalizedExchangeBuilder {
         max_retries: Option<u64>,
         connections_per_stream: Option<usize>
     ) -> eyre::Result<Option<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>>> {
-        let mut all_streams = self
+        let all_streams = self
             .ws_exchanges
             .into_iter()
             .map(|(exch, map)| {
