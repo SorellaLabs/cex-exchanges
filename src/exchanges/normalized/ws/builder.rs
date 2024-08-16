@@ -183,11 +183,9 @@ impl NormalizedExchangeBuilder {
 
             let stream_chks = all_streams.owned_chunks(chunk_size); //.take(chunk_size).collect::<Vec<_>>();
 
-            debug!(target: "cex-exchanges::live-stream", "chunking streams by size {}", stream_chks.len());
-
             stream_chks.into_iter().for_each(|chk| {
-                debug!(target: "cex-exchanges::live-stream", "made {} streams in stream chunk", chk.len());
                 let stream_chk = chk.collect::<Vec<_>>();
+                debug!(target: "cex-exchanges::live-stream", "made {} streams in stream chunk", stream_chk.len());
                 let tx = tx.clone();
                 let multi = MutliWsStream::build_from_raw(stream_chk);
                 multi.spawn_on_new_thread(tx.clone());
