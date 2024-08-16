@@ -76,7 +76,8 @@ impl CexExchange {
         Self::iter().collect()
     }
 
-    pub(crate) fn build_multistream_ws_from_normalized(
+    // change to pub(crate)
+    pub fn build_multistream_ws_from_normalized(
         self,
         map: Vec<NormalizedWsChannels>,
         max_retries: Option<u64>,
