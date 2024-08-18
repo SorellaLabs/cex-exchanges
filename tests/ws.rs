@@ -70,7 +70,7 @@ mod coinbase_tests {
             .await
             .unwrap();
 
-        mutlistream_util(builder, 1000).await;
+        mutlistream_util(builder, 1000000000).await;
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]
