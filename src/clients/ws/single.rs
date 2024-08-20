@@ -93,6 +93,7 @@ where
             }
 
             if self.retry_count > retries {
+                error!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "retries exceeded -- EXITING");
                 return Poll::Ready(None)
             }
         }
@@ -162,12 +163,14 @@ where
         } else if let Some(reconnect) = this.reconnect_fut.as_mut() {
             match reconnect.poll_unpin(cx) {
                 Poll::Ready(Ok(new_stream)) => {
+                    error!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "successfully reconnected to stream");
                     this.stream = Some(Box::pin(new_stream));
                     this.reconnect_fut = None;
                     cx.waker().wake_by_ref();
                     return Poll::Pending;
                 }
                 Poll::Ready(Err(e)) => {
+                    error!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "error reconnecting to stream {:?}", e);
                     this.reconnect_fut = Some(Box::pin(this.exchange.clone().make_owned_ws_connection()));
                     return this.handle_retry(e.normalized_with_exchange(T::EXCHANGE, None))
                 }
