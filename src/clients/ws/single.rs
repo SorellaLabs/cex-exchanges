@@ -55,7 +55,7 @@ where
                 des_msg.make_critical(msg);
                 Ok(MessageOrPing::new_message(des_msg))
             }
-            Message::Ping(_) => Ok(MessageOrPing::new_ping()),
+            Message::Ping(ping) => Ok(MessageOrPing::new_ping(ping)),
             Message::Binary(_) => panic!("Exchange: {} - Message::Binary", T::EXCHANGE),
             Message::Pong(_) => panic!("Exchange: {} - Message::Pong", T::EXCHANGE),
             Message::Close(_) => Ok(MessageOrPing::new_close()),
@@ -76,7 +76,7 @@ where
             }
         }
 
-        debug!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "finished flushind queue sink");
+        debug!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "finished flushing queue sink");
 
         ret
     }
@@ -123,9 +123,9 @@ where
                 match val {
                     Some(Ok(msg)) => match Self::handle_incoming(msg) {
                         Ok(MessageOrPing::Message(d)) => return this.handle_retry(d.into()),
-                        Ok(MessageOrPing::Ping) => {
+                        Ok(MessageOrPing::Ping(v)) => {
                             debug!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "recieved ping");
-                            if let Err(e) = stream.start_send_unpin(Message::Pong(vec![])) {
+                            if let Err(e) = stream.start_send_unpin(Message::Pong(v)) {
                                 error!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "error sending pong");
                                 this.stream = None;
                                 return this.handle_retry(WsError::StreamTxError(e).normalized_with_exchange(T::EXCHANGE, None))
