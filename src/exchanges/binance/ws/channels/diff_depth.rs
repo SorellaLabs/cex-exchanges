@@ -51,21 +51,24 @@ impl BinanceDiffDepth {
 
 impl PartialEq<NormalizedL2> for BinanceDiffDepth {
     fn eq(&self, other: &NormalizedL2) -> bool {
+        let our_bids = self
+            .bids
+            .iter()
+            .map(|bid| BidAsk::new(bid[0], bid[1]))
+            .collect::<Vec<_>>();
+
+        let our_asks = self
+            .asks
+            .iter()
+            .map(|ask| BidAsk::new(ask[0], ask[1]))
+            .collect::<Vec<_>>();
         let equals = other.exchange == CexExchange::Binance
             && other.pair == self.pair.normalize()
             && other.time == DateTime::from_timestamp_millis(self.event_time as i64).unwrap()
-            && other.bids
-                == self
-                    .bids
-                    .iter()
-                    .map(|bid| BidAsk::new(bid[0], bid[1]))
-                    .collect::<Vec<_>>()
-            && other.asks
-                == self
-                    .asks
-                    .iter()
-                    .map(|ask| BidAsk::new(ask[0], ask[1]))
-                    .collect::<Vec<_>>()
+            && other.bids.iter().all(|b| our_bids.contains(b))
+            && other.bids.len() == our_bids.len()
+            && other.asks.iter().all(|a| our_asks.contains(a))
+            && other.asks.len() == our_asks.len()
             && other.update_id == Some(format!("orderbook range: {} - {}", self.first_orderbook_update_id, self.last_orderbook_update_id));
 
         if !equals {
