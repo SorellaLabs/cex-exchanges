@@ -19,7 +19,7 @@ impl NormalizedWsChannels {
         match kind {
             NormalizedWsChannelKinds::Trades => NormalizedWsChannels::Trades(Vec::new()),
             NormalizedWsChannelKinds::Quotes => NormalizedWsChannels::Quotes(Vec::new()),
-            NormalizedWsChannelKinds::L2 => NormalizedWsChannels::L2(None, 1000, Vec::new())
+            NormalizedWsChannelKinds::L2 => NormalizedWsChannels::L2(None, 100, Vec::new())
         }
     }
 
@@ -70,7 +70,7 @@ impl NormalizedWsChannels {
             NormalizedWsChannelKinds::Trades => NormalizedWsChannels::Trades(split_pairs),
             NormalizedWsChannelKinds::Quotes => NormalizedWsChannels::Quotes(split_pairs),
             NormalizedWsChannelKinds::L2 => {
-                let (depth, update_speed) = l2_config.unwrap_or((None, 1000));
+                let (depth, update_speed) = l2_config.unwrap_or((None, 100));
                 NormalizedWsChannels::L2(depth, update_speed, split_pairs)
             }
         }
