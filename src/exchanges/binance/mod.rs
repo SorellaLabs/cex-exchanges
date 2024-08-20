@@ -26,7 +26,7 @@ use crate::{
     CexExchange
 };
 
-const WSS_URL: &str = "wss://stream.binance.com:443/stream";
+const WSS_URL: &str = "wss://stream.binance.com:443";
 const BASE_REST_API_URL: &str = "https://api.binance.com/api/v3";
 const ALL_SYMBOLS_URL: &str = "https://www.binance.com/bapi/composite/v1/public/promo/cmc/cryptocurrency/listings/latest";
 
@@ -150,10 +150,17 @@ impl Exchange for Binance {
     }
 
     async fn make_ws_connection(&self) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, WsError> {
-        let (mut ws, _) = tokio_tungstenite::connect_async(WSS_URL).await?;
-
-        let sub_message = serde_json::to_string(&self.subscription)?;
-        ws.send(Message::Text(sub_message)).await?;
+        let ws = if let Some(single_sub) = self.subscription.try_single_subscription() {
+            let ws_url = format!("{WSS_URL}/ws/{single_sub}");
+            let (ws, _) = tokio_tungstenite::connect_async(&ws_url).await?;
+            ws
+        } else {
+            let ws_url = format!("{WSS_URL}/stream");
+            let (mut ws, _) = tokio_tungstenite::connect_async(&ws_url).await?;
+            let sub_message = serde_json::to_string(&self.subscription)?;
+            ws.send(Message::Text(sub_message)).await?;
+            ws
+        };
 
         Ok(ws)
     }

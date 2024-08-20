@@ -16,6 +16,14 @@ impl BinanceSubscription {
     pub fn new() -> Self {
         BinanceSubscription { method: "SUBSCRIBE".to_string(), params: Vec::new(), id: rand::random() }
     }
+
+    pub fn try_single_subscription(&self) -> Option<String> {
+        if self.params.len() == 1 {
+            Some(self.params.first().unwrap().make_subscription_url())
+        } else {
+            None
+        }
+    }
 }
 
 impl Default for BinanceSubscription {
@@ -46,12 +54,18 @@ struct BinanceSubscriptionInner {
     trading_pair: BinanceTradingPair
 }
 
+impl BinanceSubscriptionInner {
+    pub fn make_subscription_url(&self) -> String {
+        format!("{}@{}", self.trading_pair.0.to_lowercase(), self.channel)
+    }
+}
+
 impl Serialize for BinanceSubscriptionInner {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer
     {
-        format!("{}@{}", self.trading_pair.0.to_lowercase(), self.channel).serialize(serializer)
+        self.make_subscription_url().serialize(serializer)
     }
 }
 
