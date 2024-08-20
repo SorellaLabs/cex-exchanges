@@ -7,7 +7,7 @@ use std::{
 use futures::{Future, FutureExt, SinkExt, Stream, StreamExt};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
-use tracing::{error, trace};
+use tracing::{debug, error, trace, warn};
 
 use super::WsError;
 use crate::{
@@ -64,6 +64,7 @@ where
     }
 
     fn flush_sink_queue(stream: &mut StreamConn, cx: &mut Context<'_>) -> Result<(), WsError> {
+        debug!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "starting to flush queue sink");
         loop {
             match stream.poll_ready_unpin(cx) {
                 Poll::Ready(Ok(_)) => return Ok(()),
@@ -120,12 +121,15 @@ where
                     Some(Ok(msg)) => match Self::handle_incoming(msg) {
                         Ok(MessageOrPing::Message(d)) => return this.handle_retry(d.into()),
                         Ok(MessageOrPing::Ping) => {
-                            if let Err(e) = Self::flush_sink_queue(stream, cx) {
-                                this.stream = None;
-                                return this.handle_retry(e.normalized_with_exchange(T::EXCHANGE, None))
-                            } else if let Err(e) = stream.start_send_unpin(Message::Pong(vec![])) {
+                            debug!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "recieved ping");
+                            if let Err(e) = stream.start_send_unpin(Message::Pong(vec![])) {
+                                error!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "error sending pong");
                                 this.stream = None;
                                 return this.handle_retry(WsError::StreamTxError(e).normalized_with_exchange(T::EXCHANGE, None))
+                            } else if let Err(e) = Self::flush_sink_queue(stream, cx) {
+                                warn!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "error flushing queue sink");
+                                this.stream = None;
+                                return this.handle_retry(e.normalized_with_exchange(T::EXCHANGE, None))
                             }
 
                             return Poll::Pending;
