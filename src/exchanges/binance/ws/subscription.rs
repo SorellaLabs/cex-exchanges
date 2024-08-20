@@ -14,7 +14,7 @@ pub struct BinanceSubscription {
 
 impl BinanceSubscription {
     pub fn new() -> Self {
-        BinanceSubscription { method: "SUBSCRIBE".to_string(), params: Vec::new(), id: 1 }
+        BinanceSubscription { method: "SUBSCRIBE".to_string(), params: Vec::new(), id: rand::random() }
     }
 }
 
