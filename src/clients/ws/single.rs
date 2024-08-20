@@ -7,7 +7,7 @@ use std::{
 use futures::{Future, FutureExt, SinkExt, Stream, StreamExt};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
-use tracing::{debug, error, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 
 use super::WsError;
 use crate::{
@@ -163,7 +163,7 @@ where
         } else if let Some(reconnect) = this.reconnect_fut.as_mut() {
             match reconnect.poll_unpin(cx) {
                 Poll::Ready(Ok(new_stream)) => {
-                    error!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "successfully reconnected to stream");
+                    info!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "successfully reconnected to stream");
                     this.stream = Some(Box::pin(new_stream));
                     this.reconnect_fut = None;
                     cx.waker().wake_by_ref();
