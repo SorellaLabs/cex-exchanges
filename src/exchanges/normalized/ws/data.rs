@@ -1,5 +1,5 @@
 use crate::{
-    normalized::types::{NormalizedQuote, NormalizedTrade, NormalizedTradingPair},
+    normalized::types::{NormalizedL2, NormalizedQuote, NormalizedTrade, NormalizedTradingPair},
     CexExchange, Exchange
 };
 
@@ -9,6 +9,7 @@ pub enum NormalizedWsDataTypes {
     Trades(Vec<NormalizedTrade>),
     Quote(NormalizedQuote),
     Quotes(Vec<NormalizedQuote>),
+    L2(NormalizedL2),
     Disconnect { exchange: CexExchange, message: String, raw_message: String },
     RemovedPair { exchange: CexExchange, bad_pair: NormalizedTradingPair, raw_message: String },
     Other { exchange: CexExchange, kind: String, value: String }

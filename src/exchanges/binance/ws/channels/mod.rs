@@ -1,6 +1,9 @@
 mod book_ticker;
 pub use book_ticker::*;
 
+mod diff_depth;
+pub use diff_depth::*;
+
 mod trades;
 use std::fmt::Display;
 
@@ -21,7 +24,10 @@ use crate::{
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum BinanceWsChannel {
     Trade(Vec<BinanceTradingPair>),
-    BookTicker(Vec<BinanceTradingPair>)
+    BookTicker(Vec<BinanceTradingPair>),
+    /// (depth (5, 10, or 20), update speed (100ms or 1000ms), trading pairs)
+    /// DEFAULT IS: (None, Some(1000ms), vec![])
+    DiffDepth(Option<u64>, u64, Vec<BinanceTradingPair>)
 }
 
 impl SpecificWsChannel for BinanceWsChannel {
@@ -45,6 +51,15 @@ impl SpecificWsChannel for BinanceWsChannel {
         Self::new_from_normalized(BinanceWsChannel::BookTicker(Vec::new()), normalized)
     }
 
+    fn new_l2(depth: Option<u64>, update_speed: u64, pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+        let normalized = pairs
+            .into_iter()
+            .map(|pair| pair.get_normalized_pair(CexExchange::Binance))
+            .collect();
+
+        Self::new_from_normalized(BinanceWsChannel::DiffDepth(depth, update_speed, Vec::new()), normalized)
+    }
+
     fn new_from_normalized(self, pairs: Vec<NormalizedTradingPair>) -> eyre::Result<Self> {
         match self {
             BinanceWsChannel::Trade(_) => Ok(BinanceWsChannel::Trade(
@@ -58,6 +73,14 @@ impl SpecificWsChannel for BinanceWsChannel {
                     .into_iter()
                     .map(TryInto::try_into)
                     .collect::<Result<_, _>>()?
+            )),
+            BinanceWsChannel::DiffDepth(depth, update_speed, _) => Ok(BinanceWsChannel::DiffDepth(
+                depth,
+                update_speed,
+                pairs
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?
             ))
         }
     }
@@ -65,7 +88,8 @@ impl SpecificWsChannel for BinanceWsChannel {
     fn count_entries(&self) -> usize {
         match self {
             BinanceWsChannel::Trade(vals) => vals.len(),
-            BinanceWsChannel::BookTicker(vals) => vals.len()
+            BinanceWsChannel::BookTicker(vals) => vals.len(),
+            BinanceWsChannel::DiffDepth(_, _, vals) => vals.len()
         }
     }
 }
@@ -74,7 +98,14 @@ impl Display for BinanceWsChannel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             BinanceWsChannel::Trade(_) => write!(f, "trade"),
-            BinanceWsChannel::BookTicker(_) => write!(f, "bookTicker")
+            BinanceWsChannel::BookTicker(_) => write!(f, "bookTicker"),
+            BinanceWsChannel::DiffDepth(depth, update_speed, _) => {
+                if let Some(d) = depth {
+                    write!(f, "depth{d}@{update_speed}ms")
+                } else {
+                    write!(f, "depth@{update_speed}ms")
+                }
+            }
         }
     }
 }
@@ -86,6 +117,14 @@ impl TryFrom<String> for BinanceWsChannel {
         match value.to_lowercase().as_str() {
             "trade" => Ok(Self::Trade(Vec::new())),
             "bookticker" => Ok(Self::BookTicker(Vec::new())),
+            "depth@100ms" => Ok(Self::DiffDepth(None, 100, Vec::new())),
+            "depth@1000ms" => Ok(Self::DiffDepth(None, 1000, Vec::new())),
+            "depth5@100ms" => Ok(Self::DiffDepth(Some(5), 100, Vec::new())),
+            "depth5@1000ms" => Ok(Self::DiffDepth(Some(5), 1000, Vec::new())),
+            "depth10@100ms" => Ok(Self::DiffDepth(Some(10), 100, Vec::new())),
+            "depth10@1000ms" => Ok(Self::DiffDepth(Some(10), 1000, Vec::new())),
+            "depth20@100ms" => Ok(Self::DiffDepth(Some(20), 100, Vec::new())),
+            "depth20@1000ms" => Ok(Self::DiffDepth(Some(20), 1000, Vec::new())),
             _ => Err(eyre::ErrReport::msg(format!("channel is not valid: {value}")))
         }
     }
@@ -119,14 +158,22 @@ impl TryFrom<NormalizedWsChannels> for BinanceWsChannel {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum BinanceWsChannelKind {
     Trade,
-    BookTicker
+    BookTicker,
+    DiffDepth(Option<u64>, u64)
 }
 
 impl Display for BinanceWsChannelKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             BinanceWsChannelKind::Trade => write!(f, "trade"),
-            BinanceWsChannelKind::BookTicker => write!(f, "bookTicker")
+            BinanceWsChannelKind::BookTicker => write!(f, "bookTicker"),
+            BinanceWsChannelKind::DiffDepth(depth, update_speed) => {
+                if let Some(d) = depth {
+                    write!(f, "depth{d}@{update_speed}ms")
+                } else {
+                    write!(f, "depth@{update_speed}ms")
+                }
+            }
         }
     }
 }
@@ -135,7 +182,8 @@ impl From<&BinanceWsChannel> for BinanceWsChannelKind {
     fn from(value: &BinanceWsChannel) -> Self {
         match value {
             BinanceWsChannel::Trade(_) => BinanceWsChannelKind::Trade,
-            BinanceWsChannel::BookTicker(_) => BinanceWsChannelKind::BookTicker
+            BinanceWsChannel::BookTicker(_) => BinanceWsChannelKind::BookTicker,
+            BinanceWsChannel::DiffDepth(depth, update_speed, _) => BinanceWsChannelKind::DiffDepth(*depth, *update_speed)
         }
     }
 }

@@ -259,6 +259,17 @@ mod binance_tests {
 
     #[tokio::test]
     #[serial]
+    async fn test_book_l2() {
+        init_test_tracing();
+        let builder = BinanceWsBuilder::default().add_channel(
+            BinanceWsChannel::new_l2(Some(5), 1000, vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")])
+                .unwrap()
+        );
+        binance_util(builder, 5).await;
+    }
+
+    #[tokio::test]
+    #[serial]
     async fn test_multi_distributed() {
         init_test_tracing();
         let builder = BinanceWsBuilder::default()

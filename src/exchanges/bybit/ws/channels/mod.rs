@@ -45,6 +45,10 @@ impl SpecificWsChannel for BybitWsChannel {
         Self::new_from_normalized(BybitWsChannel::OrderbookL1(Vec::new()), normalized)
     }
 
+    fn new_l2(_: Option<u64>, _: u64, _: Vec<RawTradingPair>) -> eyre::Result<Self> {
+        unreachable!()
+    }
+
     fn new_from_normalized(self, pairs: Vec<NormalizedTradingPair>) -> eyre::Result<Self> {
         match self {
             BybitWsChannel::Trade(_) => Ok(BybitWsChannel::Trade(

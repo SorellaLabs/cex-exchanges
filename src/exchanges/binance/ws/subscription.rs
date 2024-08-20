@@ -83,6 +83,11 @@ impl From<BinanceWsChannel> for Vec<BinanceSubscriptionInner> {
                 .into_iter()
                 .collect::<HashSet<_>>()
                 .into_iter()
+                .collect(),
+            BinanceWsChannel::DiffDepth(_, _, pairs) => pairs
+                .into_iter()
+                .collect::<HashSet<_>>()
+                .into_iter()
                 .collect()
         };
 

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::channels::{BinanceBookTicker, BinanceTrade};
+use super::channels::{BinanceBookTicker, BinanceDiffDepth, BinanceTrade};
 use crate::{clients::ws::CriticalWsMessage, exchanges::normalized::ws::NormalizedWsDataTypes, CexExchange};
 
 #[serde_with::serde_as]
@@ -9,6 +9,7 @@ use crate::{clients::ws::CriticalWsMessage, exchanges::normalized::ws::Normalize
 #[serde(rename_all = "snake_case", tag = "data")]
 pub enum BinanceWsMessage {
     Trade(BinanceTrade),
+    DiffDepth(BinanceDiffDepth),
     BookTicker(BinanceBookTicker),
     SuscriptionResponse { result: Option<String>, id: u64 }
 }
@@ -74,6 +75,7 @@ impl BinanceWsMessage {
         match self {
             BinanceWsMessage::Trade(v) => NormalizedWsDataTypes::Trade(v.normalize()),
             BinanceWsMessage::BookTicker(v) => NormalizedWsDataTypes::Quote(v.normalize()),
+            BinanceWsMessage::DiffDepth(v) => NormalizedWsDataTypes::L2(v.normalize()),
             BinanceWsMessage::SuscriptionResponse { result, id } => NormalizedWsDataTypes::Other {
                 exchange: CexExchange::Binance,
                 kind:     "SUBSCRIBE".to_string(),

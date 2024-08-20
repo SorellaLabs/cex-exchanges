@@ -49,6 +49,10 @@ impl SpecificWsChannel for CoinbaseWsChannel {
         Self::new_from_normalized(CoinbaseWsChannel::Ticker(Vec::new()), normalized)
     }
 
+    fn new_l2(_: Option<u64>, _: u64, _: Vec<RawTradingPair>) -> eyre::Result<Self> {
+        unreachable!()
+    }
+
     fn new_from_normalized(self, pairs: Vec<NormalizedTradingPair>) -> eyre::Result<Self> {
         match self {
             CoinbaseWsChannel::Matches(_) => Ok(CoinbaseWsChannel::Matches(
