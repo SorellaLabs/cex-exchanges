@@ -72,8 +72,8 @@ impl PartialEq<NormalizedL2> for BinanceDiffDepth {
             && other.update_id == Some(format!("orderbook range: {} - {}", self.first_orderbook_update_id, self.last_orderbook_update_id));
 
         if !equals {
-            warn!(target: "cex-exchanges::binance", "binance book ticker: {:?}", self);
-            warn!(target: "cex-exchanges::binance", "normalized quote: {:?}", other);
+            warn!(target: "cex-exchanges::binance", "binance diff depth: {:?}", self);
+            warn!(target: "cex-exchanges::binance", "normalized l2: {:?}", other);
         }
 
         equals
