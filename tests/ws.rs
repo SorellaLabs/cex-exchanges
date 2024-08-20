@@ -41,7 +41,7 @@ mod coinbase_tests {
         let builder = CoinbaseWsBuilder::default().add_channel(
             CoinbaseWsChannel::new_quote(vec![RawTradingPair::new_raw("ETH_USD", '_'), RawTradingPair::new_no_delim("BTC-USD")]).unwrap()
         );
-        coinbase_util(builder, 5).await;
+        coinbase_util(builder, 5000).await;
     }
 
     #[tokio::test]

@@ -32,7 +32,7 @@ pub struct CoinbaseTicker {
     #[serde_as(as = "DisplayFromStr")]
     pub best_ask_size: f64,
     pub side:          Option<String>,
-    #[serde(default = "Utc::now")]
+    // #[serde(default = "Utc::now")]
     pub time:          DateTime<Utc>,
     pub trade_id:      Option<u64>,
     #[serde_as(as = "Option<DisplayFromStr>")]
