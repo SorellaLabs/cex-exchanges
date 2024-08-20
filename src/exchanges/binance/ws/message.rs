@@ -27,7 +27,10 @@ impl BinanceWsMessage {
                 .as_str()
                 .ok_or(eyre::ErrReport::msg("Could not convert 'stream' (event type) field in Binance ws message to &str".to_string()))?;
 
-            if data_type.contains("@trade") {
+            if data_type.contains("@depth") {
+                let diff_depth: BinanceDiffDepth = serde_json::from_value(data.clone())?;
+                Ok(Self::DiffDepth(diff_depth))
+            } else if data_type.contains("@trade") {
                 let trade: BinanceTrade = serde_json::from_value(data.clone())?;
                 Ok(Self::Trade(trade))
             } else if data_type.contains("@bookTicker") {
