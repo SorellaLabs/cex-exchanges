@@ -66,7 +66,7 @@ where
     fn flush_sink_queue(stream: &mut StreamConn, cx: &mut Context<'_>) -> Result<(), WsError> {
         let mut ret = Ok(());
         loop {
-            match stream.poll_ready_unpin(cx) {
+            match stream.poll_flush_unpin(cx) {
                 Poll::Ready(Ok(_)) => break,
                 Poll::Ready(Err(e)) => {
                     ret = Err(WsError::StreamTxError(e));
@@ -76,7 +76,7 @@ where
             }
         }
 
-        debug!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "finished flushing queue sink");
+        debug!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "finished flushing queue sink with Pong");
 
         ret
     }
