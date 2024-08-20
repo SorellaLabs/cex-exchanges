@@ -26,7 +26,6 @@ pub enum BinanceWsChannel {
     Trade(Vec<BinanceTradingPair>),
     BookTicker(Vec<BinanceTradingPair>),
     /// (depth (5, 10, or 20), update speed (100ms or 1000ms), trading pairs)
-    /// DEFAULT IS: (None, Some(1000ms), vec![])
     DiffDepth(Option<u64>, u64, Vec<BinanceTradingPair>)
 }
 
@@ -52,6 +51,9 @@ impl SpecificWsChannel for BinanceWsChannel {
     }
 
     fn new_l2(depth: Option<u64>, update_speed: u64, pairs: Vec<RawTradingPair>) -> eyre::Result<Self> {
+        if depth.is_some() {
+            unimplemented!("depth is not implemented for Binance yet")
+        }
         let normalized = pairs
             .into_iter()
             .map(|pair| pair.get_normalized_pair(CexExchange::Binance))
@@ -150,6 +152,19 @@ impl TryFrom<NormalizedWsChannels> for BinanceWsChannel {
                     .collect::<Result<Vec<_>, Self::Error>>()?;
 
                 Ok(BinanceWsChannel::BookTicker(norm_pairs))
+            }
+
+            NormalizedWsChannels::L2(depth, update_speed, pairs) => {
+                let norm_pairs = pairs
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, Self::Error>>()?;
+
+                if depth.is_some() {
+                    unimplemented!("depth is not implemented for Binance L2 yet")
+                }
+
+                Ok(BinanceWsChannel::DiffDepth(depth, update_speed, norm_pairs))
             }
         }
     }

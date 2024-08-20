@@ -116,6 +116,7 @@ impl TryFrom<NormalizedWsChannels> for KucoinWsChannel {
 
                 Ok(KucoinWsChannel::Ticker(norm_pairs))
             }
+            NormalizedWsChannels::L2(..) => unimplemented!("L2 is not implemented for Kucoin")
         }
     }
 }

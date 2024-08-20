@@ -125,6 +125,7 @@ impl TryFrom<NormalizedWsChannels> for CoinbaseWsChannel {
 
                 Ok(CoinbaseWsChannel::Ticker(norm_pairs))
             }
+            NormalizedWsChannels::L2(..) => unimplemented!("L2 is not implemented for Coinbase")
         }
     }
 }

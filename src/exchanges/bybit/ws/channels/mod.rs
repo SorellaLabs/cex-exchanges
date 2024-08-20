@@ -117,6 +117,7 @@ impl TryFrom<NormalizedWsChannels> for BybitWsChannel {
 
                 Ok(BybitWsChannel::OrderbookL1(norm_pairs))
             }
+            NormalizedWsChannels::L2(..) => unimplemented!("L2 is not implemented for Bybit")
         }
     }
 }

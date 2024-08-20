@@ -114,6 +114,7 @@ impl TryFrom<NormalizedWsChannels> for OkexWsChannel {
 
                 Ok(OkexWsChannel::BookTicker(norm_pairs))
             }
+            NormalizedWsChannels::L2(..) => unimplemented!("L2 is not implemented for Okex")
         }
     }
 }

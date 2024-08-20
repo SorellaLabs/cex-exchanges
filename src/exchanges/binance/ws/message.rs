@@ -9,8 +9,8 @@ use crate::{clients::ws::CriticalWsMessage, exchanges::normalized::ws::Normalize
 #[serde(rename_all = "snake_case", tag = "data")]
 pub enum BinanceWsMessage {
     Trade(BinanceTrade),
-    DiffDepth(BinanceDiffDepth),
     BookTicker(BinanceBookTicker),
+    DiffDepth(BinanceDiffDepth),
     SuscriptionResponse { result: Option<String>, id: u64 }
 }
 
@@ -47,7 +47,9 @@ impl BinanceWsMessage {
 
                 Ok(Self::SuscriptionResponse { result, id })
             } else {
-                if let Ok(book_ticker) = serde_json::from_value::<BinanceBookTicker>(value.clone()) {
+                if let Ok(diff_depth) = serde_json::from_value::<BinanceDiffDepth>(value.clone()) {
+                    Ok(Self::DiffDepth(diff_depth))
+                } else if let Ok(book_ticker) = serde_json::from_value::<BinanceBookTicker>(value.clone()) {
                     Ok(Self::BookTicker(book_ticker))
                 } else if let Ok(trade) = serde_json::from_value::<BinanceTrade>(value) {
                     Ok(Self::Trade(trade))

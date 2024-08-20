@@ -266,6 +266,10 @@ mod binance_tests {
                 .unwrap()
         );
         binance_util(builder, 5).await;
+
+        let builder =
+            BinanceWsBuilder::default().add_channel(BinanceWsChannel::new_l2(Some(10), 100, vec![RawTradingPair::new_raw("ETH_USDt", '_')]).unwrap());
+        binance_util(builder, 5).await;
     }
 
     #[tokio::test]
