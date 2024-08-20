@@ -64,14 +64,21 @@ where
     }
 
     fn flush_sink_queue(stream: &mut StreamConn, cx: &mut Context<'_>) -> Result<(), WsError> {
-        debug!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "starting to flush queue sink");
+        let mut ret = Ok(());
         loop {
             match stream.poll_ready_unpin(cx) {
-                Poll::Ready(Ok(_)) => return Ok(()),
-                Poll::Ready(Err(e)) => return Err(WsError::StreamTxError(e)),
+                Poll::Ready(Ok(_)) => break,
+                Poll::Ready(Err(e)) => {
+                    ret = Err(WsError::StreamTxError(e));
+                    break;
+                }
                 Poll::Pending => ()
             }
         }
+
+        debug!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "finished flushind queue sink");
+
+        ret
     }
 
     fn handle_retry(&mut self, msg: CombinedWsMessage) -> Poll<Option<CombinedWsMessage>> {
@@ -97,11 +104,7 @@ where
     /// Some(false) => subscription is not empty
     /// None => no bad pair found
     fn handle_bad_pair(&mut self, msg: &CombinedWsMessage) -> Option<bool> {
-        if let Some(p) = msg.bad_pair() {
-            return Some(self.exchange.remove_bad_pair(p.clone()));
-        }
-
-        None
+        msg.bad_pair().map(|p| self.exchange.remove_bad_pair(p))
     }
 }
 
