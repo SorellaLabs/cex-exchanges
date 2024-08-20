@@ -95,6 +95,7 @@ impl PartialEq<NormalizedWsDataTypes> for BinanceWsMessage {
         match (self, other) {
             (BinanceWsMessage::Trade(this), NormalizedWsDataTypes::Trade(that)) => this == that,
             (BinanceWsMessage::BookTicker(this), NormalizedWsDataTypes::Quote(that)) => this == that,
+            (BinanceWsMessage::DiffDepth(this), NormalizedWsDataTypes::L2(that)) => this == that,
             (BinanceWsMessage::SuscriptionResponse { .. }, NormalizedWsDataTypes::Other { .. }) => true,
             _ => false
         }
