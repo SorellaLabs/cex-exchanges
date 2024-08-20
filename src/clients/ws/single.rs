@@ -135,6 +135,7 @@ where
                                 return this.handle_retry(e.normalized_with_exchange(T::EXCHANGE, None))
                             }
 
+                            cx.waker().wake_by_ref();
                             return Poll::Pending;
                         }
                         Ok(MessageOrPing::Close) => {
