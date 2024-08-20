@@ -19,9 +19,11 @@ impl NormalizedL2 {
         if let (Some(bid), Some(ask)) = (
             self.bids
                 .iter()
+                .filter(|v| v.amount != 0.0)
                 .max_by(|a, b| a.price.partial_cmp(&b.price).unwrap()),
             self.asks
                 .iter()
+                .filter(|v| v.amount != 0.0)
                 .min_by(|a, b| a.price.partial_cmp(&b.price).unwrap())
         ) {
             Some(NormalizedQuote {
