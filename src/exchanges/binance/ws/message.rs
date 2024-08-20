@@ -1,4 +1,3 @@
-use eyre::Ok;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -37,17 +36,24 @@ impl BinanceWsMessage {
                 Err(eyre::ErrReport::msg(format!("Event type '{data_type}' cannot be deserialized")))
             }
         } else {
-            let result_val = value
-                .get("result")
-                .ok_or(eyre::ErrReport::msg("Could not find 'result' field in Binance ws message".to_string()))?;
-            let result = serde_json::from_value(result_val.clone())?;
+            if let Some(result_val) = value.get("result") {
+                let result = serde_json::from_value(result_val.clone())?;
 
-            let id_val = value
-                .get("id")
-                .ok_or(eyre::ErrReport::msg("Could not find 'id' field in Binance ws message".to_string()))?;
-            let id = serde_json::from_value(id_val.clone())?;
+                let id_val = value
+                    .get("id")
+                    .ok_or(eyre::ErrReport::msg("Could not find 'id' field in Binance ws message".to_string()))?;
+                let id = serde_json::from_value(id_val.clone())?;
 
-            Ok(Self::SuscriptionResponse { result, id })
+                Ok(Self::SuscriptionResponse { result, id })
+            } else {
+                if let Ok(book_ticker) = serde_json::from_value::<BinanceBookTicker>(value.clone()) {
+                    Ok(Self::BookTicker(book_ticker))
+                } else if let Ok(trade) = serde_json::from_value::<BinanceTrade>(value) {
+                    Ok(Self::Trade(trade))
+                } else {
+                    Err(eyre::ErrReport::msg("Could not find 'result' field or deserialize any inner types in Binance ws message".to_string()))
+                }
+            }
         }
     }
 }
