@@ -9,7 +9,7 @@ use crate::{binance::BinanceTradingPair, traits::SpecificWsSubscription};
 pub struct BinanceSubscription {
     method: String,
     params: Vec<BinanceSubscriptionInner>,
-    id:     u64
+    id:     u32
 }
 
 impl BinanceSubscription {
