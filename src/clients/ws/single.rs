@@ -116,9 +116,6 @@ where
 
         if let Some(stream) = this.stream.as_mut() {
             if let Poll::Ready(val) = stream.poll_next_unpin(cx) {
-                let (l, u) = stream.size_hint();
-                trace!(target: "cex-exchanges::live-stream", lower_bound=l, upper_bound=?u, "size hint");
-
                 match val {
                     Some(Ok(msg)) => match Self::handle_incoming(msg) {
                         Ok(MessageOrPing::Message(d)) => return this.handle_retry(d.into()),
