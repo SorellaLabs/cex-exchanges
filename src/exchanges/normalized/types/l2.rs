@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::{pairs::NormalizedTradingPair, NormalizedQuote};
 use crate::CexExchange;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct NormalizedL2 {
     pub exchange:  CexExchange,
     pub pair:      NormalizedTradingPair,
