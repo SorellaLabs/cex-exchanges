@@ -42,7 +42,7 @@ impl NormalizedL2 {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct BidAsk {
     pub price:  f64,
     pub amount: f64
