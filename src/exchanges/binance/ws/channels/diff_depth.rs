@@ -44,7 +44,7 @@ impl BinanceDiffDepth {
                 .into_iter()
                 .map(|ask| BidAsk::new(ask[0], ask[1]))
                 .collect(),
-            update_id: Some(format!("orderbook range: {} - {}", self.first_orderbook_update_id, self.last_orderbook_update_id))
+            update_id: Some(format!("{}-{}", self.first_orderbook_update_id, self.last_orderbook_update_id))
         }
     }
 }
@@ -69,7 +69,7 @@ impl PartialEq<NormalizedL2> for BinanceDiffDepth {
             && other.bids.len() == our_bids.len()
             && other.asks.iter().all(|a| our_asks.contains(a))
             && other.asks.len() == our_asks.len()
-            && other.update_id == Some(format!("orderbook range: {} - {}", self.first_orderbook_update_id, self.last_orderbook_update_id));
+            && other.update_id == Some(format!("{}-{}", self.first_orderbook_update_id, self.last_orderbook_update_id));
 
         if !equals {
             warn!(target: "cex-exchanges::binance", "binance diff depth: {:?}", self);
