@@ -120,13 +120,13 @@ impl TryFrom<String> for BinanceWsChannel {
             "trade" => Ok(Self::Trade(Vec::new())),
             "bookticker" => Ok(Self::BookTicker(Vec::new())),
             "depth@100ms" => Ok(Self::DiffDepth(None, 100, Vec::new())),
-            "depth@1000ms" => Ok(Self::DiffDepth(None, 100, Vec::new())),
+            "depth@1000ms" => Ok(Self::DiffDepth(None, 1000, Vec::new())),
             "depth5@100ms" => Ok(Self::DiffDepth(Some(5), 100, Vec::new())),
-            "depth5@1000ms" => Ok(Self::DiffDepth(Some(5), 100, Vec::new())),
+            "depth5@1000ms" => Ok(Self::DiffDepth(Some(5), 1000, Vec::new())),
             "depth10@100ms" => Ok(Self::DiffDepth(Some(10), 100, Vec::new())),
-            "depth10@1000ms" => Ok(Self::DiffDepth(Some(10), 100, Vec::new())),
+            "depth10@1000ms" => Ok(Self::DiffDepth(Some(10), 1000, Vec::new())),
             "depth20@100ms" => Ok(Self::DiffDepth(Some(20), 100, Vec::new())),
-            "depth20@1000ms" => Ok(Self::DiffDepth(Some(20), 100, Vec::new())),
+            "depth20@1000ms" => Ok(Self::DiffDepth(Some(20), 1000, Vec::new())),
             _ => Err(eyre::ErrReport::msg(format!("channel is not valid: {value}")))
         }
     }
