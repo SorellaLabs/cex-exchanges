@@ -35,6 +35,10 @@ where
         Self { exchange, stream: None, reconnect_fut: None, max_retries, retry_count: 0 }
     }
 
+    pub fn exchange(&self) -> T {
+        self.exchange.clone()
+    }
+
     pub async fn connect(&mut self) -> Result<(), WsError> {
         let ws = self.exchange.make_ws_connection().await;
         if let Err(e) = ws {
