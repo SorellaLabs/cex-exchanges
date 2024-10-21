@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::channels::{BinanceWsChannel, BinanceWsChannelKind};
 use crate::{binance::BinanceTradingPair, traits::SpecificWsSubscription};
@@ -84,7 +84,12 @@ impl From<BinanceWsChannel> for Vec<BinanceSubscriptionInner> {
                 .collect::<HashSet<_>>()
                 .into_iter()
                 .collect(),
-            BinanceWsChannel::DiffDepth(_, _, pairs) => pairs
+            BinanceWsChannel::PartialBookDepth(_, _, pairs) => pairs
+                .into_iter()
+                .collect::<HashSet<_>>()
+                .into_iter()
+                .collect(),
+            BinanceWsChannel::DiffDepth(_, pairs) => pairs
                 .into_iter()
                 .collect::<HashSet<_>>()
                 .into_iter()
@@ -95,5 +100,17 @@ impl From<BinanceWsChannel> for Vec<BinanceSubscriptionInner> {
             .into_iter()
             .map(|p| BinanceSubscriptionInner { channel, trading_pair: p })
             .collect()
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
+pub struct BinanceSubscriptionResponse {
+    pub result: Option<String>,
+    pub id:     u64
+}
+
+impl BinanceSubscriptionResponse {
+    pub fn new(result: Option<String>, id: u64) -> Self {
+        Self { result, id }
     }
 }

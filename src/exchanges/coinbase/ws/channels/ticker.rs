@@ -5,6 +5,7 @@ use tracing::warn;
 
 use crate::{
     exchanges::{coinbase::pairs::CoinbaseTradingPair, normalized::types::NormalizedQuote},
+    normalized::types::TimeOrUpdateId,
     CexExchange
 };
 
@@ -41,29 +42,39 @@ pub struct CoinbaseTicker {
 
 impl CoinbaseTicker {
     pub fn normalize(self) -> NormalizedQuote {
+        let mut orderbook_ids_time = TimeOrUpdateId::new().with_time(self.time);
+
+        if let Some(id) = self.trade_id {
+            orderbook_ids_time = orderbook_ids_time.with_first_update_id(id);
+        }
+
         NormalizedQuote {
-            exchange:   CexExchange::Coinbase,
-            pair:       self.product_id.normalize(),
-            time:       self.time,
+            exchange: CexExchange::Coinbase,
+            pair: self.product_id.normalize(),
             ask_amount: self.best_ask_size,
-            ask_price:  self.best_ask,
+            ask_price: self.best_ask,
             bid_amount: self.best_bid_size,
-            bid_price:  self.best_bid,
-            quote_id:   self.trade_id.map(|t| t.to_string())
+            bid_price: self.best_bid,
+            orderbook_ids_time
         }
     }
 }
 
 impl PartialEq<NormalizedQuote> for CoinbaseTicker {
     fn eq(&self, other: &NormalizedQuote) -> bool {
+        let mut orderbook_ids_time = TimeOrUpdateId::new().with_time(self.time);
+
+        if let Some(id) = self.trade_id {
+            orderbook_ids_time = orderbook_ids_time.with_first_update_id(id);
+        }
+
         let equals = other.exchange == CexExchange::Coinbase
             && other.pair == self.product_id.normalize()
-            && other.time == self.time
             && other.ask_amount == self.best_ask_size
             && other.ask_price == self.best_ask
             && other.bid_amount == self.best_bid_size
             && other.bid_price == self.best_bid
-            && other.quote_id == self.trade_id.map(|t| t.to_string());
+            && other.orderbook_ids_time == orderbook_ids_time;
 
         if !equals {
             warn!(target: "cex-exchanges::coinbase", "coinbase ticker: {:?}", self);

@@ -3,7 +3,11 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use tracing::warn;
 
-use crate::{bybit::BybitTradingPair, normalized::types::NormalizedQuote, CexExchange};
+use crate::{
+    bybit::BybitTradingPair,
+    normalized::types::{NormalizedQuote, TimeOrUpdateId},
+    CexExchange
+};
 
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
@@ -24,14 +28,15 @@ impl BybitOrderbook {
         let ask = self.data.best_ask.first();
         if let (Some(b), Some(a)) = (bid.as_ref(), ask.as_ref()) {
             Some(NormalizedQuote {
-                exchange:   CexExchange::Bybit,
-                pair:       self.data.symbol.normalize(),
-                time:       DateTime::<Utc>::from_timestamp_millis(self.timestamp as i64).unwrap(),
-                ask_amount: a.amount,
-                ask_price:  a.price,
-                bid_amount: b.amount,
-                bid_price:  b.price,
-                quote_id:   Some(self.data.update_id.to_string())
+                exchange:           CexExchange::Bybit,
+                pair:               self.data.symbol.normalize(),
+                ask_amount:         a.amount,
+                ask_price:          a.price,
+                bid_amount:         b.amount,
+                bid_price:          b.price,
+                orderbook_ids_time: TimeOrUpdateId::new()
+                    .with_time(DateTime::<Utc>::from_timestamp_millis(self.timestamp as i64).unwrap())
+                    .with_first_update_id(self.data.update_id)
             })
         } else {
             None
@@ -58,8 +63,10 @@ impl PartialEq<Vec<NormalizedQuote>> for BybitOrderbook {
             };
             other_data.exchange == CexExchange::Bybit
                 && other_data.pair == self.data.symbol.normalize()
-                && other_data.time == DateTime::<Utc>::from_timestamp_millis(self.timestamp as i64).unwrap()
-                && other_data.quote_id == Some(self.data.update_id.to_string())
+                && other_data.orderbook_ids_time
+                    == TimeOrUpdateId::new()
+                        .with_time(DateTime::<Utc>::from_timestamp_millis(self.timestamp as i64).unwrap())
+                        .with_first_update_id(self.data.update_id)
                 && data_bids
         });
 

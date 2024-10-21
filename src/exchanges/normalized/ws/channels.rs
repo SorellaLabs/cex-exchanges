@@ -11,7 +11,7 @@ pub enum NormalizedWsChannels {
     Quotes(Vec<NormalizedTradingPair>),
     /// (depth, update speed, trading pairs)
     /// DEFAULT: (None, 1000ms, trading pairs)
-    L2(Option<u64>, u64, Vec<NormalizedTradingPair>)
+    L2(Option<u64>, Option<u64>, Vec<NormalizedTradingPair>)
 }
 
 impl NormalizedWsChannels {
@@ -19,7 +19,7 @@ impl NormalizedWsChannels {
         match kind {
             NormalizedWsChannelKinds::Trades => NormalizedWsChannels::Trades(Vec::new()),
             NormalizedWsChannelKinds::Quotes => NormalizedWsChannels::Quotes(Vec::new()),
-            NormalizedWsChannelKinds::L2 => NormalizedWsChannels::L2(None, 100, Vec::new())
+            NormalizedWsChannelKinds::L2 => NormalizedWsChannels::L2(None, Some(100), Vec::new())
         }
     }
 
@@ -28,7 +28,7 @@ impl NormalizedWsChannels {
         exchange: CexExchange,
         kind: NormalizedWsChannelKinds,
         pairs: &[RawTradingPair],
-        l2_config: Option<(Option<u64>, u64)>
+        l2_config: Option<(Option<u64>, Option<u64>)>
     ) -> Self {
         match kind {
             NormalizedWsChannelKinds::Trades => Self::new_with_pairs_util(exchange, NormalizedWsChannelKinds::Trades, pairs, None),
@@ -59,7 +59,7 @@ impl NormalizedWsChannels {
         exchange: CexExchange,
         kind: NormalizedWsChannelKinds,
         pairs: &[RawTradingPair],
-        l2_config: Option<(Option<u64>, u64)>
+        l2_config: Option<(Option<u64>, Option<u64>)>
     ) -> NormalizedWsChannels {
         let split_pairs = pairs
             .iter()
@@ -70,7 +70,7 @@ impl NormalizedWsChannels {
             NormalizedWsChannelKinds::Trades => NormalizedWsChannels::Trades(split_pairs),
             NormalizedWsChannelKinds::Quotes => NormalizedWsChannels::Quotes(split_pairs),
             NormalizedWsChannelKinds::L2 => {
-                let (depth, update_speed) = l2_config.unwrap_or((None, 100));
+                let (depth, update_speed) = l2_config.unwrap_or((None, Some(100)));
                 NormalizedWsChannels::L2(depth, update_speed, split_pairs)
             }
         }

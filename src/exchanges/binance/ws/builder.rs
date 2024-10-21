@@ -39,7 +39,10 @@ impl BinanceWsBuilder {
                 .map(|ch| match ch {
                     BinanceWsChannelKind::Trade => BinanceWsChannel::Trade(chk.to_vec()),
                     BinanceWsChannelKind::BookTicker => BinanceWsChannel::BookTicker(chk.to_vec()),
-                    BinanceWsChannelKind::DiffDepth(depth, update_speed) => BinanceWsChannel::DiffDepth(*depth, *update_speed, chk.to_vec())
+                    BinanceWsChannelKind::PartialBookDepth(depth, update_speed) => {
+                        BinanceWsChannel::PartialBookDepth(*depth, *update_speed, chk.to_vec())
+                    }
+                    BinanceWsChannelKind::DiffDepth(update_speed) => BinanceWsChannel::DiffDepth(*update_speed, chk.to_vec())
                 })
                 .collect::<Vec<_>>();
 

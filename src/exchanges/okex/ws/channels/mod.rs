@@ -43,7 +43,7 @@ impl SpecificWsChannel for OkexWsChannel {
         Self::new_from_normalized(OkexWsChannel::BookTicker(Vec::new()), normalized)
     }
 
-    fn new_l2(_: Option<u64>, _: u64, _: Vec<RawTradingPair>) -> eyre::Result<Self> {
+    fn new_l2(_: Option<u64>, _: Option<u64>, _: Vec<RawTradingPair>) -> eyre::Result<Self> {
         unreachable!()
     }
 

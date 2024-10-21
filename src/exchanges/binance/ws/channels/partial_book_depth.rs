@@ -1,6 +1,5 @@
-use chrono::DateTime;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::serde_as;
 use tracing::warn;
 
 use crate::{
@@ -11,26 +10,14 @@ use crate::{
 
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
-pub struct BinanceDiffDepth {
-    #[serde(rename = "e")]
-    pub event: String,
-    #[serde(rename = "E")]
-    pub event_time: u64,
-    #[serde(rename = "s")]
-    pub pair: BinanceTradingPair,
-    #[serde(rename = "U")]
-    pub first_orderbook_update_id: u64,
-    #[serde(rename = "u")]
-    pub last_orderbook_update_id: u64,
-    #[serde(rename = "b")]
-    #[serde_as(as = "Vec<Vec<DisplayFromStr>>")]
-    pub bids: Vec<Vec<f64>>,
-    #[serde(rename = "a")]
-    #[serde_as(as = "Vec<Vec<DisplayFromStr>>")]
-    pub asks: Vec<Vec<f64>>
+pub struct BinancePartialBookDepth {
+    pub pair:                BinanceTradingPair,
+    pub bids:                Vec<Vec<f64>>,
+    pub asks:                Vec<Vec<f64>>,
+    pub orderbook_update_id: u64
 }
 
-impl BinanceDiffDepth {
+impl BinancePartialBookDepth {
     pub fn normalize(self) -> NormalizedL2 {
         NormalizedL2 {
             exchange:           CexExchange::Binance,
@@ -45,15 +32,12 @@ impl BinanceDiffDepth {
                 .into_iter()
                 .map(|ask| BidAsk::new(ask[0], ask[1]))
                 .collect(),
-            orderbook_ids_time: TimeOrUpdateId::new()
-                .with_time(DateTime::from_timestamp_millis(self.event_time as i64).unwrap())
-                .with_first_update_id(self.first_orderbook_update_id)
-                .with_last_update_id(self.last_orderbook_update_id)
+            orderbook_ids_time: TimeOrUpdateId::new().with_first_update_id(self.orderbook_update_id)
         }
     }
 }
 
-impl PartialEq<NormalizedL2> for BinanceDiffDepth {
+impl PartialEq<NormalizedL2> for BinancePartialBookDepth {
     fn eq(&self, other: &NormalizedL2) -> bool {
         let our_bids = self
             .bids
@@ -72,11 +56,7 @@ impl PartialEq<NormalizedL2> for BinanceDiffDepth {
             && other.bids.len() == our_bids.len()
             && other.asks.iter().all(|a| our_asks.contains(a))
             && other.asks.len() == our_asks.len()
-            && other.orderbook_ids_time
-                == TimeOrUpdateId::new()
-                    .with_time(DateTime::from_timestamp_millis(self.event_time as i64).unwrap())
-                    .with_first_update_id(self.first_orderbook_update_id)
-                    .with_last_update_id(self.last_orderbook_update_id);
+            && other.orderbook_ids_time == TimeOrUpdateId::new().with_first_update_id(self.orderbook_update_id);
 
         if !equals {
             warn!(target: "cex-exchanges::binance", "binance diff depth: {:?}", self);

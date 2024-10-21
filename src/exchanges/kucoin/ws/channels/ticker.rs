@@ -3,7 +3,11 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use tracing::warn;
 
-use crate::{kucoin::KucoinTradingPair, normalized::types::NormalizedQuote, CexExchange};
+use crate::{
+    kucoin::KucoinTradingPair,
+    normalized::types::{NormalizedQuote, TimeOrUpdateId},
+    CexExchange
+};
 
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
@@ -18,14 +22,15 @@ pub struct KucoinTicker {
 impl KucoinTicker {
     pub fn normalize(self) -> NormalizedQuote {
         NormalizedQuote {
-            exchange:   CexExchange::Kucoin,
-            pair:       self.topic.normalize(),
-            time:       DateTime::<Utc>::from_timestamp_nanos(self.data.timestamp as i64),
-            ask_amount: self.data.best_ask_size,
-            ask_price:  self.data.best_ask_price,
-            bid_amount: self.data.best_bid_size,
-            bid_price:  self.data.best_bid_price,
-            quote_id:   Some(self.data.sequence.to_string())
+            exchange:           CexExchange::Kucoin,
+            pair:               self.topic.normalize(),
+            ask_amount:         self.data.best_ask_size,
+            ask_price:          self.data.best_ask_price,
+            bid_amount:         self.data.best_bid_size,
+            bid_price:          self.data.best_bid_price,
+            orderbook_ids_time: TimeOrUpdateId::new()
+                .with_first_update_id(self.data.sequence)
+                .with_time(DateTime::<Utc>::from_timestamp_nanos(self.data.timestamp as i64))
         }
     }
 }
@@ -34,12 +39,14 @@ impl PartialEq<NormalizedQuote> for KucoinTicker {
     fn eq(&self, other: &NormalizedQuote) -> bool {
         let equals = other.exchange == CexExchange::Kucoin
             && other.pair == self.topic.normalize()
-            && other.time == DateTime::<Utc>::from_timestamp_nanos(self.data.timestamp as i64)
             && other.ask_amount == self.data.best_ask_size
             && other.ask_price == self.data.best_ask_price
             && other.bid_amount == self.data.best_bid_size
             && other.bid_price == self.data.best_bid_price
-            && other.quote_id == Some(self.data.sequence.to_string());
+            && other.orderbook_ids_time
+                == TimeOrUpdateId::new()
+                    .with_first_update_id(self.data.sequence)
+                    .with_time(DateTime::<Utc>::from_timestamp_nanos(self.data.timestamp as i64));
 
         if !equals {
             warn!(target: "cex-exchanges::kucoin", "kucoin ticker: {:?}", self);

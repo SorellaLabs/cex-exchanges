@@ -7,6 +7,7 @@ use tracing::warn;
 
 use crate::{
     exchanges::{normalized::types::NormalizedQuote, okex::pairs::OkexTradingPair},
+    normalized::types::TimeOrUpdateId,
     CexExchange
 };
 
@@ -75,12 +76,11 @@ impl OkexTicker {
             Some(NormalizedQuote {
                 exchange: CexExchange::Okex,
                 pair: self.pair.normalize(),
-                time: DateTime::from_timestamp_millis(self.timestamp as i64).unwrap(),
                 ask_amount,
                 ask_price,
                 bid_amount,
                 bid_price,
-                quote_id: None
+                orderbook_ids_time: TimeOrUpdateId::new().with_time(DateTime::from_timestamp_millis(self.timestamp as i64).unwrap())
             })
         } else {
             None
@@ -92,12 +92,11 @@ impl PartialEq<NormalizedQuote> for OkexTicker {
     fn eq(&self, other: &NormalizedQuote) -> bool {
         let equals = other.exchange == CexExchange::Okex
             && other.pair == self.pair.normalize()
-            && other.time == DateTime::from_timestamp_millis(self.timestamp as i64).unwrap()
             && (other.bid_amount - self.bid_amt.unwrap_or_default()).abs() < EPSILON
             && (other.bid_price - self.bid_price.unwrap_or_default()).abs() < EPSILON
             && (other.ask_amount - self.ask_amt.unwrap_or_default()).abs() < EPSILON
             && (other.ask_price - self.ask_price.unwrap_or_default()).abs() < EPSILON
-            && other.quote_id.is_none();
+            && other.orderbook_ids_time == TimeOrUpdateId::new().with_time(DateTime::from_timestamp_millis(self.timestamp as i64).unwrap());
 
         if !equals {
             warn!(target: "cex-exchanges::okex", "okex ticker: {:?}", self);

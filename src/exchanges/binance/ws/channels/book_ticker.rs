@@ -3,7 +3,11 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use tracing::warn;
 
-use crate::{binance::BinanceTradingPair, normalized::types::NormalizedQuote, CexExchange};
+use crate::{
+    binance::BinanceTradingPair,
+    normalized::types::{NormalizedQuote, TimeOrUpdateId},
+    CexExchange
+};
 
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
@@ -31,14 +35,15 @@ pub struct BinanceBookTicker {
 impl BinanceBookTicker {
     pub fn normalize(self) -> NormalizedQuote {
         NormalizedQuote {
-            exchange:   CexExchange::Binance,
-            pair:       self.pair.normalize(),
-            time:       self.local_update_time,
-            ask_amount: self.best_ask_amt,
-            ask_price:  self.best_ask_price,
-            bid_amount: self.best_bid_amt,
-            bid_price:  self.best_bid_price,
-            quote_id:   Some(self.orderbook_update_id.to_string())
+            exchange:           CexExchange::Binance,
+            pair:               self.pair.normalize(),
+            ask_amount:         self.best_ask_amt,
+            ask_price:          self.best_ask_price,
+            bid_amount:         self.best_bid_amt,
+            bid_price:          self.best_bid_price,
+            orderbook_ids_time: TimeOrUpdateId::new()
+                .with_time(self.local_update_time)
+                .with_first_update_id(self.orderbook_update_id)
         }
     }
 }
@@ -47,12 +52,14 @@ impl PartialEq<NormalizedQuote> for BinanceBookTicker {
     fn eq(&self, other: &NormalizedQuote) -> bool {
         let equals = other.exchange == CexExchange::Binance
             && other.pair == self.pair.normalize()
-            && other.time == self.local_update_time
             && other.ask_amount == self.best_ask_amt
             && other.ask_price == self.best_ask_price
             && other.bid_amount == self.best_bid_amt
             && other.bid_price == self.best_bid_price
-            && other.quote_id == Some(self.orderbook_update_id.to_string());
+            && other.orderbook_ids_time
+                == TimeOrUpdateId::new()
+                    .with_time(self.local_update_time)
+                    .with_first_update_id(self.orderbook_update_id);
 
         if !equals {
             warn!(target: "cex-exchanges::binance", "binance book ticker: {:?}", self);
