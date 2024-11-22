@@ -226,8 +226,12 @@ mod binance_tests {
             channels::{BinanceWsChannel, BinanceWsChannelKind},
             BinanceWsBuilder
         },
-        normalized::types::RawTradingPair,
-        traits::{SpecificWsBuilder, SpecificWsChannel}
+        normalized::{
+            types::RawTradingPair,
+            ws::{NormalizedExchangeBuilder, NormalizedWsChannelKinds}
+        },
+        traits::{SpecificWsBuilder, SpecificWsChannel},
+        CexExchange
     };
     use serial_test::serial;
 
@@ -262,12 +266,13 @@ mod binance_tests {
     async fn test_book_l2() {
         init_test_tracing();
         let builder = BinanceWsBuilder::default().add_channel(
-            BinanceWsChannel::new_l2(None, 100, vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
+            BinanceWsChannel::new_l2(None, Some(100), vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")])
+                .unwrap()
         );
         binance_util(builder, 5).await;
 
-        let builder =
-            BinanceWsBuilder::default().add_channel(BinanceWsChannel::new_l2(None, 100, vec![RawTradingPair::new_raw("ETH_USDt", '_')]).unwrap());
+        let builder = BinanceWsBuilder::default()
+            .add_channel(BinanceWsChannel::new_l2(None, Some(100), vec![RawTradingPair::new_raw("ETH_USDt", '_')]).unwrap());
         binance_util(builder, 5).await;
     }
 
@@ -312,6 +317,7 @@ mod binance_tests {
         let builder = BinanceWsBuilder::build_from_all_instruments(&channels, None, None)
             .await
             .unwrap();
+
         mutlithreaded_util(builder, 1000).await;
     }
 }

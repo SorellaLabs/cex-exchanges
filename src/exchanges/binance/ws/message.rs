@@ -70,7 +70,8 @@ mod private {
     pub(super) enum BinanceWsMessageRaw {
         DataMsg(BinanceDataStreamMsg),
         DiffDepth(BinanceDiffDepth),
-        OtherMsg(BinanceSubscriptionResponse)
+        OtherMsg(BinanceSubscriptionResponse),
+        BookTicker(BinanceBookTicker)
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -98,7 +99,8 @@ mod private {
                     BinanceWsMessageDataRaw::PartialBookDepth(v) => BinanceWsMessage::PartialBookDepth((v, parse_stream_to_pair(msg.stream)).into())
                 },
                 BinanceWsMessageRaw::OtherMsg(msg) => BinanceWsMessage::SubscriptionResponse(msg),
-                BinanceWsMessageRaw::DiffDepth(v) => BinanceWsMessage::DiffDepth(v)
+                BinanceWsMessageRaw::DiffDepth(v) => BinanceWsMessage::DiffDepth(v),
+                BinanceWsMessageRaw::BookTicker(v) => BinanceWsMessage::BookTicker(v)
             }
         }
     }
