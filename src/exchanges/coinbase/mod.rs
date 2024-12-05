@@ -73,6 +73,7 @@ impl Exchange for Coinbase {
     type WsMessage = CoinbaseWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Coinbase;
+    const STREAM_TIMEOUT_SEC: Option<u64> = None;
 
     fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
         let pair: CoinbaseTradingPair = bad_pair.try_into().unwrap();

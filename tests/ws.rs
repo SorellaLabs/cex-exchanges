@@ -226,12 +226,8 @@ mod binance_tests {
             channels::{BinanceWsChannel, BinanceWsChannelKind},
             BinanceWsBuilder
         },
-        normalized::{
-            types::RawTradingPair,
-            ws::{NormalizedExchangeBuilder, NormalizedWsChannelKinds}
-        },
-        traits::{SpecificWsBuilder, SpecificWsChannel},
-        CexExchange
+        normalized::types::RawTradingPair,
+        traits::{SpecificWsBuilder, SpecificWsChannel}
     };
     use serial_test::serial;
 
@@ -285,14 +281,14 @@ mod binance_tests {
                 BinanceWsChannel::new_trade(vec![
                     RawTradingPair::new_raw("ETH_USDt", '_'),
                     RawTradingPair::new_no_delim("btcusdc"),
-                    RawTradingPair::new_no_delim("SUSDETH"),
+                    RawTradingPair::new_no_delim("KEYUSDT"),
                 ])
                 .unwrap()
             )
             .build_many_distributed()
             .unwrap();
 
-        mutlistream_util(builder, 50).await;
+        mutlistream_util(builder, 500).await;
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 3)]

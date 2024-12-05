@@ -2,7 +2,7 @@
 use std::fmt::Debug;
 
 use cex_exchanges::{
-    clients::ws::{MutliWsStreamBuilder, WsStream},
+    clients::ws::{MutliWsStreamBuilder, WsStream, WsStreamConfig},
     normalized::ws::NormalizedExchangeBuilder,
     Exchange
 };
@@ -12,7 +12,7 @@ use tracing::{error, info, Level};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 
 pub async fn stream_util<E: Exchange + Unpin + Debug + Send + 'static>(exchange: E, iterations: usize) {
-    let mut stream = WsStream::new(exchange, None);
+    let mut stream = WsStream::new(exchange, WsStreamConfig::default());
     stream.connect().await.unwrap();
     info!(target: "cex-exchanges::tests::ws", "connected stream");
 
@@ -35,7 +35,7 @@ pub async fn stream_util<E: Exchange + Unpin + Debug + Send + 'static>(exchange:
 }
 
 pub async fn mutlistream_util<E: Exchange + Unpin + Debug + Send + 'static>(builder: MutliWsStreamBuilder<E>, iterations: usize) {
-    let mut stream = builder.build_multistream_unconnected(None);
+    let mut stream = builder.build_multistream_unconnected(WsStreamConfig::default());
     info!(target: "cex-exchanges::tests::ws", "connected stream");
 
     let mut i = 0;
@@ -59,7 +59,7 @@ pub async fn mutlistream_util<E: Exchange + Unpin + Debug + Send + 'static>(buil
 }
 
 pub async fn mutlithreaded_util<E: Exchange + Unpin + Debug + Send + 'static>(builder: MutliWsStreamBuilder<E>, iterations: usize) {
-    let mut rx = builder.spawn_multithreaded(8, None);
+    let mut rx = builder.spawn_multithreaded(8, WsStreamConfig::default());
     info!(target: "cex-exchanges::tests::ws", "connected stream");
 
     let mut i = 0;
@@ -84,7 +84,7 @@ pub async fn mutlithreaded_util<E: Exchange + Unpin + Debug + Send + 'static>(bu
 
 pub async fn normalized_mutlithreaded_util(builder: NormalizedExchangeBuilder, iterations: usize) {
     let mut rx = builder
-        .build_all_multithreaded(1, Some(10), Some(25))
+        .build_all_multithreaded(1, WsStreamConfig::default().with_max_retries(10), Some(25))
         .unwrap()
         .unwrap();
     info!(target: "cex-exchanges::tests::ws", "connected stream");

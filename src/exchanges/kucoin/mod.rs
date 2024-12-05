@@ -61,6 +61,7 @@ impl Exchange for Kucoin {
     type WsMessage = KucoinWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Kucoin;
+    const STREAM_TIMEOUT_SEC: Option<u64> = None;
 
     fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
         let pair = bad_pair.try_into().unwrap();

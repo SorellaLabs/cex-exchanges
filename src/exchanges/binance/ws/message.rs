@@ -71,7 +71,8 @@ mod private {
         DataMsg(BinanceDataStreamMsg),
         DiffDepth(BinanceDiffDepth),
         OtherMsg(BinanceSubscriptionResponse),
-        BookTicker(BinanceBookTicker)
+        BookTicker(BinanceBookTicker),
+        Trade(BinanceTrade)
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -100,7 +101,8 @@ mod private {
                 },
                 BinanceWsMessageRaw::OtherMsg(msg) => BinanceWsMessage::SubscriptionResponse(msg),
                 BinanceWsMessageRaw::DiffDepth(v) => BinanceWsMessage::DiffDepth(v),
-                BinanceWsMessageRaw::BookTicker(v) => BinanceWsMessage::BookTicker(v)
+                BinanceWsMessageRaw::BookTicker(v) => BinanceWsMessage::BookTicker(v),
+                BinanceWsMessageRaw::Trade(v) => BinanceWsMessage::Trade(v)
             }
         }
     }

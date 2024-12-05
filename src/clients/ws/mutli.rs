@@ -7,7 +7,7 @@ use std::{
 use futures::{Stream, StreamExt};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
-use super::{errors::WsError, WsStream};
+use super::{errors::WsError, WsStream, WsStreamConfig};
 use crate::{exchanges::normalized::ws::CombinedWsMessage, Exchange};
 
 pub struct MutliWsStream {
@@ -85,10 +85,10 @@ where
         Self { exchanges }
     }
 
-    pub async fn build_multistream(self, max_retries: Option<u64>) -> Result<MutliWsStream, WsError> {
+    pub async fn build_multistream(self, config: WsStreamConfig) -> Result<MutliWsStream, WsError> {
         let ws_streams = futures::stream::iter(self.exchanges)
             .map(|exch| async move {
-                let mut stream = WsStream::new(exch, max_retries);
+                let mut stream = WsStream::new(exch, config);
                 stream.connect().await?;
                 Ok::<_, WsError>(stream)
             })
@@ -104,11 +104,11 @@ where
         Ok(MutliWsStream { combined_streams, stream_count })
     }
 
-    pub fn build_multistream_unconnected(self, max_retries: Option<u64>) -> MutliWsStream {
+    pub fn build_multistream_unconnected(self, config: WsStreamConfig) -> MutliWsStream {
         let ws_streams = self
             .exchanges
             .into_iter()
-            .map(|exch| WsStream::new(exch, max_retries))
+            .map(|exch| WsStream::new(exch, config))
             .collect::<Vec<_>>();
 
         let stream_count = ws_streams.len();
@@ -117,14 +117,14 @@ where
         MutliWsStream { combined_streams, stream_count }
     }
 
-    pub(crate) fn build_multistream_unconnected_raw(self, max_retries: Option<u64>) -> Vec<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>> {
+    pub(crate) fn build_multistream_unconnected_raw(self, config: WsStreamConfig) -> Vec<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>> {
         self.exchanges
             .into_iter()
-            .map(|exch| Box::pin(WsStream::new(exch, max_retries)) as Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>)
+            .map(|exch| Box::pin(WsStream::new(exch, config)) as Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>)
             .collect::<Vec<_>>()
     }
 
-    pub fn spawn_multithreaded(self, num_threads: usize, max_retries: Option<u64>) -> UnboundedReceiver<CombinedWsMessage> {
+    pub fn spawn_multithreaded(self, num_threads: usize, config: WsStreamConfig) -> UnboundedReceiver<CombinedWsMessage> {
         let chunk_size = if self.exchanges.len() < num_threads + 1 { 1 } else { self.exchanges.len() / num_threads + 1 };
         let exchange_chunks = self.exchanges.chunks(chunk_size);
 
@@ -138,7 +138,7 @@ where
                     .enable_all()
                     .build()?;
                 let this_new = Self { exchanges };
-                let ms = this_new.build_multistream_unconnected(max_retries);
+                let ms = this_new.build_multistream_unconnected(config);
 
                 thread_rt.block_on(ms.run_with_sender(tx))?;
                 Ok::<(), eyre::Report>(())

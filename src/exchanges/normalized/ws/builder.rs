@@ -7,7 +7,7 @@ use tracing::{debug, info};
 
 use super::CombinedWsMessage;
 use crate::{
-    clients::ws::MutliWsStream,
+    clients::ws::{MutliWsStream, WsStreamConfig},
     exchanges::normalized::{
         types::RawTradingPair,
         ws::channels::{NormalizedWsChannelKinds, NormalizedWsChannels}
@@ -121,7 +121,7 @@ impl NormalizedExchangeBuilder {
     }
 
     /// builds the multistream ws client
-    pub fn build_all_multistream(self, max_retries: Option<u64>, connections_per_stream: Option<usize>) -> eyre::Result<Option<MutliWsStream>> {
+    pub fn build_all_multistream(self, config: WsStreamConfig, connections_per_stream: Option<usize>) -> eyre::Result<Option<MutliWsStream>> {
         let mut multistream_ws: Option<MutliWsStream> = None;
 
         self.ws_exchanges.into_iter().try_for_each(|(exch, map)| {
@@ -130,7 +130,7 @@ impl NormalizedExchangeBuilder {
                 .flat_map(|channel| channel.make_many_single())
                 .collect::<Vec<_>>();
 
-            let new_stream = exch.build_multistream_ws_from_normalized(channel_map, max_retries, connections_per_stream, self.exch_currency_proxy)?;
+            let new_stream = exch.build_multistream_ws_from_normalized(channel_map, config, connections_per_stream, self.exch_currency_proxy)?;
             if let Some(ws) = multistream_ws.take() {
                 multistream_ws = Some(ws.combine_other(new_stream))
             } else {
@@ -147,7 +147,7 @@ impl NormalizedExchangeBuilder {
     pub fn build_all_multithreaded(
         self,
         number_threads: usize,
-        max_retries: Option<u64>,
+        config: WsStreamConfig,
         connections_per_stream: Option<usize>
     ) -> eyre::Result<Option<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>>> {
         let all_streams = self
@@ -161,26 +161,12 @@ impl NormalizedExchangeBuilder {
 
                 debug!(target: "cex-exchanges::live-stream",exchange=?exch, "made {} channels", channel_map.len());
 
-                let streams = exch.build_multistream_unconnected_raw_ws_from_normalized(
-                    channel_map,
-                    self.exch_currency_proxy,
-                    max_retries,
-                    connections_per_stream
-                )?;
+                let streams =
+                    exch.build_multistream_unconnected_raw_ws_from_normalized(channel_map, self.exch_currency_proxy, config, connections_per_stream)?;
 
                 debug!(target: "cex-exchanges::live-stream",exchange=?exch, "made {} streams", streams.len());
 
                 Ok::<_, eyre::ErrReport>(streams)
-
-                // let new_stream =
-                // exch.build_multithreaded_multistream_ws_from_normalized(
-                //     channel_map,
-                //     self.exch_currency_proxy,
-                //     max_retries,
-                //     connections_per_stream,
-                //     number_threads
-                // )?;
-                // Ok::<_, eyre::Report>(UnboundedReceiverStream::new(new_stream))
             })
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
@@ -194,7 +180,7 @@ impl NormalizedExchangeBuilder {
         if !all_streams.is_empty() {
             let chunk_size = (all_streams.len() as f64 / number_threads as f64).ceil() as usize;
 
-            let stream_chks = all_streams.owned_chunks(chunk_size); //.take(chunk_size).collect::<Vec<_>>();
+            let stream_chks = all_streams.owned_chunks(chunk_size);
 
             stream_chks.into_iter().for_each(|chk| {
                 let stream_chk = chk.collect::<Vec<_>>();

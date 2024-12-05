@@ -8,3 +8,6 @@ pub use single::*;
 
 mod critical;
 pub use critical::*;
+
+mod config;
+pub use config::*;

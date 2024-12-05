@@ -95,6 +95,7 @@ impl Exchange for Okex {
     type WsMessage = OkexWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Okex;
+    const STREAM_TIMEOUT_SEC: Option<u64> = None;
 
     fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
         let pair: OkexTradingPair = bad_pair.try_into().unwrap();

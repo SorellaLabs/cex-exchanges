@@ -104,6 +104,7 @@ impl Exchange for Bybit {
     type WsMessage = BybitWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Bybit;
+    const STREAM_TIMEOUT_SEC: Option<u64> = None;
 
     fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
         let pair = bad_pair.try_into().unwrap();
