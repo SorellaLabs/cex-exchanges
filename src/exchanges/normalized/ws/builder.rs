@@ -1,7 +1,6 @@
 use std::{collections::HashMap, pin::Pin};
 
 use futures::Stream;
-use owned_chunks::OwnedChunks;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tracing::{debug, info};
 
@@ -10,9 +9,9 @@ use crate::{
     clients::ws::{MutliWsStream, WsStreamConfig},
     exchanges::normalized::{
         types::RawTradingPair,
-        ws::channels::{NormalizedWsChannelKinds, NormalizedWsChannels}
+        ws::channels::{NormalizedWsChannelKinds, NormalizedWsChannels},
     },
-    CexExchange
+    CexExchange,
 };
 
 #[derive(Debug, Default, Clone)]
@@ -20,7 +19,7 @@ pub struct NormalizedExchangeBuilder {
     pub(crate) ws_exchanges: HashMap<CexExchange, HashMap<NormalizedWsChannelKinds, NormalizedWsChannels>>,
     /// proxy exchange to get symbols for exchanges that don't have a direct api
     /// link
-    exch_currency_proxy:     Option<CexExchange>
+    exch_currency_proxy: Option<CexExchange>,
 }
 
 impl NormalizedExchangeBuilder {
@@ -69,7 +68,7 @@ impl NormalizedExchangeBuilder {
         &mut self,
         exchange: &[CexExchange],
         channels: &[NormalizedWsChannelKinds],
-        pairs: &[RawTradingPair]
+        pairs: &[RawTradingPair],
     ) {
         exchange
             .iter()
@@ -148,7 +147,7 @@ impl NormalizedExchangeBuilder {
         self,
         number_threads: usize,
         config: WsStreamConfig,
-        connections_per_stream: Option<usize>
+        connections_per_stream: Option<usize>,
     ) -> eyre::Result<Option<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>>> {
         let all_streams = self
             .ws_exchanges
@@ -180,10 +179,21 @@ impl NormalizedExchangeBuilder {
         if !all_streams.is_empty() {
             let chunk_size = (all_streams.len() as f64 / number_threads as f64).ceil() as usize;
 
-            let stream_chks = all_streams.owned_chunks(chunk_size);
+            let mut all_streams_iter = all_streams.into_iter();
 
-            stream_chks.into_iter().for_each(|chk| {
-                let stream_chk = chk.collect::<Vec<_>>();
+            let mut owned_stream_chks = Vec::new();
+            let mut temp_chunk = Vec::new();
+            while let Some(next) = all_streams_iter.next() {
+                temp_chunk.push(next);
+                if temp_chunk.len() == chunk_size {
+                    owned_stream_chks.push(std::mem::take(&mut temp_chunk));
+                }
+            }
+            if temp_chunk.len() != 0 {
+                owned_stream_chks.push(std::mem::take(&mut temp_chunk));
+            }
+
+            owned_stream_chks.into_iter().for_each(|stream_chk| {
                 debug!(target: "cex-exchanges::live-stream", "made {} streams in stream chunk", stream_chk.len());
                 let tx = tx.clone();
                 let multi = MutliWsStream::build_from_raw(stream_chk);

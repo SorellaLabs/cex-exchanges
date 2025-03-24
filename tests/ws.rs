@@ -242,7 +242,7 @@ mod binance_tests {
     async fn test_trade() {
         init_test_tracing();
         let builder = BinanceWsBuilder::default().add_channel(
-            BinanceWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdc")]).unwrap()
+            BinanceWsChannel::new_trade(vec![RawTradingPair::new_raw("ETH_USDt", '_'), RawTradingPair::new_no_delim("BTC-USdt")]).unwrap()
         );
         binance_util(builder, 5).await;
     }
