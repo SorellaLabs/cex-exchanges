@@ -6,7 +6,7 @@ use tracing::{debug, info};
 
 use super::CombinedWsMessage;
 use crate::{
-    clients::ws::{MutliWsStream, WsStreamConfig},
+    clients::ws::{MultiWsStream, WsStreamConfig},
     exchanges::normalized::{
         types::RawTradingPair,
         ws::channels::{NormalizedWsChannelKinds, NormalizedWsChannels},
@@ -120,8 +120,8 @@ impl NormalizedExchangeBuilder {
     }
 
     /// builds the multistream ws client
-    pub fn build_all_multistream(self, config: WsStreamConfig, connections_per_stream: Option<usize>) -> eyre::Result<Option<MutliWsStream>> {
-        let mut multistream_ws: Option<MutliWsStream> = None;
+    pub fn build_all_multistream(self, config: WsStreamConfig, connections_per_stream: Option<usize>) -> eyre::Result<Option<MultiWsStream>> {
+        let mut multistream_ws: Option<MultiWsStream> = None;
 
         self.ws_exchanges.into_iter().try_for_each(|(exch, map)| {
             let channel_map = map
@@ -196,7 +196,7 @@ impl NormalizedExchangeBuilder {
             owned_stream_chks.into_iter().for_each(|stream_chk| {
                 debug!(target: "cex-exchanges::live-stream", "made {} streams in stream chunk", stream_chk.len());
                 let tx = tx.clone();
-                let multi = MutliWsStream::build_from_raw(stream_chk);
+                let multi = MultiWsStream::build_from_raw(stream_chk);
                 multi.spawn_on_new_thread(tx.clone());
             });
 

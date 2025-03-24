@@ -1,20 +1,20 @@
 use super::{
     channels::{OkexWsChannel, OkexWsChannelKind},
-    OkexSubscription
+    OkexSubscription,
 };
 use crate::{
-    clients::ws::MutliWsStreamBuilder,
+    clients::ws::MultiWsStreamBuilder,
     normalized::{types::InstrumentFilter, ws::NormalizedWsChannels},
     okex::Okex,
     traits::{SpecificWsBuilder, SpecificWsSubscription},
-    CexExchange
+    CexExchange,
 };
 
 #[derive(Debug, Clone)]
 pub struct OkexWsBuilder {
-    pub channels:            Vec<OkexWsChannel>,
+    pub channels: Vec<OkexWsChannel>,
     /// proxy exchange to get on-chain addresses
-    pub exch_currency_proxy: CexExchange
+    pub exch_currency_proxy: CexExchange,
 }
 
 impl OkexWsBuilder {
@@ -26,7 +26,7 @@ impl OkexWsBuilder {
     async fn build_from_all_instruments_util(
         channels: &[OkexWsChannelKind],
         streams_per_connection: Option<usize>,
-        proxy: Option<CexExchange>
+        proxy: Option<CexExchange>,
     ) -> eyre::Result<Self> {
         let mut this = Self::new(proxy);
 
@@ -47,7 +47,7 @@ impl OkexWsBuilder {
                 .iter()
                 .map(|ch| match ch {
                     OkexWsChannelKind::TradesAll => OkexWsChannel::TradesAll(chk.to_vec()),
-                    OkexWsChannelKind::BookTicker => OkexWsChannel::BookTicker(chk.to_vec())
+                    OkexWsChannelKind::BookTicker => OkexWsChannel::BookTicker(chk.to_vec()),
                 })
                 .collect::<Vec<_>>();
 
@@ -79,7 +79,7 @@ impl SpecificWsBuilder for OkexWsBuilder {
         Okex::new_ws_subscription(sub, self.exch_currency_proxy)
     }
 
-    fn build_many_distributed(self) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>> {
+    fn build_many_distributed(self) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>> {
         let stream_size = if self.channels.len() <= Self::MAX_CONNECTIONS { 1 } else { self.channels.len() / Self::MAX_CONNECTIONS };
 
         let chunks = self.channels.chunks(stream_size).collect::<Vec<_>>();
@@ -95,10 +95,10 @@ impl SpecificWsBuilder for OkexWsBuilder {
             })
             .collect();
 
-        Ok(MutliWsStreamBuilder::new(split_exchange))
+        Ok(MultiWsStreamBuilder::new(split_exchange))
     }
 
-    fn build_many_packed(self, connections_per_stream: Option<usize>) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>> {
+    fn build_many_packed(self, connections_per_stream: Option<usize>) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>> {
         let chunks = self
             .channels
             .chunks(connections_per_stream.unwrap_or(Self::MAX_STREAMS_PER_CONNECTION))
@@ -115,14 +115,14 @@ impl SpecificWsBuilder for OkexWsBuilder {
             })
             .collect();
 
-        Ok(MutliWsStreamBuilder::new(split_exchange))
+        Ok(MultiWsStreamBuilder::new(split_exchange))
     }
 
     async fn build_from_all_instruments<'a>(
         channels: &'a [<Self::WsChannel as crate::traits::SpecificWsChannel>::ChannelKind],
         streams_per_connection: Option<usize>,
-        exch_currency_proxy: Option<CexExchange>
-    ) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>> {
+        exch_currency_proxy: Option<CexExchange>,
+    ) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>> {
         let this = Self::build_from_all_instruments_util(channels, streams_per_connection, exch_currency_proxy).await?;
 
         let all_streams = this
@@ -136,12 +136,12 @@ impl SpecificWsBuilder for OkexWsBuilder {
             })
             .collect::<Vec<_>>();
 
-        Ok(MutliWsStreamBuilder::new(all_streams))
+        Ok(MultiWsStreamBuilder::new(all_streams))
     }
 
     fn make_from_normalized_map(map: Vec<NormalizedWsChannels>, exch_currency_proxy: Option<CexExchange>) -> eyre::Result<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         let mut this = Self { channels: Vec::new(), exch_currency_proxy: exch_currency_proxy.unwrap_or(CexExchange::Okex) };
 

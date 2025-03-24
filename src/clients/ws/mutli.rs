@@ -10,12 +10,12 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use super::{errors::WsError, WsStream, WsStreamConfig};
 use crate::{exchanges::normalized::ws::CombinedWsMessage, Exchange};
 
-pub struct MutliWsStream {
+pub struct MultiWsStream {
     combined_streams: Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>,
     stream_count: usize,
 }
 
-impl MutliWsStream {
+impl MultiWsStream {
     pub fn combine_other(self, other: Self) -> Self {
         let combined_streams = Box::pin(futures::stream::select_all(vec![self.combined_streams, other.combined_streams]));
 
@@ -52,7 +52,7 @@ impl MutliWsStream {
     }
 }
 
-impl Stream for MutliWsStream {
+impl Stream for MultiWsStream {
     type Item = CombinedWsMessage;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -85,7 +85,7 @@ where
         Self { exchanges }
     }
 
-    pub async fn build_multistream(self, config: WsStreamConfig) -> Result<MutliWsStream, WsError> {
+    pub async fn build_multistream(self, config: WsStreamConfig) -> Result<MultiWsStream, WsError> {
         let ws_streams = futures::stream::iter(self.exchanges)
             .map(|exch| async move {
                 let mut stream = WsStream::new(exch, config);
@@ -101,10 +101,10 @@ where
         let stream_count = ws_streams.len();
         let combined_streams = Box::pin(futures::stream::select_all(ws_streams));
 
-        Ok(MutliWsStream { combined_streams, stream_count })
+        Ok(MultiWsStream { combined_streams, stream_count })
     }
 
-    pub fn build_multistream_unconnected(self, config: WsStreamConfig) -> MutliWsStream {
+    pub fn build_multistream_unconnected(self, config: WsStreamConfig) -> MultiWsStream {
         let ws_streams = self
             .exchanges
             .into_iter()
@@ -114,7 +114,7 @@ where
         let stream_count = ws_streams.len();
         let combined_streams = Box::pin(futures::stream::select_all(ws_streams));
 
-        MutliWsStream { combined_streams, stream_count }
+        MultiWsStream { combined_streams, stream_count }
     }
 
     pub(crate) fn build_multistream_unconnected_raw(self, config: WsStreamConfig) -> Vec<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>> {
