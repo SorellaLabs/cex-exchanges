@@ -20,7 +20,7 @@ pub mod okex;
 use std::{
     fmt::{Debug, Display},
     pin::Pin,
-    str::FromStr
+    str::FromStr,
 };
 
 use clap::ValueEnum;
@@ -35,26 +35,26 @@ use traits::SpecificWsBuilder;
 use self::normalized::{
     rest_api::NormalizedRestApiRequest,
     types::{NormalizedCurrency, NormalizedInstrument, NormalizedTradingPair},
-    ws::{CombinedWsMessage, NormalizedWsChannels}
+    ws::{CombinedWsMessage, NormalizedWsChannels},
 };
 #[cfg(feature = "non-us")]
 use self::{
     binance::{ws::BinanceWsBuilder, Binance, BinanceTradingPair},
     bybit::{ws::BybitWsBuilder, Bybit, BybitTradingPair},
-    kucoin::{ws::KucoinWsBuilder, Kucoin, KucoinTradingPair}
+    kucoin::{ws::KucoinWsBuilder, Kucoin, KucoinTradingPair},
 };
 #[cfg(feature = "us")]
 use self::{
     coinbase::{ws::CoinbaseWsBuilder, Coinbase, CoinbaseTradingPair},
-    okex::{ws::OkexWsBuilder, Okex, OkexTradingPair}
+    okex::{ws::OkexWsBuilder, Okex, OkexTradingPair},
 };
 use crate::{
     clients::{
         rest_api::{ExchangeApi, RestApiError},
-        ws::{CriticalWsMessage, MutliWsStream, WsError, WsStreamConfig}
+        ws::{CriticalWsMessage, MultiWsStream, WsError, WsStreamConfig},
     },
     exchanges::normalized::rest_api::CombinedRestApiResponse,
-    traits::ExchangeFilter
+    traits::ExchangeFilter,
 };
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord, EnumIter, ValueEnum)]
@@ -68,7 +68,7 @@ pub enum CexExchange {
     #[cfg(feature = "non-us")]
     Kucoin,
     #[cfg(feature = "non-us")]
-    Bybit
+    Bybit,
 }
 
 impl CexExchange {
@@ -81,8 +81,8 @@ impl CexExchange {
         map: Vec<NormalizedWsChannels>,
         config: WsStreamConfig,
         connections_per_stream: Option<usize>,
-        exch_currency_proxy: Option<CexExchange>
-    ) -> eyre::Result<MutliWsStream> {
+        exch_currency_proxy: Option<CexExchange>,
+    ) -> eyre::Result<MultiWsStream> {
         let res = match self {
             #[cfg(feature = "us")]
             CexExchange::Coinbase => CoinbaseWsBuilder::make_from_normalized_map(map, None)?
@@ -94,7 +94,7 @@ impl CexExchange {
                 #[cfg(not(feature = "non-us"))]
                 exch_currency_proxy.unwrap_or(CexExchange::Coinbase),
                 #[cfg(feature = "non-us")]
-                Some(exch_currency_proxy.unwrap_or(CexExchange::Binance))
+                Some(exch_currency_proxy.unwrap_or(CexExchange::Binance)),
             )?
             .build_many_packed(connections_per_stream)?
             .build_multistream_unconnected(config),
@@ -109,7 +109,7 @@ impl CexExchange {
             #[cfg(feature = "non-us")]
             CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
-                .build_multistream_unconnected(config)
+                .build_multistream_unconnected(config),
         };
 
         Ok(res)
@@ -121,7 +121,7 @@ impl CexExchange {
         exch_currency_proxy: Option<CexExchange>,
         config: WsStreamConfig,
         connections_per_stream: Option<usize>,
-        number_threads: usize
+        number_threads: usize,
     ) -> eyre::Result<UnboundedReceiver<CombinedWsMessage>> {
         let res = match self {
             #[cfg(feature = "us")]
@@ -134,7 +134,7 @@ impl CexExchange {
                 #[cfg(not(feature = "non-us"))]
                 exch_currency_proxy.unwrap_or(CexExchange::Coinbase),
                 #[cfg(feature = "non-us")]
-                Some(exch_currency_proxy.unwrap_or(CexExchange::Binance))
+                Some(exch_currency_proxy.unwrap_or(CexExchange::Binance)),
             )?
             .build_many_packed(connections_per_stream)?
             .spawn_multithreaded(number_threads, config),
@@ -149,7 +149,7 @@ impl CexExchange {
             #[cfg(feature = "non-us")]
             CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
-                .spawn_multithreaded(number_threads, config)
+                .spawn_multithreaded(number_threads, config),
         };
 
         Ok(res)
@@ -160,7 +160,7 @@ impl CexExchange {
         map: Vec<NormalizedWsChannels>,
         exch_currency_proxy: Option<CexExchange>,
         config: WsStreamConfig,
-        connections_per_stream: Option<usize>
+        connections_per_stream: Option<usize>,
     ) -> eyre::Result<Vec<Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>>> {
         let res = match self {
             #[cfg(feature = "us")]
@@ -173,7 +173,7 @@ impl CexExchange {
                 #[cfg(not(feature = "non-us"))]
                 exch_currency_proxy.unwrap_or(CexExchange::Coinbase),
                 #[cfg(feature = "non-us")]
-                Some(exch_currency_proxy.unwrap_or(CexExchange::Binance))
+                Some(exch_currency_proxy.unwrap_or(CexExchange::Binance)),
             )?
             .build_many_packed(connections_per_stream)?
             .build_multistream_unconnected_raw(config),
@@ -188,7 +188,7 @@ impl CexExchange {
             #[cfg(feature = "non-us")]
             CexExchange::Bybit => BybitWsBuilder::make_from_normalized_map(map, None)?
                 .build_many_packed(connections_per_stream)?
-                .build_multistream_unconnected_raw(config)
+                .build_multistream_unconnected_raw(config),
         };
 
         Ok(res)
@@ -203,7 +203,7 @@ impl CexExchange {
     /// ```
     pub async fn get_all_currencies<F>(self, filter: Option<F>) -> Result<Vec<NormalizedCurrency>, RestApiError>
     where
-        F: ExchangeFilter<NormalizedCurrency>
+        F: ExchangeFilter<NormalizedCurrency>,
     {
         let exchange_api = ExchangeApi::new();
         let out = match self {
@@ -241,7 +241,7 @@ impl CexExchange {
                 .await?
                 .normalize()
                 .take_currencies(filter)
-                .unwrap()
+                .unwrap(),
         };
 
         Ok(out)
@@ -256,7 +256,7 @@ impl CexExchange {
     /// ```
     pub async fn get_all_instruments<F>(self, filter: Option<F>) -> Result<Vec<NormalizedInstrument>, RestApiError>
     where
-        F: ExchangeFilter<NormalizedInstrument>
+        F: ExchangeFilter<NormalizedInstrument>,
     {
         let exchange_api = ExchangeApi::new();
         let out = match self {
@@ -294,7 +294,7 @@ impl CexExchange {
                 .await?
                 .normalize()
                 .take_instruments(filter)
-                .unwrap()
+                .unwrap(),
         };
 
         Ok(out)
@@ -338,7 +338,7 @@ impl CexExchange {
         match self {
             CexExchange::Coinbase => CoinbaseTradingPair::parse_for_bad_pair(&msg).map(|p| p.normalize()),
             CexExchange::Okex => OkexTradingPair::parse_for_bad_pair(&msg).map(|p| p.normalize()),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -355,7 +355,7 @@ impl Display for CexExchange {
             #[cfg(feature = "non-us")]
             CexExchange::Kucoin => write!(f, "kucoin"),
             #[cfg(feature = "non-us")]
-            CexExchange::Bybit => write!(f, "bybit")
+            CexExchange::Bybit => write!(f, "bybit"),
         }
     }
 }
@@ -377,7 +377,7 @@ impl FromStr for CexExchange {
             "kucoin" => Ok(CexExchange::Kucoin),
             #[cfg(feature = "non-us")]
             "bybit" => Ok(CexExchange::Bybit),
-            _ => Err(eyre::ErrReport::msg(format!("'{s}' is not a valid exchange")))
+            _ => Err(eyre::ErrReport::msg(format!("'{s}' is not a valid exchange"))),
         }
     }
 }
@@ -399,6 +399,6 @@ pub trait Exchange: Clone + Default + Send + Unpin + 'static {
     fn rest_api_call(
         &self,
         web_client: &reqwest::Client,
-        api_channel: NormalizedRestApiRequest
+        api_channel: NormalizedRestApiRequest,
     ) -> impl Future<Output = Result<Self::RestApiResult, RestApiError>> + Send;
 }

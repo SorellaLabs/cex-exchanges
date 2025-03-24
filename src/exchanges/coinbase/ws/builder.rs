@@ -1,18 +1,18 @@
 use super::{
     channels::{CoinbaseWsChannel, CoinbaseWsChannelKind},
-    CoinbaseSubscription
+    CoinbaseSubscription,
 };
 use crate::{
-    clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},
+    clients::{rest_api::ExchangeApi, ws::MultiWsStreamBuilder},
     coinbase::Coinbase,
     normalized::ws::NormalizedWsChannels,
     traits::{SpecificWsBuilder, SpecificWsSubscription},
-    CexExchange
+    CexExchange,
 };
 
 #[derive(Debug, Clone, Default)]
 pub struct CoinbaseWsBuilder {
-    pub channels: Vec<CoinbaseWsChannel>
+    pub channels: Vec<CoinbaseWsChannel>,
 }
 
 impl CoinbaseWsBuilder {
@@ -38,7 +38,7 @@ impl CoinbaseWsBuilder {
                 .map(|ch| match ch {
                     CoinbaseWsChannelKind::Matches => CoinbaseWsChannel::Matches(chk.to_vec()),
                     CoinbaseWsChannelKind::Ticker => CoinbaseWsChannel::Ticker(chk.to_vec()),
-                    CoinbaseWsChannelKind::Status => CoinbaseWsChannel::Status
+                    CoinbaseWsChannelKind::Status => CoinbaseWsChannel::Status,
                 })
                 .collect::<Vec<_>>();
 
@@ -70,7 +70,7 @@ impl SpecificWsBuilder for CoinbaseWsBuilder {
         Coinbase::new_ws_subscription(sub)
     }
 
-    fn build_many_distributed(self) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>> {
+    fn build_many_distributed(self) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>> {
         let stream_size = if self.channels.len() <= Self::MAX_CONNECTIONS { 1 } else { self.channels.len() / Self::MAX_CONNECTIONS };
 
         let chunks = self.channels.chunks(stream_size).collect::<Vec<_>>();
@@ -86,10 +86,10 @@ impl SpecificWsBuilder for CoinbaseWsBuilder {
             })
             .collect();
 
-        Ok(MutliWsStreamBuilder::new(split_exchange))
+        Ok(MultiWsStreamBuilder::new(split_exchange))
     }
 
-    fn build_many_packed(self, connections_per_stream: Option<usize>) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>> {
+    fn build_many_packed(self, connections_per_stream: Option<usize>) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>> {
         let chunks = self
             .channels
             .chunks(connections_per_stream.unwrap_or(Self::MAX_STREAMS_PER_CONNECTION))
@@ -106,14 +106,14 @@ impl SpecificWsBuilder for CoinbaseWsBuilder {
             })
             .collect();
 
-        Ok(MutliWsStreamBuilder::new(split_exchange))
+        Ok(MultiWsStreamBuilder::new(split_exchange))
     }
 
     async fn build_from_all_instruments<'a>(
         channels: &'a [<Self::WsChannel as crate::traits::SpecificWsChannel>::ChannelKind],
         streams_per_connection: Option<usize>,
-        _: Option<CexExchange>
-    ) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>> {
+        _: Option<CexExchange>,
+    ) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>> {
         let this = Self::build_from_all_instruments_util(channels, streams_per_connection).await?;
 
         let all_streams = this
@@ -127,12 +127,12 @@ impl SpecificWsBuilder for CoinbaseWsBuilder {
             })
             .collect::<Vec<_>>();
 
-        Ok(MutliWsStreamBuilder::new(all_streams))
+        Ok(MultiWsStreamBuilder::new(all_streams))
     }
 
     fn make_from_normalized_map(map: Vec<NormalizedWsChannels>, _: Option<CexExchange>) -> eyre::Result<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         let mut this = Self { channels: Vec::new() };
 
@@ -153,10 +153,10 @@ mod tests {
     use crate::{
         exchanges::{
             coinbase::CoinbaseTradingPair,
-            normalized::{types::RawTradingPair, ws::NormalizedWsChannelKinds}
+            normalized::{types::RawTradingPair, ws::NormalizedWsChannelKinds},
         },
         normalized::ws::NormalizedExchangeBuilder,
-        CexExchange
+        CexExchange,
     };
 
     #[test]
@@ -167,7 +167,7 @@ mod tests {
         builder.add_pairs_all_channels(
             CexExchange::Coinbase,
             &[NormalizedWsChannelKinds::Quotes, NormalizedWsChannelKinds::Trades],
-            &[RawTradingPair::new_raw("pepe_USD", '_'), RawTradingPair::new_base_quote("ETH", "usd", None)]
+            &[RawTradingPair::new_raw("pepe_USD", '_'), RawTradingPair::new_base_quote("ETH", "usd", None)],
         );
 
         builder.add_pairs_single_channel(CexExchange::Coinbase, NormalizedWsChannelKinds::Trades, &[RawTradingPair::new_no_delim("wbtc-usd")]);

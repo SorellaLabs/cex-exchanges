@@ -1,13 +1,13 @@
 use super::{
     channels::{KucoinWsChannel, KucoinWsChannelKind},
-    KucoinMultiSubscription
+    KucoinMultiSubscription,
 };
 use crate::{
-    clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},
+    clients::{rest_api::ExchangeApi, ws::MultiWsStreamBuilder},
     kucoin::Kucoin,
     normalized::ws::NormalizedWsChannels,
     traits::SpecificWsBuilder,
-    CexExchange
+    CexExchange,
 };
 
 /// There is a limit of 300 connections per attempt every 5 minutes per IP.
@@ -17,7 +17,7 @@ pub const MAX_KUCOIN_WS_CONNS_PER_STREAM: usize = 100;
 
 #[derive(Debug, Clone, Default)]
 pub struct KucoinWsBuilder {
-    pub channels: Vec<KucoinWsChannel>
+    pub channels: Vec<KucoinWsChannel>,
 }
 
 impl KucoinWsBuilder {
@@ -43,7 +43,7 @@ impl KucoinWsBuilder {
                 .iter()
                 .map(|ch| match ch {
                     KucoinWsChannelKind::Match => KucoinWsChannel::Match(chk.to_vec()),
-                    KucoinWsChannelKind::Ticker => KucoinWsChannel::Ticker(chk.to_vec())
+                    KucoinWsChannelKind::Ticker => KucoinWsChannel::Ticker(chk.to_vec()),
                 })
                 .collect::<Vec<_>>();
 
@@ -78,7 +78,7 @@ impl SpecificWsBuilder for KucoinWsBuilder {
         Kucoin::new_ws_subscription(subscription)
     }
 
-    fn build_many_distributed(self) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>> {
+    fn build_many_distributed(self) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>> {
         let stream_size = if self.channels.len() <= MAX_KUCOIN_STREAMS { 1 } else { self.channels.len() / MAX_KUCOIN_STREAMS };
 
         let chunks = self.channels.chunks(stream_size).collect::<Vec<_>>();
@@ -94,10 +94,10 @@ impl SpecificWsBuilder for KucoinWsBuilder {
             })
             .collect();
 
-        Ok(MutliWsStreamBuilder::new(split_exchange))
+        Ok(MultiWsStreamBuilder::new(split_exchange))
     }
 
-    fn build_many_packed(self, connections_per_stream: Option<usize>) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>> {
+    fn build_many_packed(self, connections_per_stream: Option<usize>) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>> {
         let chunks = self
             .channels
             .chunks(connections_per_stream.unwrap_or(MAX_KUCOIN_WS_CONNS_PER_STREAM))
@@ -114,14 +114,14 @@ impl SpecificWsBuilder for KucoinWsBuilder {
             })
             .collect();
 
-        Ok(MutliWsStreamBuilder::new(split_exchange))
+        Ok(MultiWsStreamBuilder::new(split_exchange))
     }
 
     async fn build_from_all_instruments<'a>(
         channels: &'a [<Self::WsChannel as crate::traits::SpecificWsChannel>::ChannelKind],
         streams_per_connection: Option<usize>,
-        _: Option<CexExchange>
-    ) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>> {
+        _: Option<CexExchange>,
+    ) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>> {
         let this = Self::build_from_all_instruments_util(channels, streams_per_connection).await?;
 
         let all_streams = this
@@ -135,12 +135,12 @@ impl SpecificWsBuilder for KucoinWsBuilder {
             })
             .collect::<Vec<_>>();
 
-        Ok(MutliWsStreamBuilder::new(all_streams))
+        Ok(MultiWsStreamBuilder::new(all_streams))
     }
 
     fn make_from_normalized_map(map: Vec<NormalizedWsChannels>, _: Option<CexExchange>) -> eyre::Result<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         let mut this = Self { channels: Vec::new() };
 

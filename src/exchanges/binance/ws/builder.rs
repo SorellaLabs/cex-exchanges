@@ -1,18 +1,18 @@
 use super::{
     channels::{BinanceWsChannel, BinanceWsChannelKind},
-    BinanceSubscription
+    BinanceSubscription,
 };
 use crate::{
     binance::Binance,
-    clients::{rest_api::ExchangeApi, ws::MutliWsStreamBuilder},
+    clients::{rest_api::ExchangeApi, ws::MultiWsStreamBuilder},
     normalized::ws::NormalizedWsChannels,
     traits::{SpecificWsBuilder, SpecificWsSubscription},
-    CexExchange
+    CexExchange,
 };
 
 #[derive(Debug, Clone, Default)]
 pub struct BinanceWsBuilder {
-    pub channels: Vec<BinanceWsChannel>
+    pub channels: Vec<BinanceWsChannel>,
 }
 
 impl BinanceWsBuilder {
@@ -42,7 +42,7 @@ impl BinanceWsBuilder {
                     BinanceWsChannelKind::PartialBookDepth(depth, update_speed) => {
                         BinanceWsChannel::PartialBookDepth(*depth, *update_speed, chk.to_vec())
                     }
-                    BinanceWsChannelKind::DiffDepth(update_speed) => BinanceWsChannel::DiffDepth(*update_speed, chk.to_vec())
+                    BinanceWsChannelKind::DiffDepth(update_speed) => BinanceWsChannel::DiffDepth(*update_speed, chk.to_vec()),
                 })
                 .collect::<Vec<_>>();
 
@@ -79,7 +79,7 @@ impl SpecificWsBuilder for BinanceWsBuilder {
         Binance::new_ws_subscription(subscription)
     }
 
-    fn build_many_distributed(self) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>> {
+    fn build_many_distributed(self) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>> {
         let stream_size = if self.channels.len() <= Self::MAX_CONNECTIONS { 1 } else { self.channels.len() / Self::MAX_CONNECTIONS };
         let chunks = self.channels.chunks(stream_size).collect::<Vec<_>>();
 
@@ -94,10 +94,10 @@ impl SpecificWsBuilder for BinanceWsBuilder {
             })
             .collect();
 
-        Ok(MutliWsStreamBuilder::new(split_exchange))
+        Ok(MultiWsStreamBuilder::new(split_exchange))
     }
 
-    fn build_many_packed(self, connections_per_stream: Option<usize>) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>> {
+    fn build_many_packed(self, connections_per_stream: Option<usize>) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>> {
         let chunks = self
             .channels
             .chunks(connections_per_stream.unwrap_or(Self::MAX_STREAMS_PER_CONNECTION))
@@ -114,14 +114,14 @@ impl SpecificWsBuilder for BinanceWsBuilder {
             })
             .collect();
 
-        Ok(MutliWsStreamBuilder::new(split_exchange))
+        Ok(MultiWsStreamBuilder::new(split_exchange))
     }
 
     async fn build_from_all_instruments<'a>(
         channels: &'a [<Self::WsChannel as crate::traits::SpecificWsChannel>::ChannelKind],
         streams_per_connection: Option<usize>,
-        _: Option<CexExchange>
-    ) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>> {
+        _: Option<CexExchange>,
+    ) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>> {
         let this = Self::build_from_all_instruments_util(channels, streams_per_connection).await?;
 
         let all_streams = this
@@ -135,12 +135,12 @@ impl SpecificWsBuilder for BinanceWsBuilder {
             })
             .collect::<Vec<_>>();
 
-        Ok(MutliWsStreamBuilder::new(all_streams))
+        Ok(MultiWsStreamBuilder::new(all_streams))
     }
 
     fn make_from_normalized_map(map: Vec<NormalizedWsChannels>, _: Option<CexExchange>) -> eyre::Result<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         let mut this = Self { channels: Vec::new() };
 

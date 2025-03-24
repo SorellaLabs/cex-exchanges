@@ -1,7 +1,7 @@
 use std::future::Future;
 
 use super::SpecificWsChannel;
-use crate::{clients::ws::MutliWsStreamBuilder, normalized::ws::NormalizedWsChannels, CexExchange, Exchange};
+use crate::{clients::ws::MultiWsStreamBuilder, normalized::ws::NormalizedWsChannels, CexExchange, Exchange};
 
 pub trait SpecificWsBuilder {
     /// maximum number of connections per IP
@@ -26,12 +26,12 @@ pub trait SpecificWsBuilder {
     /// streams, each with size # channels / [Self::MAX_CONNECTIONS]
     ///
     /// WARNING: too many channels may break the stream
-    fn build_many_distributed(self) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>>;
+    fn build_many_distributed(self) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>>;
 
     /// builds many ws instances of the [Self::CexExchange] as the inner streams
     /// of [MutliWsStreamBuilder], splitting the channels into different
     /// streams, each of size [Self::MAX_STREAMS_PER_CONNECTION]
-    fn build_many_packed(self, connections_per_stream: Option<usize>) -> eyre::Result<MutliWsStreamBuilder<Self::CexExchange>>;
+    fn build_many_packed(self, connections_per_stream: Option<usize>) -> eyre::Result<MultiWsStreamBuilder<Self::CexExchange>>;
 
     /// builds a mutlistream channel from all active instruments
     ///
@@ -43,8 +43,8 @@ pub trait SpecificWsBuilder {
     fn build_from_all_instruments<'a>(
         channels: &'a [<Self::WsChannel as SpecificWsChannel>::ChannelKind],
         streams_per_connection: Option<usize>,
-        exch_currency_proxy: Option<CexExchange>
-    ) -> impl Future<Output = eyre::Result<MutliWsStreamBuilder<Self::CexExchange>>> + 'a;
+        exch_currency_proxy: Option<CexExchange>,
+    ) -> impl Future<Output = eyre::Result<MultiWsStreamBuilder<Self::CexExchange>>> + 'a;
 
     /// makes the builder from the normalized builder's map
     fn make_from_normalized_map(map: Vec<NormalizedWsChannels>, exch_currency_proxy: Option<CexExchange>) -> eyre::Result<Self>
