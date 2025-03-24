@@ -2,9 +2,9 @@
 use std::fmt::Debug;
 
 use cex_exchanges::{
-    clients::ws::{MutliWsStreamBuilder, WsStream, WsStreamConfig},
+    clients::ws::{MultiWsStreamBuilder, WsStream, WsStreamConfig},
     normalized::ws::NormalizedExchangeBuilder,
-    Exchange
+    Exchange,
 };
 use futures::StreamExt;
 use serde::Serialize;
@@ -34,7 +34,7 @@ pub async fn stream_util<E: Exchange + Unpin + Debug + Send + 'static>(exchange:
     }
 }
 
-pub async fn mutlistream_util<E: Exchange + Unpin + Debug + Send + 'static>(builder: MutliWsStreamBuilder<E>, iterations: usize) {
+pub async fn mutlistream_util<E: Exchange + Unpin + Debug + Send + 'static>(builder: MultiWsStreamBuilder<E>, iterations: usize) {
     let mut stream = builder.build_multistream_unconnected(WsStreamConfig::default());
     info!(target: "cex-exchanges::tests::ws", "connected stream");
 
@@ -58,7 +58,7 @@ pub async fn mutlistream_util<E: Exchange + Unpin + Debug + Send + 'static>(buil
     }
 }
 
-pub async fn mutlithreaded_util<E: Exchange + Unpin + Debug + Send + 'static>(builder: MutliWsStreamBuilder<E>, iterations: usize) {
+pub async fn mutlithreaded_util<E: Exchange + Unpin + Debug + Send + 'static>(builder: MultiWsStreamBuilder<E>, iterations: usize) {
     let mut rx = builder.spawn_multithreaded(8, WsStreamConfig::default());
     info!(target: "cex-exchanges::tests::ws", "connected stream");
 
@@ -111,7 +111,7 @@ pub async fn normalized_mutlithreaded_util(builder: NormalizedExchangeBuilder, i
 
 pub fn write_json<D>(a: D, path: &str)
 where
-    D: Serialize
+    D: Serialize,
 {
     use std::io::Write;
 

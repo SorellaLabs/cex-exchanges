@@ -1,7 +1,7 @@
 use std::{
     fmt::Debug,
     pin::Pin,
-    task::{Context, Poll}
+    task::{Context, Poll},
 };
 
 use futures::{Stream, StreamExt};
@@ -12,7 +12,7 @@ use crate::{exchanges::normalized::ws::CombinedWsMessage, Exchange};
 
 pub struct MutliWsStream {
     combined_streams: Pin<Box<dyn Stream<Item = CombinedWsMessage> + Send>>,
-    stream_count:     usize
+    stream_count: usize,
 }
 
 impl MutliWsStream {
@@ -62,10 +62,10 @@ impl Stream for MutliWsStream {
             if val.is_none() {
                 this.stream_count -= 1;
                 if this.stream_count == 0 {
-                    return Poll::Ready(None)
+                    return Poll::Ready(None);
                 }
             } else {
-                return Poll::Ready(val)
+                return Poll::Ready(val);
             }
         }
 
@@ -73,13 +73,13 @@ impl Stream for MutliWsStream {
     }
 }
 
-pub struct MutliWsStreamBuilder<T> {
-    exchanges: Vec<T>
+pub struct MultiWsStreamBuilder<T> {
+    exchanges: Vec<T>,
 }
 
-impl<T> MutliWsStreamBuilder<T>
+impl<T> MultiWsStreamBuilder<T>
 where
-    T: Exchange + Unpin + Debug + Send + 'static
+    T: Exchange + Unpin + Debug + Send + 'static,
 {
     pub fn new(exchanges: Vec<T>) -> Self {
         Self { exchanges }
