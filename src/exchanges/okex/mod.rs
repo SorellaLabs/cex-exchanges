@@ -14,17 +14,17 @@ use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
     rest_api::{OkexAllInstruments, OkexAllSymbols, OkexRestApiResponse},
-    ws::{OkexSubscription, OkexWsMessage}
+    ws::{OkexSubscription, OkexWsMessage},
 };
 use super::traits::SpecificWsSubscription;
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
     normalized::{
         rest_api::NormalizedRestApiRequest,
-        types::{NormalizedTradingPair, NormalizedTradingType}
+        types::{NormalizedTradingPair, NormalizedTradingType},
     },
     traits::EmptyFilter,
-    CexExchange, Exchange
+    CexExchange, Exchange,
 };
 
 const WSS_PUBLIC_URL: &str = "wss://ws.okx.com:8443/ws/v5/public";
@@ -33,10 +33,10 @@ const BASE_REST_API_URL: &str = "https://www.okx.com";
 
 #[derive(Debug, Clone)]
 pub struct Okex {
-    subscription:        OkexSubscription,
+    subscription: OkexSubscription,
     /// exchange to use to get the symbols (since there is no direct symbols
     /// api) - default is binance
-    exch_currency_proxy: CexExchange
+    exch_currency_proxy: CexExchange,
 }
 
 impl Okex {
@@ -46,7 +46,7 @@ impl Okex {
 
     pub fn get_all_symbols<'a>(
         &'a self,
-        web_client: &'a reqwest::Client
+        web_client: &'a reqwest::Client,
     ) -> Pin<Box<dyn Future<Output = Result<OkexAllSymbols, RestApiError>> + Send + 'a>> {
         Box::pin(async {
             let proxy_symbols = self
@@ -82,7 +82,7 @@ impl Okex {
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
     where
-        T: for<'de> Deserialize<'de>
+        T: for<'de> Deserialize<'de>,
     {
         let data = web_client.get(&url).send().await?.json().await?;
 
@@ -95,7 +95,7 @@ impl Exchange for Okex {
     type WsMessage = OkexWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Okex;
-    const STREAM_TIMEOUT_SEC: Option<u64> = None;
+    const STREAM_TIMEOUT_MS: Option<u64> = None;
 
     fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
         let pair: OkexTradingPair = bad_pair.try_into().unwrap();
@@ -116,7 +116,7 @@ impl Exchange for Okex {
     async fn rest_api_call(&self, web_client: &reqwest::Client, api_channel: NormalizedRestApiRequest) -> Result<OkexRestApiResponse, RestApiError> {
         let call_result = match api_channel {
             NormalizedRestApiRequest::AllCurrencies => OkexRestApiResponse::Symbols(self.get_all_symbols(web_client).await?),
-            NormalizedRestApiRequest::AllInstruments => OkexRestApiResponse::Instruments(self.get_all_instruments(web_client).await?)
+            NormalizedRestApiRequest::AllInstruments => OkexRestApiResponse::Instruments(self.get_all_instruments(web_client).await?),
         };
 
         Ok(call_result)
@@ -130,7 +130,7 @@ impl Default for Okex {
             #[cfg(feature = "non-us")]
             exch_currency_proxy: CexExchange::Binance,
             #[cfg(not(feature = "non-us"))]
-            exch_currency_proxy: CexExchange::Coinbase
+            exch_currency_proxy: CexExchange::Coinbase,
         }
     }
 }

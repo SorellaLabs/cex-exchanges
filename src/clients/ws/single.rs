@@ -220,8 +220,8 @@ impl<T: Exchange> WsStreamFutures<T> {
     }
 
     fn new_timeout_rx(&mut self) {
-        if let Some(timeout_sec) = T::STREAM_TIMEOUT_SEC {
-            self.timeout_rx = Some(Box::pin(tokio::time::sleep(std::time::Duration::from_secs(timeout_sec))));
+        if let Some(timeout_sec) = T::STREAM_TIMEOUT_MS {
+            self.timeout_rx = Some(Box::pin(tokio::time::sleep(std::time::Duration::from_millis(timeout_sec))));
         } else {
             panic!()
         }

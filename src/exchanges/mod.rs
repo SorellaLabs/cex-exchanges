@@ -384,7 +384,7 @@ impl FromStr for CexExchange {
 
 pub trait Exchange: Clone + Default + Send + Unpin + 'static {
     const EXCHANGE: CexExchange;
-    const STREAM_TIMEOUT_SEC: Option<u64>;
+    const STREAM_TIMEOUT_MS: Option<u64>;
     type WsMessage: CriticalWsMessage + Send;
     type RestApiResult: for<'de> Deserialize<'de> + Into<CombinedRestApiResponse> + Debug + Send;
 

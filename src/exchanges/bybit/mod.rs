@@ -14,7 +14,7 @@ use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
     rest_api::{BybitAllCoins, BybitAllInstruments, BybitRestApiResponse},
-    ws::{BybitSubscription, BybitWsMessage}
+    ws::{BybitSubscription, BybitWsMessage},
 };
 use super::traits::SpecificWsSubscription;
 use crate::{
@@ -22,7 +22,7 @@ use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
     exchanges::Exchange,
     normalized::{rest_api::NormalizedRestApiRequest, types::NormalizedTradingPair},
-    CexExchange
+    CexExchange,
 };
 
 const WSS_URL: &str = "wss://stream.bybit.com/v5/public/spot";
@@ -30,7 +30,7 @@ const BASE_REST_API_URL: &str = "https://api.bybit.com";
 
 #[derive(Debug, Default, Clone)]
 pub struct Bybit {
-    subscription: BybitSubscription
+    subscription: BybitSubscription,
 }
 
 impl Bybit {
@@ -92,7 +92,7 @@ impl Bybit {
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
     where
-        T: for<'de> Deserialize<'de>
+        T: for<'de> Deserialize<'de>,
     {
         let data = web_client.get(&url).send().await?.json().await?;
         Ok(data)
@@ -104,7 +104,7 @@ impl Exchange for Bybit {
     type WsMessage = BybitWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Bybit;
-    const STREAM_TIMEOUT_SEC: Option<u64> = None;
+    const STREAM_TIMEOUT_MS: Option<u64> = None;
 
     fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
         let pair = bad_pair.try_into().unwrap();
@@ -123,7 +123,7 @@ impl Exchange for Bybit {
     async fn rest_api_call(&self, web_client: &reqwest::Client, api_channel: NormalizedRestApiRequest) -> Result<BybitRestApiResponse, RestApiError> {
         let api_response = match api_channel {
             NormalizedRestApiRequest::AllCurrencies => BybitRestApiResponse::Coins(Self::get_all_coins(web_client).await?),
-            NormalizedRestApiRequest::AllInstruments => BybitRestApiResponse::Instruments(Self::get_all_instruments(web_client).await?)
+            NormalizedRestApiRequest::AllInstruments => BybitRestApiResponse::Instruments(Self::get_all_instruments(web_client).await?),
         };
 
         Ok(api_response)

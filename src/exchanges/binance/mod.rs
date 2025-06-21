@@ -16,14 +16,14 @@ use tracing::{debug, error, info, trace, warn};
 
 use self::{
     rest_api::{BinanceAllInstruments, BinanceAllSymbols, BinanceRestApiResponse, BinanceSymbol},
-    ws::{BinanceSubscription, BinanceWsMessage}
+    ws::{BinanceSubscription, BinanceWsMessage},
 };
 use super::traits::SpecificWsSubscription;
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
     exchanges::Exchange,
     normalized::{rest_api::NormalizedRestApiRequest, types::NormalizedTradingPair},
-    CexExchange
+    CexExchange,
 };
 
 const WSS_URL: &str = "wss://stream.binance.com:443";
@@ -32,7 +32,7 @@ const ALL_SYMBOLS_URL: &str = "https://www.binance.com/bapi/composite/v1/public/
 
 #[derive(Debug, Default, Clone)]
 pub struct Binance {
-    subscription: BinanceSubscription
+    subscription: BinanceSubscription,
 }
 
 impl Binance {
@@ -69,7 +69,7 @@ impl Binance {
                 Ok(vals) => {
                     if vals.is_empty() {
                         trace!(target: "cex-exchanges::binance", "no symbols found in valid call - breaking loop");
-                        break
+                        break;
                     }
                     vals
                 }
@@ -77,7 +77,7 @@ impl Binance {
                     if !e.is_gateway_timeout() {
                         err_count -= 1;
                         if err_count == 0 {
-                            return Err(e)
+                            return Err(e);
                         }
                     }
 
@@ -119,10 +119,10 @@ impl Binance {
     pub async fn simple_rest_api_request<T>(
         web_client: &reqwest::Client,
         url: String,
-        extra_header: Option<(header::HeaderName, header::HeaderValue)>
+        extra_header: Option<(header::HeaderName, header::HeaderValue)>,
     ) -> Result<T, RestApiError>
     where
-        T: for<'de> Deserialize<'de>
+        T: for<'de> Deserialize<'de>,
     {
         let mut builder = web_client
             .get(&url)
@@ -143,7 +143,7 @@ impl Exchange for Binance {
     type WsMessage = BinanceWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Binance;
-    const STREAM_TIMEOUT_SEC: Option<u64> = Some(60);
+    const STREAM_TIMEOUT_MS: Option<u64> = Some(500);
 
     fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
         let pair = bad_pair.try_into().unwrap();
@@ -169,7 +169,7 @@ impl Exchange for Binance {
     async fn rest_api_call(
         &self,
         web_client: &reqwest::Client,
-        api_channel: NormalizedRestApiRequest
+        api_channel: NormalizedRestApiRequest,
     ) -> Result<BinanceRestApiResponse, RestApiError> {
         let api_response = match api_channel {
             NormalizedRestApiRequest::AllCurrencies => Self::get_all_symbols(web_client)
@@ -177,7 +177,7 @@ impl Exchange for Binance {
                 .map(|v| BinanceRestApiResponse::Symbols(v)),
             NormalizedRestApiRequest::AllInstruments => Self::get_all_instruments(web_client)
                 .await
-                .map(|v| BinanceRestApiResponse::Instruments(v))
+                .map(|v| BinanceRestApiResponse::Instruments(v)),
         };
 
         if let Err(e) = api_response.as_ref() {

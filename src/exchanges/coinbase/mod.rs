@@ -15,13 +15,13 @@ use tracing::{error, info};
 
 use self::{
     rest_api::CoinbaseRestApiResponse,
-    ws::{CoinbaseSubscription, CoinbaseWsMessage}
+    ws::{CoinbaseSubscription, CoinbaseWsMessage},
 };
 use super::traits::SpecificWsSubscription;
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
     normalized::{rest_api::NormalizedRestApiRequest, types::NormalizedTradingPair},
-    CexExchange, Exchange
+    CexExchange, Exchange,
 };
 
 const WSS_URL: &str = "wss://ws-feed.exchange.coinbase.com";
@@ -29,7 +29,7 @@ const BASE_REST_API_URL: &str = "https://api.exchange.coinbase.com";
 
 #[derive(Debug, Default, Clone)]
 pub struct Coinbase {
-    subscription: CoinbaseSubscription
+    subscription: CoinbaseSubscription,
 }
 
 impl Coinbase {
@@ -51,7 +51,7 @@ impl Coinbase {
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
     where
-        T: for<'de> Deserialize<'de> + Debug
+        T: for<'de> Deserialize<'de> + Debug,
     {
         let data = web_client
             .get(&url)
@@ -73,7 +73,7 @@ impl Exchange for Coinbase {
     type WsMessage = CoinbaseWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Coinbase;
-    const STREAM_TIMEOUT_SEC: Option<u64> = None;
+    const STREAM_TIMEOUT_MS: Option<u64> = None;
 
     fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
         let pair: CoinbaseTradingPair = bad_pair.try_into().unwrap();
@@ -92,7 +92,7 @@ impl Exchange for Coinbase {
     async fn rest_api_call(
         &self,
         web_client: &reqwest::Client,
-        api_channel: NormalizedRestApiRequest
+        api_channel: NormalizedRestApiRequest,
     ) -> Result<CoinbaseRestApiResponse, RestApiError> {
         let api_response = match api_channel {
             NormalizedRestApiRequest::AllCurrencies => Self::get_all_currencies(web_client)
@@ -100,7 +100,7 @@ impl Exchange for Coinbase {
                 .map(|v| CoinbaseRestApiResponse::Currencies(v)),
             NormalizedRestApiRequest::AllInstruments => Self::get_all_products(web_client)
                 .await
-                .map(|v| CoinbaseRestApiResponse::Products(v))
+                .map(|v| CoinbaseRestApiResponse::Products(v)),
         };
 
         if let Err(e) = api_response.as_ref() {
