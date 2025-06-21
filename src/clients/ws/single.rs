@@ -1,7 +1,7 @@
 use std::{
     fmt::Debug,
     pin::Pin,
-    task::{Context, Poll}
+    task::{Context, Poll},
 };
 
 use futures::{Future, FutureExt, SinkExt, Stream, StreamExt};
@@ -13,22 +13,22 @@ use super::{WsError, WsStreamConfig};
 use crate::{
     clients::ws::critical::CriticalWsMessage,
     exchanges::normalized::ws::{CombinedWsMessage, MessageOrPing},
-    Exchange
+    Exchange,
 };
 
 type StreamConn = Pin<Box<WebSocketStream<MaybeTlsStream<TcpStream>>>>;
 
 pub struct WsStream<T> {
-    exchange:    T,
-    stream:      Option<StreamConn>,
+    exchange: T,
+    stream: Option<StreamConn>,
     stream_futs: WsStreamFutures<T>,
-    config:      WsStreamConfig,
-    retry_count: u64
+    config: WsStreamConfig,
+    retry_count: u64,
 }
 
 impl<T> WsStream<T>
 where
-    T: Exchange
+    T: Exchange,
 {
     pub fn new(exchange: T, config: WsStreamConfig) -> Self {
         Self { stream_futs: WsStreamFutures::new(exchange.clone()), exchange, stream: None, config, retry_count: 0 }
@@ -47,9 +47,10 @@ where
         Ok(())
     }
 
-    fn reconnect(&mut self) {
+    fn reconnect(&mut self, cx: &mut Context<'_>) {
         self.stream = None;
         self.stream_futs.new_reconnect();
+        cx.waker().wake_by_ref();
     }
 
     fn handle_incoming(message: Message) -> Result<MessageOrPing<T>, (WsError, String)> {
@@ -64,7 +65,7 @@ where
             Message::Binary(_) => panic!("Exchange: {} - Message::Binary", T::EXCHANGE),
             Message::Pong(_) => panic!("Exchange: {} - Message::Pong", T::EXCHANGE),
             Message::Close(_) => Ok(MessageOrPing::new_close()),
-            Message::Frame(_) => panic!("Exchange: {} - Message::Frame", T::EXCHANGE)
+            Message::Frame(_) => panic!("Exchange: {} - Message::Frame", T::EXCHANGE),
         }
     }
 
@@ -77,7 +78,7 @@ where
                     ret = Err(WsError::StreamTxError(e));
                     break;
                 }
-                Poll::Pending => ()
+                Poll::Pending => (),
             }
         }
 
@@ -90,7 +91,7 @@ where
         let stay_same = match self.handle_bad_pair(&msg) {
             Some(true) => return Poll::Ready(None),
             Some(false) => false,
-            None => true
+            None => true,
         };
         if let Some(retries) = self.config.max_retries {
             if !stay_same {
@@ -99,7 +100,7 @@ where
 
             if self.retry_count > retries {
                 error!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "retries exceeded -- EXITING");
-                return Poll::Ready(None)
+                return Poll::Ready(None);
             }
         }
 
@@ -127,7 +128,7 @@ where
 impl<T> Stream for WsStream<T>
 where
     T: Exchange + Debug,
-    Self: Send
+    Self: Send,
 {
     type Item = CombinedWsMessage;
 
@@ -141,42 +142,42 @@ where
                     Some(Ok(msg)) => match Self::handle_incoming(msg) {
                         Ok(MessageOrPing::Message(d)) => {
                             this.stream_futs.new_timeout_rx();
-                            return this.handle_retry(d.into())
+                            return this.handle_retry(d.into());
                         }
                         Ok(MessageOrPing::Ping(v)) => {
                             debug!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "recieved ping");
                             if let Err(e) = stream.start_send_unpin(Message::Pong(v)) {
                                 error!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "error sending pong");
-                                this.reconnect();
-                                return this.handle_retry(WsError::StreamTxError(e).normalized_with_exchange(T::EXCHANGE, None))
+                                this.reconnect(cx);
+                                return this.handle_retry(WsError::StreamTxError(e).normalized_with_exchange(T::EXCHANGE, None));
                             } else if let Err(e) = Self::flush_sink_queue(stream, cx) {
                                 warn!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "error flushing queue sink");
-                                this.reconnect();
-                                return this.handle_retry(e.normalized_with_exchange(T::EXCHANGE, None))
+                                this.reconnect(cx);
+                                return this.handle_retry(e.normalized_with_exchange(T::EXCHANGE, None));
                             }
                         }
                         Ok(MessageOrPing::Close) => {
-                            this.reconnect();
+                            this.reconnect(cx);
                             return Poll::Pending;
                         }
                         Err((e, raw_msg)) => {
-                            this.reconnect();
+                            this.reconnect(cx);
                             return this.handle_retry(e.normalized_with_exchange(T::EXCHANGE, Some(raw_msg)));
                         }
                     },
                     Some(Err(e)) => {
-                        this.reconnect();
-                        return this.handle_retry(WsError::StreamRxError(e).normalized_with_exchange(T::EXCHANGE, None))
+                        this.reconnect(cx);
+                        return this.handle_retry(WsError::StreamRxError(e).normalized_with_exchange(T::EXCHANGE, None));
                     }
                     None => {
-                        this.reconnect();
-                        return this.handle_retry(WsError::StreamTerminated.normalized_with_exchange(T::EXCHANGE, None))
+                        this.reconnect(cx);
+                        return this.handle_retry(WsError::StreamTerminated.normalized_with_exchange(T::EXCHANGE, None));
                     }
                 };
             }
 
             if this.stream_futs.is_timed_out(cx) {
-                this.reconnect();
+                this.reconnect(cx);
             }
         } else if let Poll::Ready(Some(stream_futs)) = this.stream_futs.poll_next_unpin(cx) {
             match stream_futs {
@@ -186,14 +187,15 @@ where
                 }
                 Err(err) => {
                     this.stream_futs.new_reconnect();
-                    return this.handle_retry(err.normalized_with_exchange(T::EXCHANGE, None))
+                    return this.handle_retry(err.normalized_with_exchange(T::EXCHANGE, None));
                 }
             }
+            cx.waker().wake_by_ref();
         } else if !this.stream_futs.is_reconnecting() {
+            cx.waker().wake_by_ref();
             this.stream_futs.new_reconnect();
         }
 
-        cx.waker().wake_by_ref();
         Poll::Pending
     }
 }
@@ -202,9 +204,9 @@ type ReconnectFuture = Option<Pin<Box<dyn Future<Output = Result<WebSocketStream
 type TimeoutRxFuture = Option<Pin<Box<dyn Future<Output = ()> + Send + 'static>>>;
 
 struct WsStreamFutures<T> {
-    exchange:   T,
-    reconnect:  ReconnectFuture,
-    timeout_rx: TimeoutRxFuture
+    exchange: T,
+    reconnect: ReconnectFuture,
+    timeout_rx: TimeoutRxFuture,
 }
 
 impl<T: Exchange> WsStreamFutures<T> {
@@ -234,7 +236,7 @@ impl<T: Exchange> WsStreamFutures<T> {
             if timeout.poll_unpin(cx).is_ready() {
                 warn!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "stream timed out - reconnecting");
                 self.new_reconnect();
-                return true
+                return true;
             } else {
                 self.timeout_rx = Some(timeout);
             }
@@ -258,7 +260,7 @@ impl<T: Exchange> Stream for WsStreamFutures<T> {
                     this.new_timeout_rx();
                     info!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "successfully reconnected to stream");
                 }
-                return Poll::Ready(Some(new_stream_res))
+                return Poll::Ready(Some(new_stream_res));
             } else {
                 this.reconnect = Some(reconnect);
             }
