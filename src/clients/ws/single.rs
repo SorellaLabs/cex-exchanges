@@ -114,6 +114,7 @@ where
         msg.bad_pair().map(|p| self.exchange.remove_bad_pair(p))
     }
 
+    #[allow(unused)]
     fn sanity_check(&self) {
         if self.stream_futs.is_reconnecting() {
             assert!(self.stream_futs.timeout_rx.is_none() && self.stream.is_none());

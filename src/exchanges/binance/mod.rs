@@ -143,7 +143,7 @@ impl Exchange for Binance {
     type WsMessage = BinanceWsMessage;
 
     const EXCHANGE: CexExchange = CexExchange::Binance;
-    const STREAM_TIMEOUT_MS: Option<u64> = Some(500);
+    const STREAM_TIMEOUT_MS: Option<u64> = Some(2000);
 
     fn remove_bad_pair(&mut self, bad_pair: NormalizedTradingPair) -> bool {
         let pair = bad_pair.try_into().unwrap();
