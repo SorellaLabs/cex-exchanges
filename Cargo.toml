@@ -33,8 +33,7 @@ chrono = { version = "0.4", features = ["serde"] }
 strum = "0.25"
 strum_macros = "0.25"
 clap = { version = "4", features = ["derive"] }
-rand = "0.8"
-# owned_chunks = "0.1.1"
+rand = "0.9"
 
 # tracing
 tracing = "0.1.0"
