@@ -45,7 +45,7 @@ tracing-subscriber = { version = "0.3", default-features = false, features = [
 
 
 [features]
-default = ["us", "non-us"]
+default = ["non-us"]
 
 all = ["non-us", "us"]
 non-us = []

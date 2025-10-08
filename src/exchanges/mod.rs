@@ -336,7 +336,9 @@ impl CexExchange {
     #[allow(unreachable_patterns)]
     pub fn bad_pair(self, msg: String) -> Option<NormalizedTradingPair> {
         match self {
+            #[cfg(feature = "us")]
             CexExchange::Coinbase => CoinbaseTradingPair::parse_for_bad_pair(&msg).map(|p| p.normalize()),
+            #[cfg(feature = "us")]
             CexExchange::Okex => OkexTradingPair::parse_for_bad_pair(&msg).map(|p| p.normalize()),
             _ => None,
         }
