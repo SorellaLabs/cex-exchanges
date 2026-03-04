@@ -12,21 +12,21 @@ use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use self::{
     rest_api::KucoinRestApiResponse,
-    ws::{KucoinMultiSubscription, KucoinSubscription, KucoinWsEndpointResponse, KucoinWsMessage},
+    ws::{KucoinMultiSubscription, KucoinSubscription, KucoinWsEndpointResponse, KucoinWsMessage}
 };
 use super::traits::SpecificWsSubscription;
 use crate::{
     clients::{rest_api::RestApiError, ws::WsError},
     exchanges::Exchange,
     normalized::{rest_api::NormalizedRestApiRequest, types::NormalizedTradingPair},
-    CexExchange,
+    CexExchange
 };
 
 const BASE_REST_API_URL: &str = "https://api.kucoin.com";
 
 #[derive(Debug, Default, Clone)]
 pub struct Kucoin {
-    subscriptions: Vec<KucoinSubscription>,
+    subscriptions: Vec<KucoinSubscription>
 }
 
 impl Kucoin {
@@ -49,7 +49,7 @@ impl Kucoin {
 
     pub async fn simple_rest_api_request<T>(web_client: &reqwest::Client, url: String) -> Result<T, RestApiError>
     where
-        T: for<'de> Deserialize<'de>,
+        T: for<'de> Deserialize<'de>
     {
         let data = web_client.get(&url).send().await?.json().await?;
         Ok(data)
@@ -92,7 +92,7 @@ impl Exchange for Kucoin {
     async fn rest_api_call(
         &self,
         web_client: &reqwest::Client,
-        api_channel: NormalizedRestApiRequest,
+        api_channel: NormalizedRestApiRequest
     ) -> Result<KucoinRestApiResponse, RestApiError> {
         let api_response = match api_channel {
             NormalizedRestApiRequest::AllCurrencies => {
@@ -104,5 +104,9 @@ impl Exchange for Kucoin {
         };
 
         Ok(api_response)
+    }
+
+    fn display_ws_subscription(&self) -> impl std::fmt::Debug {
+        &self.subscriptions
     }
 }

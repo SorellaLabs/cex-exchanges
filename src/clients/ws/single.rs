@@ -1,7 +1,7 @@
 use std::{
     fmt::Debug,
     pin::Pin,
-    task::{Context, Poll},
+    task::{Context, Poll}
 };
 
 use futures::{Future, FutureExt, SinkExt, Stream, StreamExt};
@@ -13,22 +13,22 @@ use super::{WsError, WsStreamConfig};
 use crate::{
     clients::ws::critical::CriticalWsMessage,
     exchanges::normalized::ws::{CombinedWsMessage, MessageOrPing},
-    Exchange,
+    Exchange
 };
 
 type StreamConn = Pin<Box<WebSocketStream<MaybeTlsStream<TcpStream>>>>;
 
 pub struct WsStream<T> {
-    exchange: T,
-    stream: Option<StreamConn>,
+    exchange:    T,
+    stream:      Option<StreamConn>,
     stream_futs: WsStreamFutures<T>,
-    config: WsStreamConfig,
-    retry_count: u64,
+    config:      WsStreamConfig,
+    retry_count: u64
 }
 
 impl<T> WsStream<T>
 where
-    T: Exchange,
+    T: Exchange
 {
     pub fn new(exchange: T, config: WsStreamConfig) -> Self {
         Self { stream_futs: WsStreamFutures::new(exchange.clone()), exchange, stream: None, config, retry_count: 0 }
@@ -65,7 +65,7 @@ where
             Message::Binary(_) => panic!("Exchange: {} - Message::Binary", T::EXCHANGE),
             Message::Pong(_) => panic!("Exchange: {} - Message::Pong", T::EXCHANGE),
             Message::Close(_) => Ok(MessageOrPing::new_close()),
-            Message::Frame(_) => panic!("Exchange: {} - Message::Frame", T::EXCHANGE),
+            Message::Frame(_) => panic!("Exchange: {} - Message::Frame", T::EXCHANGE)
         }
     }
 
@@ -78,7 +78,7 @@ where
                     ret = Err(WsError::StreamTxError(e));
                     break;
                 }
-                Poll::Pending => (),
+                Poll::Pending => ()
             }
         }
 
@@ -91,7 +91,7 @@ where
         let stay_same = match self.handle_bad_pair(&msg) {
             Some(true) => return Poll::Ready(None),
             Some(false) => false,
-            None => true,
+            None => true
         };
         if let Some(retries) = self.config.max_retries {
             if !stay_same {
@@ -129,7 +129,7 @@ where
 impl<T> Stream for WsStream<T>
 where
     T: Exchange + Debug,
-    Self: Send,
+    Self: Send
 {
     type Item = CombinedWsMessage;
 
@@ -205,9 +205,9 @@ type ReconnectFuture = Option<Pin<Box<dyn Future<Output = Result<WebSocketStream
 type TimeoutRxFuture = Option<Pin<Box<dyn Future<Output = ()> + Send + 'static>>>;
 
 struct WsStreamFutures<T> {
-    exchange: T,
-    reconnect: ReconnectFuture,
-    timeout_rx: TimeoutRxFuture,
+    exchange:   T,
+    reconnect:  ReconnectFuture,
+    timeout_rx: TimeoutRxFuture
 }
 
 impl<T: Exchange> WsStreamFutures<T> {
@@ -235,7 +235,7 @@ impl<T: Exchange> WsStreamFutures<T> {
     fn is_timed_out(&mut self, cx: &mut Context<'_>) -> bool {
         if let Some(mut timeout) = self.timeout_rx.take() {
             if timeout.poll_unpin(cx).is_ready() {
-                warn!(target: "cex-exchanges::live-stream", exchange=?T::EXCHANGE, "stream timed out - reconnecting");
+                warn!(target: "cex-exchanges::live-stream", subscription = ?self.exchange.display_ws_subscription(), exchange=?T::EXCHANGE, "stream timed out - reconnecting");
                 self.new_reconnect();
                 return true;
             } else {
